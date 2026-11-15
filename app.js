@@ -247,11 +247,18 @@ function playCard(f) { const p = playingOf(f); if (!p) return ""; const c = CATA
 function clearPlaying() { if (!me?.uid || me.guest || !ui.playKey) return; ui.playKey = null; updateDoc(doc(db, "users", me.uid), { playing: deleteField() }).catch(() => {}); }
 const playingOf = f => { const p = f?.playing, t = p?.at?.toMillis?.() || 0; return p?.c && GAMES[p.g] && isOnline(f) && Date.now() - t < ONLINE_MS ? p : null; };
 
+/* ================= تطبيق الآيفون ================= */
+// داخل تطبيق الآب ستور: نخفي قوقل والمتجر والأكواد (شروط آبل)
+const IN_APP = /RawqApp/.test(navigator.userAgent) || !!window.Capacitor?.isNativePlatform?.();
+if (IN_APP) document.documentElement.classList.add("inapp");
+const SHOP_TAG = IN_APP ? "✨ حصري" : "🛍️ من المتجر";
+const SHOP_MSG = IN_APP ? "هذا من الحصريات ✨" : "هذا من متجر روق 🛍️";
 /* ================= navigation & rendering ================= */
 const REFRESH = new Set(["home", "friends", "room", "profile", "admin", "inbox", "shop"]);
 const GUEST_NO = new Set(["home", "profile", "friends", "shop", "inbox", "dm", "pub", "admin", "rename", "welcome"]);
 function go(name) {
   if (me?.guest && GUEST_NO.has(name)) name = roomCode ? "room" : "auth";
+  if (IN_APP && name === "shop") return;
   stopLocalTimers();
   if (screen === "dm" && name !== "dm") { off("dm"); ui.dmWith = null; }
   if (name !== "pub") { off("pub"); pubRooms = null; }
@@ -297,7 +304,7 @@ function renderHeader() {
   if (me?.username && !me.guest && !back && screen !== "room" && screen !== "welcome") {
     if (isOwner()) h += `<button class="pill hot" id="hAdmin" aria-label="لوحة المالك">👑</button>`;
     h += `<button class="pill add" id="hFriends"><span aria-hidden="true">+</span> أضف صديق${reqIn.length ? `<span class="badge">${ar(reqIn.length)}</span>` : ""}</button>`;
-    h += `<button class="pill shop ${isOwner() ? "mini" : ""}" id="hShop" aria-label="متجر روق"><span class="ps-ic" aria-hidden="true">${ICONS.shop}</span><span class="ps-t">المتجر</span></button>`;
+    if (!IN_APP) h += `<button class="pill shop ${isOwner() ? "mini" : ""}" id="hShop" aria-label="متجر روق"><span class="ps-ic" aria-hidden="true">${ICONS.shop}</span><span class="ps-t">المتجر</span></button>`;
     const un = unreadCount();
     h += `<button class="pill icon" id="hChat" aria-label="الرسائل">💬${un ? `<span class="badge">${ar(un)}</span>` : ""}</button>`;
     h += `<button class="me-btn" id="hMe" aria-label="بروفايلي">${avatar(me.username, me.photo, 38)}</button>`;
@@ -2388,7 +2395,7 @@ VIEWS.dm = () => {
   </section>`;
   bindEmoji(V);
   on("dmWho", "click", () => showProfile(uid));
-  document.getElementById("dmList").addEventListener("click", e => { const b = e.target.closest("[data-gift]"); if (b) redeemCode(b.dataset.gift); });
+  document.getElementById("dmList").addEventListener("click", e => { const b = e.target.closest("[data-gift]"); if (b) { if (IN_APP) return toast("الهدايا تنفتح من موقع روق 🎁"); redeemCode(b.dataset.gift); } });
   on("dmF", "submit", async e => {
     e.preventDefault();
     const inp = document.getElementById("dmIn"), text = cleanMsg(inp.value).slice(0, 500);
@@ -2654,8 +2661,8 @@ VIEWS.auth = () => {
     </div>
     <div class="foot">
       ${APPLE_ON ? `<button class="btn apple" id="loginApple"><span class="a-logo" aria-hidden="true">${APPLE_LOGO}</span>كمّل بحساب أبل</button>` : ""}
-      <button class="btn google" id="login"><span class="g-logo" aria-hidden="true">${GOOGLE_G}</span>كمّل بحساب قوقل</button>
-      <button class="btn ghost" id="byEmail">تسجيل الدخول</button>
+      ${IN_APP ? `<button class="btn" id="byEmail">تسجيل الدخول بالإيميل</button>` : `<button class="btn google" id="login"><span class="g-logo" aria-hidden="true">${GOOGLE_G}</span>كمّل بحساب قوقل</button>
+      <button class="btn ghost" id="byEmail">تسجيل الدخول</button>`}
       <div class="or"><span>أو</span></div>
       <button class="btn ghost" id="local">العب بجوال واحد</button>
       <button class="btn ghost" id="gjGo">عندك كود غرفة؟ ادخل بدون حساب</button>
@@ -3129,7 +3136,7 @@ function pushNotify(to, kind) {
   pushLast[k] = Date.now();
   auth.currentUser.getIdToken().then(t => fetch(PUSH_URL, { method: "POST", headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" }, body: JSON.stringify({ to, kind }) })).catch(() => {});
 }
-const pushState = () => !("Notification" in window) || !("serviceWorker" in navigator) ? (isIOS() && !isStandalone() ? "ios" : "no") : Notification.permission;
+const pushState = () => IN_APP ? "app" : !("Notification" in window) || !("serviceWorker" in navigator) ? (isIOS() && !isStandalone() ? "ios" : "no") : Notification.permission;
 async function pushSaveToken(quiet) {
   try {
     // مكتبة الإشعارات تنحمّل بس لما نحتاجها (عشان روق يفتح أسرع)
@@ -3333,7 +3340,7 @@ window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); instal
 window.addEventListener("appinstalled", () => { installEvt = null; store.set("instHide", Date.now()); toast("انثبّت روق 🎉"); if (screen === "home") render(false); });
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 function showInstallCard() {
-  if (isStandalone()) return false;
+  if (IN_APP || isStandalone()) return false;
   const hid = store.get("instHide", 0);
   if (hid && Date.now() - hid < 7 * 864e5) return false;
   return !!installEvt || isIOS();
@@ -3368,6 +3375,7 @@ async function doInstall() {
 
 // بنر الإعلان (من لوحة الإدارة): آخر شي تحت في الرئيسية
 function promoBlock() {
+  if (IN_APP) return "";
   const pimg = promo && typeof promo.img === "string" && promo.img.startsWith("data:image/jpeg;base64,") ? promo.img : "";
   if (!pimg) return ""; const plink = promo && /^https:\/\//.test(promo.link || "") ? promo.link : "";
   return plink ? `<a class="promo" href="${esc(plink)}" target="_blank" rel="noopener"><img src="${esc(pimg)}" alt="${esc(promo.alt || "إعلان روق")}"></a>` : `<div class="promo"><img src="${esc(pimg)}" alt="${esc(promo.alt || "إعلان روق")}"></div>`;
@@ -3614,7 +3622,7 @@ VIEWS.profile = () => {
     </div>
 
     <div class="field"><span class="label">🔔 الإشعارات</span>
-      <div class="li"><span class="nm">${{ granted: "مفعّلة ✓", denied: "مقفلة من إعدادات الجوال", ios: "تحتاج تضيف روق للشاشة الرئيسية", no: "جهازك ما يدعمها" }[pushState()] || "مو مفعّلة"}</span>
+      <div class="li"><span class="nm">${{ granted: "مفعّلة ✓", denied: "مقفلة من إعدادات الجوال", ios: "تحتاج تضيف روق للشاشة الرئيسية", app: "قريب في التطبيق ✨", no: "جهازك ما يدعمها" }[pushState()] || "مو مفعّلة"}</span>
       ${pushState() === "granted" ? `<button class="btn small ghost" id="pushRe">حدّث</button>` : ["default", "ios"].includes(pushState()) ? `<button class="btn small" id="pushOn">فعّل</button>` : ""}</div>
       <p class="hint">توصلك العزايم وطلبات الصداقة والرسائل حتى لو روق مقفل.</p></div>
 
@@ -3624,14 +3632,14 @@ VIEWS.profile = () => {
     <div class="field"><span class="label">🎨 أشكالك</span>
       <span class="hint">شكل الطاولة</span>
       <div class="looks">${Object.entries(TABLES).map(([k, t]) => { const open = lookOpen(t), sel = myLook().t === k;
-        return `<button class="look ${sel ? "sel" : ""} ${t.shop ? "excl" : ""}" data-lt="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}"><span class="look-pv">${tableSVG(k)}</span><b>${t.name}</b><span class="hint">${open ? (sel ? "مختار ✓" : "متاح") : t.shop ? "🛍️ من المتجر" : "🔒 مستوى " + ar(t.lvl)}</span></button>`; }).join("")}</div>
+        return `<button class="look ${sel ? "sel" : ""} ${t.shop ? "excl" : ""}" data-lt="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}"><span class="look-pv">${tableSVG(k)}</span><b>${t.name}</b><span class="hint">${open ? (sel ? "مختار ✓" : "متاح") : t.shop ? SHOP_TAG : "🔒 مستوى " + ar(t.lvl)}</span></button>`; }).join("")}</div>
       <span class="hint">ظهر الورق</span>
       <div class="looks">${Object.entries(BACKS).map(([k, t]) => { const open = lookOpen(t), sel = myLook().b === k;
-        return `<button class="look back ${sel ? "sel" : ""} ${t.shop ? "excl" : ""}" data-lb="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}"><span class="look-pv">${cardSVG(null, k)}</span><b>${t.name}</b><span class="hint">${open ? (sel ? "مختار ✓" : "متاح") : t.shop ? "🛍️ من المتجر" : "🔒 مستوى " + ar(t.lvl)}</span></button>`; }).join("")}</div>
+        return `<button class="look back ${sel ? "sel" : ""} ${t.shop ? "excl" : ""}" data-lb="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}"><span class="look-pv">${cardSVG(null, k)}</span><b>${t.name}</b><span class="hint">${open ? (sel ? "مختار ✓" : "متاح") : t.shop ? SHOP_TAG : "🔒 مستوى " + ar(t.lvl)}</span></button>`; }).join("")}</div>
       <span class="hint">إطار الصورة</span>
       <div class="looks">${[["", "بدون"], ...Object.entries(FRAMES)].map(([k, n]) => { const open = !k || owns(prof(me.uid), k), sel = (frameOf(prof(me.uid)) || "") === k;
-        return `<button class="look frm ${sel ? "sel" : ""} ${k ? "excl" : ""}" data-lf="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}"><span class="look-pv">${k ? `<span class="fr ${k}" style="--fs:4px">${avatar(me.username, me.photo, 56)}</span>` : avatar(me.username, me.photo, 56)}</span><b>${n}</b><span class="hint">${open ? (sel ? "مختار ✓" : "متاح") : "🛍️ من المتجر"}</span></button>`; }).join("")}</div>
-      <button class="btn ghost" id="toShop">🛍️ متجر روق</button></div>
+        return `<button class="look frm ${sel ? "sel" : ""} ${k ? "excl" : ""}" data-lf="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}"><span class="look-pv">${k ? `<span class="fr ${k}" style="--fs:4px">${avatar(me.username, me.photo, 56)}</span>` : avatar(me.username, me.photo, 56)}</span><b>${n}</b><span class="hint">${open ? (sel ? "مختار ✓" : "متاح") : SHOP_TAG}</span></button>`; }).join("")}</div>
+      ${IN_APP ? "" : `<button class="btn ghost" id="toShop">🛍️ متجر روق</button>`}</div>
     <div class="field"><button class="btn wrapbtn" id="wrapBtn">📊 ملخصي لشهر ${monName(monKey())}</button>${me.monPrev?.r ? `<button class="btn ghost" id="wrapPrev">ملخص شهر ${monName(me.monPrev.m)}</button>` : ""}</div>
 
     <div class="field"><span class="label">✨ زينة بروفايلك</span>
@@ -3640,7 +3648,7 @@ VIEWS.profile = () => {
         return `<button class="nsb ${sel ? "sel" : ""}" data-ns="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}"><b class="${k ? "ns ns-" + k : ""}" dir="ltr">${esc(me.username)}</b><span class="hint">${open ? (sel ? "مختار ✓" : n) : ns.shop ? "👑 VIP" : "🔒 مستوى " + ar(ns.lvl)}</span></button>`; }).join("")}</div>
       ${DECO_ON ? `      <span class="hint">ثيم البروفايل (يلوّن بروفايلك كامل مع تأثير متحرك، يشوفه كل من يفتح بروفايلك)</span>
       <div class="ths">\${[["", null], ...Object.entries(DECO)].map(([k, d]) => { const open = !k || owns(prof(me.uid), "th_" + k), sel = themeOf(prof(me.uid)) === k;
-        return \`<button class="thb \${sel ? "sel" : ""}" data-th="\${k}" \${open ? "" : "aria-disabled=\"true\""} aria-pressed="\${sel}"><span class="thb-pv\${thC(k)}"><span class="thb-av">\${avatar(me.username, me.photo, 30)}</span><i></i><i></i></span><b>\${k ? d.name : "بدون"}</b><span class="hint">\${open ? (sel ? "مختار ✓" : k ? "✨ " + d.fxName : "متاح") : "🛍️ من المتجر"}</span></button>\`; }).join("")}</div>
+        return \`<button class="thb \${sel ? "sel" : ""}" data-th="\${k}" \${open ? "" : "aria-disabled=\"true\""} aria-pressed="\${sel}"><span class="thb-pv\${thC(k)}"><span class="thb-av">\${avatar(me.username, me.photo, 30)}</span><i></i><i></i></span><b>\${k ? d.name : "بدون"}</b><span class="hint">\${open ? (sel ? "مختار ✓" : k ? "✨ " + d.fxName : "متاح") : SHOP_TAG}</span></button>\`; }).join("")}</div>
       <span class="hint">لوحة الاسم (تطلع خلف اسمك في قائمة اللاعبين)</span>
       <div class="nps">\${[["", null], ...Object.entries(DECO)].map(([k, d]) => { const open = !k || owns(prof(me.uid), "np_" + k), sel = plateOf(prof(me.uid)) === k;
         return \`<button class="npb li \${k ? "np" : ""} \${sel ? "sel" : ""}" data-np="\${k}" \${open ? "" : "aria-disabled=\"true\""} aria-pressed="\${sel}">\${k ? \`<span class="np-art">\${d.art(360, 60)}</span>\` : ""}\${avF(prof(me.uid), 32)}<span class="nm\${nsC(prof(me.uid))}" dir="ltr">@\${esc(me.username)}</span><span class="tag">\${open ? (sel ? "✓" : k ? d.name : "بدون") : "🛍️"}</span></button>\`; }).join("")}</div>
@@ -3659,7 +3667,7 @@ VIEWS.profile = () => {
   on("tour", "click", () => { ui.slide = 0; go("welcome"); });
   on("delAcc", "click", openDeleteAccount);
   const setLook = async (kind, k, list) => {
-    if (!lookOpen(list[k])) { if (list[k].shop) { toast("هذا من متجر روق 🛍️"); go("shop"); return; } return toast(`يفتح لك في المستوى ${ar(list[k].lvl)} ⭐`); }
+    if (!lookOpen(list[k])) { if (list[k].shop) { toast(SHOP_MSG); go("shop"); return; } return toast(`يفتح لك في المستوى ${ar(list[k].lvl)} ⭐`); }
     const look = { ...myLook(), [kind]: k };
     me.look = look; render(false);
     try { await updateDoc(doc(db, "users", me.uid), { look }); } catch (e) { console.error(e); }
@@ -3671,12 +3679,12 @@ VIEWS.profile = () => {
   onAll("[data-ns]", b => { const k = b.dataset.ns;
     if (k && !nsOpen(k, prof(me.uid))) return NSTYLES[k].shop ? (toast("هذا للـ VIP 👑"), go("shop")) : toast(`يفتح لك في المستوى ${ar(NSTYLES[k].lvl)} ⭐`);
     setDeco("ns", k); });
-  onAll("[data-th]", b => { const k = b.dataset.th; if (k && !owns(prof(me.uid), "th_" + k)) { toast("هذا من متجر روق 🛍️"); return go("shop"); } setDeco("th", k); });
-  onAll("[data-np]", b => { const k = b.dataset.np; if (k && !owns(prof(me.uid), "np_" + k)) { toast("هذا من متجر روق 🛍️"); return go("shop"); } setDeco("np", k); });
+  onAll("[data-th]", b => { const k = b.dataset.th; if (k && !owns(prof(me.uid), "th_" + k)) { toast(SHOP_MSG); return go("shop"); } setDeco("th", k); });
+  onAll("[data-np]", b => { const k = b.dataset.np; if (k && !owns(prof(me.uid), "np_" + k)) { toast(SHOP_MSG); return go("shop"); } setDeco("np", k); });
   onAll("[data-fav]", b => setDeco("fav", b.dataset.fav));
   onAll("[data-lf]", async b => {
     const k = b.dataset.lf;
-    if (k && !owns(prof(me.uid), k)) { toast("هذا من متجر روق 🛍️"); go("shop"); return; }
+    if (k && !owns(prof(me.uid), k)) { toast(SHOP_MSG); go("shop"); return; }
     me.frame = k; render(false);
     try { await updateDoc(doc(db, "users", me.uid), { frame: k }); } catch (e) { console.error(e); }
   });
