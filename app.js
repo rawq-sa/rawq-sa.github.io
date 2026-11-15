@@ -42,7 +42,8 @@ function confirmTap(btn, label) {
   return false;
 }
 
-const USER_RE = /^[A-Za-z0-9_-]{3,20}$/;
+const USER_RE = /^[A-Za-z0-9_-]{2,20}$/;   // للبحث: فيه يوزرات من حرفين يعطيها المالك
+const CLAIM_RE = /^[A-Za-z0-9_-]{3,20}$/;  // اللاعب يختار يوزر من ٣ حروف وفوق
 const HAS_UPPER = /[A-Z]/;
 const PW_MIN = 8;
 // صاحب اللعبة: يطلع جنب يوزره تاج
@@ -50,11 +51,11 @@ const OWNER = "b_1";
 const RESERVED = new Set(["admin", "owner", "jalsah", "jalsa", "support", "official", "moderator", "mod", "staff", "team"]);
 /* ================= المستويات والإنجازات ================= */
 // المستوى L يحتاج 25×L×(L-1) نقطة خبرة: ٢=٥٠، ٣=١٥٠، ٥=٥٠٠، ١٠=٢٢٥٠
-const lvlOf = xp => Math.max(1, Math.floor((1 + Math.sqrt(1 + (xp || 0) * 4 / 25)) / 2));
+const MAXL = 500;
+const lvlOf = xp => Math.min(MAXL, Math.max(1, Math.floor((1 + Math.sqrt(1 + (xp || 0) * 4 / 25)) / 2)));
 const lvlXp = L => 25 * L * (L - 1);
 // المالك والحساب الرسمي: أعلى مستوى وكل شي مفتوح
 const STAFF = n => [OWNER, OFFICIAL].includes(String(n || "").toLowerCase());
-const MAXL = 99;
 const lvlOfP = p => STAFF(p?.username) ? MAXL : lvlOf(p?.xp);
 const myLvl = () => lvlOfP(me);
 const lvlTag = p => `<span class="lvl ${STAFF(p?.username) ? "max" : ""}" title="المستوى">${STAFF(p?.username) ? "👑" : "⭐"} ${ar(lvlOfP(p))}</span>`;
@@ -80,15 +81,15 @@ const medal = (x, on = true) => `<span class="medal ${on ? "t-" + x.tier : "off"
 const achGot = (s, xp, name) => STAFF(name) ? ACH : ACH.filter(x => x.ok(s || {}, xp || 0));
 /* ================= متجر روق ================= */
 const SHOP = [
-  { id: "king", name: "باقة الملك", desc: "كل الحصريات + VIP سنة كاملة", price: 399, grants: ["t_royal", "b_royal", "f_gold", "f_fire", "f_sadu", "e_royal", "ns_rainbow"], days: 365, hot: 1 },
-  { id: "vip365", name: "VIP سنة", desc: "شارة VIP وكل الحصريات لمدة سنة", price: 249, grants: [], days: 365 },
-  { id: "vip30", name: "VIP شهر", desc: "شارة VIP وكل الحصريات لمدة شهر", price: 39, grants: [], days: 30 },
-  { id: "t_royal", name: "الطاولة الملكية", desc: "مخمل أحمر وإطار ذهبي يلمع", price: 39, grants: ["t_royal"], days: 0 },
-  { id: "f_gold", name: "إطار ذهبي", desc: "إطار يدور حول صورتك ويشوفه الكل", price: 25, grants: ["f_gold"], days: 0 },
-  { id: "f_fire", name: "إطار ناري", desc: "إطار يدور حول صورتك ويشوفه الكل", price: 25, grants: ["f_fire"], days: 0 },
-  { id: "f_sadu", name: "إطار سدو", desc: "إطار يدور حول صورتك ويشوفه الكل", price: 25, grants: ["f_sadu"], days: 0 },
-  { id: "e_royal", name: "الدخلة الملكية", desc: "لما تدخل أي غرفة يطلع للكل إعلان دخولك 👑", price: 29, grants: ["e_royal"], days: 0 },
-  { id: "b_royal", name: "ظهر الورق الملكي", desc: "عنابي بتاج ذهبي", price: 19, grants: ["b_royal"], days: 0 }
+  { id: "king", name: "باقة الملك", desc: "كل الحصريات + VIP سنة كاملة", price: 199, grants: ["t_royal", "b_royal", "f_gold", "f_fire", "f_sadu", "e_royal", "ns_rainbow"], days: 365, hot: 1 },
+  { id: "vip365", name: "VIP سنة", desc: "شارة VIP وكل الحصريات لمدة سنة", price: 119, grants: [], days: 365 },
+  { id: "vip30", name: "VIP شهر", desc: "شارة VIP وكل الحصريات لمدة شهر", price: 19, grants: [], days: 30 },
+  { id: "t_royal", name: "الطاولة الملكية", desc: "مخمل أحمر وإطار ذهبي يلمع", price: 19, grants: ["t_royal"], days: 0 },
+  { id: "f_gold", name: "إطار ذهبي", desc: "إطار يدور حول صورتك ويشوفه الكل", price: 12, grants: ["f_gold"], days: 0 },
+  { id: "f_fire", name: "إطار ناري", desc: "إطار يدور حول صورتك ويشوفه الكل", price: 12, grants: ["f_fire"], days: 0 },
+  { id: "f_sadu", name: "إطار سدو", desc: "إطار يدور حول صورتك ويشوفه الكل", price: 12, grants: ["f_sadu"], days: 0 },
+  { id: "e_royal", name: "الدخلة الملكية", desc: "لما تدخل أي غرفة يطلع للكل إعلان دخولك 👑", price: 15, grants: ["e_royal"], days: 0 },
+  { id: "b_royal", name: "ظهر الورق الملكي", desc: "عنابي بتاج ذهبي", price: 9, grants: ["b_royal"], days: 0 }
 ];
 const FRAMES = { f_gold: "ذهبي", f_fire: "ناري", f_sadu: "سدو" };
 // ستايل الاسم: تفتح بالمستوى، وقوس قزح للـ VIP
@@ -124,8 +125,12 @@ const vipTag = p => vipOn(p) && !STAFF(p?.username) ? `<span class="vip">VIP</sp
 
 const OFFICIAL = "jalsah"; // حساب روق الرسمي (@Jalsah)، تحت تصرف المالك
 const isOwner = () => [OWNER, OFFICIAL].includes(String(me?.username || "").toLowerCase());
+// علامة التوثيق: سودا وفيها صح أبيض. للمالك والرسمي، ولأي أحد يوثّقه المالك من اللوحة
+let VERIFIED = new Set();
+const isVerified = name => { const k = String(name || "").toLowerCase(); return k === OWNER || k === OFFICIAL || VERIFIED.has(k); };
+const VBADGE = `<span class="vbadge" title="حساب موثّق" aria-label="حساب موثّق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6l2.5 1.9 3.1-.3 1.2 2.9 2.9 1.2-.3 3.1L23.3 12l-1.9 2.5.3 3.1-2.9 1.2-1.2 2.9-3.1-.3L12 23.3l-2.5-1.9-3.1.3-1.2-2.9-2.9-1.2.3-3.1L.7 12l1.9-2.5-.3-3.1 2.9-1.2 1.2-2.9 3.1.3z" fill="#0b0b0f" stroke="#fff" stroke-opacity=".25" stroke-width=".8"/><path d="M7.4 12.3l3.1 3.1 6.1-6.3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
 const at = name => { const k = String(name).toLowerCase();
-  return `@${esc(name)}${k === OWNER ? ' <span class="crown" title="صاحب اللعبة" aria-label="صاحب اللعبة">👑</span>' : k === OFFICIAL ? ' <span class="verified" title="الحساب الرسمي" aria-label="الحساب الرسمي">✓</span>' : ""}`; };
+  return `@${esc(name)}${isVerified(k) ? " " + VBADGE : ""}${k === OWNER ? ' <span class="crown" title="صاحب اللعبة" aria-label="صاحب اللعبة">👑</span>' : ""}`; };
 // صورة البروفايل: صورة اللاعب، أو أول حرف من يوزره بلون ثابت
 const AV_COLORS = ["#ef6f6c", "#f2b134", "#74d6b8", "#8f7bea", "#5fb0f0", "#f08a24", "#e66aa8", "#4fc48a"];
 const avColor = name => { let h = 0; for (const c of String(name || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return AV_COLORS[h % AV_COLORS.length]; };
@@ -203,7 +208,7 @@ function prof(uid) {
 let pendingJoin = (new URLSearchParams(location.search).get("r") || "").toUpperCase() || null;
 // رابط دعوة صاحب: ?ref=يوزره
 (() => { const r = (new URLSearchParams(location.search).get("ref") || "").toLowerCase();
-  if (/^[a-z0-9_-]{3,20}$/.test(r)) { try { localStorage.setItem("jalsa:ref", JSON.stringify({ u: r, at: Date.now() })); } catch (e) {}
+  if (/^[a-z0-9_-]{2,20}$/.test(r)) { try { localStorage.setItem("jalsa:ref", JSON.stringify({ u: r, at: Date.now() })); } catch (e) {}
     if (!pendingJoin) history.replaceState(null, "", location.pathname); } })();
 
 const isOnline = f => { const t = f?.lastSeen?.toMillis?.(); return !!t && Date.now() - t < ONLINE_MS; };
@@ -2095,6 +2100,39 @@ async function playerUpdate(upd, msg) {
   try { await updateDoc(doc(db, "users", p.uid), upd); toast(msg); await findPlayer(p.username); }
   catch (e) { console.error(e); toast("ما زبط"); }
 }
+// المالك يعطي مستوى: نحط الخبرة على أول المستوى
+function setLevel(L) {
+  const p = adm.player; L = Math.round(Number(L)); if (!p) return;
+  if (!(L >= 1 && L <= MAXL)) return toast(`المستوى من ١ إلى ${ar(MAXL)}`);
+  playerUpdate({ xp: lvlXp(L) }, `صار @${p.username} مستوى ${ar(L)} ⭐`);
+}
+// التوثيق: قائمة يوزرات في config/verified
+async function setVerified(name, on) {
+  const k = String(name || "").toLowerCase(); if (!k) return;
+  const list = new Set(VERIFIED); on ? list.add(k) : list.delete(k);
+  try { await setDoc(doc(db, "config", "verified"), { names: [...list].slice(0, 500) }); VERIFIED = list; toast(on ? `توثّق @${name} ✔️` : `انشال التوثيق من @${name}`); render(false); }
+  catch (e) { console.error(e); toast("ما زبط"); }
+}
+// يوزر من حرفين: المالك بس يعطيه، ويتبدل يوزر اللاعب
+async function giveShortName(raw) {
+  const p = adm.player; if (!p) return;
+  const v = String(raw || "").trim().replace(/^@/, ""), k = v.toLowerCase();
+  if (!/^[A-Za-z0-9_-]{2}$/.test(v)) return toast("اليوزر لازم يكون حرفين بالضبط (حروف إنجليزية أو أرقام)");
+  if (RESERVED.has(k) || k === OWNER) return toast("هذا اليوزر محجوز");
+  try {
+    await runTransaction(db, async tx => {
+      const nRef = doc(db, "usernames", k), n = await tx.get(nRef);
+      if (n.exists() && n.data().uid !== p.uid) throw new Error("taken");
+      tx.set(nRef, { uid: p.uid });
+      if (p.username.toLowerCase() !== k) tx.delete(doc(db, "usernames", p.username.toLowerCase()));
+      tx.update(doc(db, "users", p.uid), { username: v });
+    });
+    const wasV = VERIFIED.has(p.username.toLowerCase());
+    toast(`صار يوزره @${v} 🔥`);
+    if (wasV) { await setVerified(p.username, false); await setVerified(v, true); }
+    await findPlayer(v);
+  } catch (e) { console.error(e); toast(e.message === "taken" ? "اليوزر مأخوذ" : "ما زبط"); }
+}
 function giveItem(id) {
   const it = SHOP.find(x => x.id === id), p = adm.player; if (!it || !p) return;
   const upd = {};
@@ -2118,6 +2156,9 @@ function playerCard(p) {
     </div>
     <div><span class="label">أغراضه</span><p class="lead">${items.length ? items.map(esc).join("، ") : "ما عنده شي"}</p></div>
     <div class="row"><select class="txt" id="pGive" aria-label="الهدية">${SHOP.map(it => `<option value="${it.id}">${it.name}</option>`).join("")}</select><button class="btn small good" id="pGiveB">أعطه 🎁</button></div>
+    <div class="row"><input class="txt nlvl" id="pLvl" type="number" min="1" max="${MAXL}" dir="ltr" placeholder="المستوى" aria-label="المستوى" value="${lvlOf(p.xp)}"><button class="btn small grow" id="pLvlB">أعطه المستوى ⭐</button></div>
+    <div class="row"><div class="uinput"><span>@</span><input id="pShort" maxlength="2" dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="حرفين" aria-label="يوزر من حرفين"></div><button class="btn small" id="pShortB">أعطه يوزر حرفين</button></div>
+    <div class="row">${isVerified(p.username) ? (STAFF(p.username) ? `<span class="hint">موثّق دايمًا ${VBADGE}</span>` : `<button class="btn small ghost" id="pUnver">شيل التوثيق</button>`) : `<button class="btn small" id="pVer">وثّقه ${VBADGE}</button>`}</div>
     <div class="row wrap">
       ${vip ? `<button class="btn small ghost" id="pNoVip">شيل VIP</button>` : ""}
       ${muted || p.warns ? `<button class="btn small ghost" id="pUnmute">فك الكتم والتحذيرات</button>` : `<button class="btn small ghost" id="pMute">اكتمه ٢٤ ساعة</button>`}
@@ -2373,30 +2414,39 @@ VIEWS.admin = () => {
   if (!adm.stats && !adm.loading) { loadStats(); }
   const st = adm.stats;
   const tile = (n, label, tone) => `<div class="stat ${tone || ""}"><span class="n">${st ? ar(n) : "…"}</span><span class="l">${label}</span></div>`;
-  V.innerHTML = `<section>
+  V.innerHTML = `<section class="adm" data-tab="${adm.tab || "stats"}">
     <div><h2>لوحة المالك 👑</h2><p class="lead">تشوفها أنت بس.</p></div>
+    <div class="atabs" role="tablist">${[["stats", "📊 الأرقام"], ["players", "👤 اللاعبين"], ["ann", "📣 الإعلانات"], ["shop", "🛍️ المتجر"], ["safe", `🛡️ الحماية${adm.reports?.length ? ` (${ar(adm.reports.length)})` : ""}`]].map(([k, t]) => `<button class="atab ${(adm.tab || "stats") === k ? "on" : ""}" data-atab="${k}" role="tab" aria-selected="${(adm.tab || "stats") === k}">${t}</button>`).join("")}</div>
 
-    <div class="field"><div class="row-h"><span class="label">الإحصائيات</span>
+    <div class="field" data-at="stats"><div class="row-h"><span class="label">📊 الأرقام</span>
       <button class="link" id="reload">${adm.loading ? "يحدّث…" : "تحديث"}</button></div>
-      <div class="stats">
-        ${tile(st?.online, "أونلاين الحين", "good")}
-        ${tile(st?.total, "كل اللاعبين")}
-        ${tile(st?.today, "سجّلوا اليوم")}
+      <div class="agrp"><span class="ag-h">🟢 الحين</span><div class="stats">
+        ${tile(st?.online, "لاعبين أونلاين", "good")}
+        ${tile(st?.gOnline ?? "—", "زوار بدون حساب")}
         ${tile(st?.rooms, "غرف مفتوحة")}
-        ${tile(st?.gOnline ?? "—", "زوار بدون حساب الحين", "good")}
-        ${tile(st?.gToday ?? "—", "زوار بدون حساب اليوم")}
+      </div></div>
+      <div class="agrp"><span class="ag-h">📅 اليوم</span><div class="stats">
         ${tile(st?.played ?? "—", "دخلوا اليوم", "good")}
-        ${tile(st?.cUsed ?? "—", "أكواد انشحنت 💰")}
-        ${tile(st?.cLeft ?? "—", "أكواد ما انباعت")}
-      </div>
-      ${st?.games ? (() => { const mx = Math.max(1, ...st.games.map(x => x.n)); return `<span class="label">أكثر الألعاب لعبًا</span><div class="gbars">${st.games.map(x =>
-        `<div class="gbar"><span>${esc(GAMES[x.g])}</span><i style="--w:${Math.round(x.n / mx * 100)}%"></i><b>${ar(x.n)}</b></div>`).join("")}</div>`; })() : ""}
+        ${tile(st?.today, "حسابات جديدة")}
+        ${tile(st?.gToday ?? "—", "زوار جدد بدون حساب")}
+      </div></div>
+      <div class="agrp"><span class="ag-h">👥 الكل</span><div class="stats">
+        ${tile(st?.total, "كل اللاعبين")}
+        ${tile(VERIFIED.size, "حسابات موثّقة")}
+        ${tile(adm.banned?.length ?? 0, "محظورين", (adm.banned?.length ? "bad" : ""))}
+      </div></div>
+      <div class="agrp"><span class="ag-h">💰 المبيعات</span><div class="stats">
+        ${tile(st?.cUsed ?? "—", "أكواد انشحنت", "good")}
+        ${tile(st?.cLeft ?? "—", "أكواد باقية")}
+      </div></div>
+      ${st?.games ? (() => { const mx = Math.max(1, ...st.games.map(x => x.n)); return `<div class="agrp"><span class="ag-h">🎮 أكثر الألعاب لعبًا</span><div class="gbars">${st.games.map(x =>
+        `<div class="gbar"><span>${esc(GAMES[x.g])}</span><i style="--w:${Math.round(x.n / mx * 100)}%"></i><b>${ar(x.n)}</b></div>`).join("")}</div></div>`; })() : ""}
       ${st ? `<p class="hint">آخر تحديث ${esc(st.at.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" }))}</p>` : ""}
     </div>
 
     ${(() => { const r = adm.ret; const pc = (x, good, ok) => x?.pct == null ? `<div class="stat"><span class="n">—</span><span class="l">ما فيه بيانات كافية</span></div>`
         : `<div class="stat ${x.pct >= good ? "good" : x.pct >= ok ? "" : "bad"}"><span class="n">${ar(x.pct)}٪</span><span class="l">من ${ar(x.n)} لاعب جديد</span></div>`;
-      return `<div class="field"><span class="label">📈 هل الناس يرجعون؟</span>
+      return `<div class="field" data-at="stats"><span class="label">📈 هل الناس يرجعون؟</span>
       ${r ? `<div class="stats">
         <div class="stat good"><span class="n">${r.dau == null ? "—" : ar(r.dau)}</span><span class="l">لعبوا آخر ٢٤ ساعة</span></div>
         <div class="stat"><span class="n">${r.wau == null ? "—" : ar(r.wau)}</span><span class="l">لعبوا هالأسبوع</span></div>
@@ -2406,25 +2456,31 @@ VIEWS.admin = () => {
         <span class="label">رجعوا بعد أسبوع</span><div class="stats">${pc(r.d7, 12, 6)}</div>
         <p class="hint">المقياس: الألعاب الناجحة يرجع لها تقريبًا ٢٠–٣٠٪ بعد يوم، و ٨–١٢٪ بعد أسبوع. أخضر = ممتاز، أحمر = يحتاج شغل.</p>` : `<p class="hint">نحسب…</p>`}</div>`; })()}
 
-    <div class="field"><span class="label">🔎 ابحث عن لاعب</span>
+    <div class="field" data-at="players"><span class="label">🔎 ابحث عن لاعب</span>
       <form class="addf" id="pFindF"><div class="uinput"><span>@</span><input id="pFind" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="21" placeholder="يوزر اللاعب" aria-label="يوزر اللاعب" value="${esc(adm.player?.username || "")}"></div><button class="btn small">${adm.pLoading ? "…" : "ابحث"}</button></form>
       ${adm.player ? playerCard(adm.player) : `<p class="hint">تشوف حسابه كامل، وتقدر تعطيه منتج أو VIP هدية، أو تصلّح مشكلة شراء، أو تكتمه وتحظره.</p>`}
     </div>
 
-    <div class="field"><span class="label">🔔 إشعار لكل اللاعبين</span>
+
+    <div class="field" data-at="players"><span class="label">✔️ الحسابات الموثّقة</span>
+      <p class="hint">توثّق أي أحد من بطاقته فوق (ابحث عنه واضغط «وثّقه»). العلامة سودا وفيها صح أبيض ${VBADGE}</p>
+      <div class="list">${[OWNER, OFFICIAL, ...[...VERIFIED].filter(k => k !== OWNER && k !== OFFICIAL)].map(k => `<div class="li"><span class="nm" dir="ltr">${at(k)}</span>${STAFF(k) ? `<span class="tag">دايم</span>` : `<button class="btn small ghost" data-unver="${esc(k)}">شيل</button>`}</div>`).join("")}</div>
+    </div>
+
+    <div class="field" data-at="ann"><span class="label">🔔 إشعار لكل اللاعبين</span>
       <input class="txt" id="bcTitle" maxlength="60" placeholder="العنوان: لعبة جديدة نزلت 🔥" value="${esc(adm.bcDraft?.t || "")}">
       <textarea class="txt" id="bcBody" rows="2" maxlength="160" placeholder="الكلام: جربوا «كمّل الكلمة» مع شلتكم الحين!">${esc(adm.bcDraft?.b || "")}</textarea>
       <button class="btn" id="bcSend" ${adm.bc?.busy ? "disabled" : ""}>${adm.bc?.busy ? "يرسل…" : "أرسل الإشعار"}</button>
       <p class="hint" id="bcProg">${adm.bc?.busy ? `انرسل لـ ${ar(adm.bc.sent)} جهاز…` : adm.bc?.done != null ? `آخر إشعار وصل لـ ${ar(adm.bc.done)} جهاز.` : "يوصل لجوال كل اللي فعّلوا الإشعارات. لا تكثر منه عشان ما يقفلونها 😅"}</p>
     </div>
 
-    <div class="field"><span class="label">إعلان لكل اللاعبين</span>
+    <div class="field" data-at="ann"><span class="label">📢 إعلان مكتوب فوق الصفحة</span>
       <textarea class="txt" id="annText" rows="3" maxlength="200" placeholder="مثال: نزلت لعبة جديدة الليلة 🔥">${esc(announce?.text || "")}</textarea>
       <div class="row"><button class="btn" id="annSend">انشر الإعلان</button>${announce?.text ? `<button class="btn ghost" id="annDel">شيل الإعلان</button>` : ""}</div>
       <p class="hint">${announce?.text ? "فيه إعلان منشور الحين، ويطلع فوق الصفحة لكل اللاعبين." : "ما فيه إعلان منشور."}</p>
     </div>
 
-    <div class="field"><span class="label">البنر (يطلع فوق تحت الشعار)</span>
+    <div class="field" data-at="ann"><span class="label">🖼️ البنر (يطلع آخر الصفحة الرئيسية)</span>
       ${promo?.img ? `<div class="promo preview"><img src="${esc(safeJpeg(promo.img))}" alt=""></div>` : `<p class="hint">ما فيه بنر الحين.</p>`}
       <input type="file" id="bnFile" accept="image/*" hidden>
       <input class="txt" id="bnLink" dir="ltr" placeholder="رابط اختياري يفتح لما يضغطون البنر (https://...)" value="${esc(promo?.link || "")}">
@@ -2433,7 +2489,7 @@ VIEWS.admin = () => {
       <p class="hint">أفضل مقاس: صورة عريضة، مثل ١٢٠٠×٤٠٠.</p>
     </div>
 
-    <div class="field"><div class="row-h"><span class="label">البلاغات 🚩 ${adm.reports.length ? `(${ar(adm.reports.length)})` : ""}</span><button class="link" id="repLoad">تحديث</button></div>
+    <div class="field" data-at="safe"><div class="row-h"><span class="label">البلاغات 🚩 ${adm.reports.length ? `(${ar(adm.reports.length)})` : ""}</span><button class="link" id="repLoad">تحديث</button></div>
       ${adm.reports.length ? `<div class="list">${adm.reports.map(r => `<div class="rep">
         <div class="row-h"><b dir="ltr">@${esc(r.targetName || "—")}</b><span class="tag">${esc(r.why || "")}</span></div>
         ${r.text ? `<p class="rep-t" dir="auto">${esc(r.text)}</p>` : ""}
@@ -2443,7 +2499,7 @@ VIEWS.admin = () => {
         : `<p class="hint">${adm.repLoaded ? "ما فيه بلاغات 👌" : "…"}</p>`}
     </div>
 
-    <div class="field"><span class="label">🛍️ أكواد المتجر</span>
+    <div class="field" data-at="shop"><span class="label">🛍️ أكواد المتجر</span>
       <form class="codegen" id="genF">
         <select class="txt" id="genItem" aria-label="المنتج">${SHOP.map(it => `<option value="${it.id}">${it.name} (${ar(it.price)} ريال)</option>`).join("")}</select>
         <div class="row"><input class="txt" id="genN" type="number" min="1" max="100" value="10" dir="ltr" aria-label="كم كود"><button class="btn small">ولّد الأكواد</button></div>
@@ -2457,11 +2513,11 @@ VIEWS.admin = () => {
         ${SHOP.map(it => `<label class="lk"><span>${it.name}</span><input class="txt" data-link="${it.id}" dir="ltr" placeholder="https://..." value="${esc(shopCfg?.links?.[it.id] || "")}"></label>`).join("")}
         <button class="btn small" id="saveLinks">احفظ الروابط</button></details></div>
 
-    <div class="field"><span class="label">🤖 فك كتم / صفّر تحذيرات البوت</span>
+    <div class="field" data-at="safe"><span class="label">🤖 فك كتم / صفّر تحذيرات البوت</span>
       <form class="addf" id="unmuteF"><div class="uinput"><span>@</span><input id="unmuteName" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="21" placeholder="يوزر اللاعب" aria-label="يوزر اللاعب"></div><button class="btn small good">صفّر</button></form>
       <p class="hint">البوت يحذّر اللي يسب، وبعد ٣ تحذيرات يكتمه ٢٤ ساعة. من هنا تفك كتمه وترجع تحذيراته صفر.</p></div>
 
-    <div class="field"><span class="label">حظر لاعب</span>
+    <div class="field" data-at="safe"><span class="label">🚫 حظر لاعب</span>
       <form class="addf" id="banF"><div class="uinput"><span>@</span><input id="banName" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="21" placeholder="يوزر اللاعب" aria-label="يوزر اللاعب"></div><button class="btn small danger">احظر</button></form>
       <p class="hint">المحظور ما يقدر يسوي غرف، ولا يدخلها، ولا يضيف أحد.</p>
       ${adm.banned.length ? `<div class="list">${adm.banned.map(b => `
@@ -2472,6 +2528,12 @@ VIEWS.admin = () => {
   on("reload", "click", loadStats);
   on("pFindF", "submit", e => { e.preventDefault(); findPlayer(document.getElementById("pFind").value); });
   on("pGiveB", "click", e => { if (confirmTap(e.currentTarget, "متأكد؟")) giveItem(document.getElementById("pGive").value); });
+  on("pLvlB", "click", e => { if (confirmTap(e.currentTarget, "متأكد؟")) setLevel(document.getElementById("pLvl").value); });
+  on("pShortB", "click", e => { if (confirmTap(e.currentTarget, "متأكد؟ يتغير يوزره")) giveShortName(document.getElementById("pShort").value); });
+  on("pVer", "click", () => setVerified(adm.player.username, true));
+  on("pUnver", "click", e => { if (confirmTap(e.currentTarget, "متأكد؟")) setVerified(adm.player.username, false); });
+  onAll("[data-unver]", b => setVerified(b.dataset.unver, false));
+  onAll("[data-atab]", b => { adm.tab = b.dataset.atab; render(false); });
   on("pNoVip", "click", e => { if (confirmTap(e.currentTarget, "متأكد؟")) playerUpdate({ vipUntil: 0 }, "انشال VIP"); });
   on("pMute", "click", e => { if (confirmTap(e.currentTarget, "متأكد؟")) playerUpdate({ mutedUntil: Date.now() + 86400000 }, "انكتم ٢٤ ساعة 🔇"); });
   on("pUnmute", "click", () => playerUpdate({ warns: 0, mutedUntil: 0 }, "تصفّرت تحذيراته وانفك كتمه ✅"));
@@ -2801,7 +2863,7 @@ VIEWS.rename = () => {
   const check = () => {
     const v = inp.value.replace(/\s+/g, "");
     if (v !== inp.value) inp.value = v;
-    const ok = USER_RE.test(v) && HAS_UPPER.test(v) && !RESERVED.has(v.toLowerCase()) && v.toLowerCase() !== OWNER && v !== me.username && !roomCode;
+    const ok = CLAIM_RE.test(v) && HAS_UPPER.test(v) && !RESERVED.has(v.toLowerCase()) && v.toLowerCase() !== OWNER && v !== me.username && !roomCode;
     btn.disabled = !ok;
     if (!v) { msg.className = "hint"; msg.textContent = UNAME_HINT; }
     else if (/[^A-Za-z0-9_-]/.test(v)) { msg.className = "hint msg-bad"; msg.textContent = "مسموح بس: حروف إنجليزية وأرقام و _ و -"; }
@@ -2870,7 +2932,7 @@ VIEWS.username = () => {
   const check = () => {
     const v = inp.value.replace(/\s+/g, "");
     if (v !== inp.value) inp.value = v;
-    const ok = USER_RE.test(v) && HAS_UPPER.test(v) && (!RESERVED.has(v.toLowerCase()) || v.toLowerCase() === OFFICIAL);
+    const ok = CLAIM_RE.test(v) && HAS_UPPER.test(v) && (!RESERVED.has(v.toLowerCase()) || v.toLowerCase() === OFFICIAL);
     btn.disabled = !ok || !document.getElementById("agree").checked;
     if (!v) { msg.className = "hint"; msg.textContent = UNAME_HINT; }
     else if (/[^A-Za-z0-9_-]/.test(v)) { msg.className = "hint msg-bad"; msg.textContent = "مسموح بس: حروف إنجليزية وأرقام و _ و -"; }
@@ -2883,7 +2945,7 @@ VIEWS.username = () => {
   inp.addEventListener("input", check); on("agree", "change", check); check();
   btn.addEventListener("click", async () => {
     const name = inp.value;
-    if (!USER_RE.test(name) || !HAS_UPPER.test(name) || (RESERVED.has(name.toLowerCase()) && name.toLowerCase() !== OFFICIAL)) return;
+    if (!CLAIM_RE.test(name) || !HAS_UPPER.test(name) || (RESERVED.has(name.toLowerCase()) && name.toLowerCase() !== OFFICIAL)) return;
     if (!document.getElementById("agree").checked) return toast("لازم توافق على الشروط أول");
     btn.disabled = true; btn.textContent = "لحظة…";
     try {
@@ -4920,6 +4982,10 @@ if (configured) {
     announce = s.exists() ? s.data() : null; renderBanner(); if (screen === "admin") render(false);
   }, err);
   getRedirectResult(auth).catch(() => {});
+  onSnapshot(doc(db, "config", "verified"), s => {
+    VERIFIED = new Set((s.exists() ? s.data().names || [] : []).map(x => String(x).toLowerCase()));
+    if (screen !== "loading") render(false);
+  }, () => {});
   onSnapshot(doc(db, "config", "shop"), s => { shopCfg = s.exists() ? s.data() : null; if (screen === "shop" || screen === "admin") render(false); }, () => {});
   onSnapshot(doc(db, "config", "banner"), s => {
     promo = s.exists() ? s.data() : null; renderBanner(); if (screen === "home") render(false); if (screen === "admin") render(false);

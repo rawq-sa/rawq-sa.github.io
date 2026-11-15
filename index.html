@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=75">
+<link rel="modulepreload" href="./app.js?v=76">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=29">
 <link rel="modulepreload" href="./uno.js?v=35">
@@ -1011,6 +1011,20 @@ video.share-img{background:#000}
 .ha.nd{border-color:#f2b134;border-style:dashed;opacity:.85}.ha.nd .ha-a{text-decoration:line-through wavy rgba(242,177,52,.7)}
 .hcard.win{border-color:var(--saffron);box-shadow:0 0 0 2px rgba(242,177,52,.25)}.hc-crown{font-size:18px}
 .hwin{align-items:center;text-align:center}.hwin .big{font-size:26px;line-height:1.3}
+
+/* لوحة المالك: تبويبات */
+.atabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin:0 -2px}
+.atab{flex:none;font:inherit;font-size:14px;font-weight:700;border-radius:99px;padding:8px 14px;background:var(--surface);border:1.5px solid var(--line);color:var(--ink);cursor:pointer}
+.atab.on{background:var(--saffron);border-color:var(--saffron);color:#1c1530}
+.adm[data-tab="stats"] [data-at]:not([data-at="stats"]),.adm[data-tab="players"] [data-at]:not([data-at="players"]),.adm[data-tab="ann"] [data-at]:not([data-at="ann"]),.adm[data-tab="shop"] [data-at]:not([data-at="shop"]),.adm[data-tab="safe"] [data-at]:not([data-at="safe"]){display:none}
+.agrp{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px}
+.ag-h{font-weight:800;font-size:14px}
+.apc .nlvl{width:96px;flex:none}.apc .grow{flex:1}
+.agrp .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.agrp .stat{background:var(--bg)}
+/* علامة التوثيق السودا */
+.vbadge{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;line-height:0;-webkit-text-fill-color:initial}
+.vbadge svg{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 @media (prefers-reduced-motion:reduce){.fx{display:none}.ns{animation:none}}
 </style>
 </head>
@@ -1025,6 +1039,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=75"></script>
+<script type="module" src="./app.js?v=76"></script>
 </body>
 </html>
