@@ -8,14 +8,13 @@ import {
 import {
   getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot,
   collection, query, where, runTransaction, writeBatch, serverTimestamp, deleteField,
-  getCountFromServer, Timestamp, orderBy, limit, addDoc, getAggregateFromServer, sum, arrayUnion
+  getCountFromServer, getDocFromServer, Timestamp, orderBy, limit, addDoc, getAggregateFromServer, sum, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getMessaging, getToken, isSupported as pushSupported } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 import { firebaseConfig, authUrl } from "./firebase-config.js?v=27";
-import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY } from "./content.js?v=30";
+import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } from "./content.js?v=31";
 import { ICONS } from "./icons.js?v=29";
 import { DECO, fxLayer } from "./deco.js?v=1";
-import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=34";
+import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=35";
 
 /* ================= helpers ================= */
 const ar = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
@@ -683,6 +682,8 @@ function startGlobal() {
 }
 let lastVisPing = 0;
 function onVisible() {
+  if (document.visibilityState === "visible" && roomCode && Date.now() - (ui.hiddenAt || Date.now()) > 3000) resyncRoom("visible");
+  if (document.visibilityState === "hidden") { ui.hiddenAt = Date.now(); return; }
   if (document.visibilityState !== "visible" || !me?.username || me.guest || Date.now() - lastVisPing < 60000) return;
   lastVisPing = Date.now();
   updateDoc(doc(db, "users", me.uid), { lastSeen: serverTimestamp() }).catch(() => {});
@@ -787,8 +788,24 @@ async function joinRoom(raw) {
     enterRoom(code);
   } catch (e) { console.error(e); toast("ما قدرنا ندخل الغرفة"); }
 }
-function enterRoom(code) {
-  roomCode = code; room = null; votes = {}; secret = null; ui.shownRound = 0;
+// يعيد ربط الغرفة من السيرفر (لما الجوال يرجع من الخلفية أو الدور يعلّق)
+async function resyncRoom(why = "") {
+  if (!roomCode || ui.resyncing) return; ui.resyncing = true;
+  try {
+    const s = await getDocFromServer(doc(db, "rooms", roomCode));
+    if (s.exists() && roomCode) {
+      const fresh = s.data();
+      if (!room || (fresh.uno?.v || 0) >= (room.uno?.v || 0) || fresh.round !== room.round || fresh.phase !== room.phase) room = fresh;
+      ["room", "secret", "votes", "rchat", "rx", "umoves", "hdone", "dguess", "dcanvas", "priv"].forEach(k => off(k));
+      if (isHost() && room.phase === "uno") { UNO.st = null; UNO.busy = false; UNO.queue = []; ui.unoKickV = null; }
+      enterRoom(roomCode, true);
+      if (screen === "room") render(false);
+    }
+  } catch (e) { console.warn("resync", why, e); }
+  setTimeout(() => ui.resyncing = false, 3000);
+}
+function enterRoom(code, keep = false) {
+  roomCode = code; if (!keep) { room = null; votes = {}; secret = null; ui.shownRound = 0; }
   sub("room", onSnapshot(doc(db, "rooms", code), s => {
     if (!s.exists()) { exitRoomLocal("انتهت الغرفة"); return; }
     const prevPhase = room?.phase; room = s.data();
@@ -902,6 +919,21 @@ function startsWithLetter(word, letter) {
   const w = stripAl(normAr(word)), l = normAr(letter);
   return !!w && w.charAt(0) === l;
 }
+// القاموس: كل فئة مجموعة كلمات بعد التنظيف
+const HSET = HDICT.map(line => new Set(line.split(" ").map(w => stripAl(normAr(w)))));
+function inDict(ci, word) {
+  const k = stripAl(normAr(word)).replace(/\s/g, ""), S = HSET[ci]; if (!k || !S) return false;
+  if (S.has(k)) return true;
+  // نقبل الجمع والمؤنث البسيط: اسود ↔ اسد، قطط… (ات/ه/ين/ون)
+  for (const suf of ["ات", "ه", "ين", "ون", "ان"]) if (k.endsWith(suf) && S.has(k.slice(0, -suf.length))) return true;
+  return S.has(k + "ه");
+}
+// حالة الجواب: ok صح، dup صح ومكرر، no مو موجود بالقاموس، bad ما يبدأ بالحرف أو فاضي
+function hAnsOk(u, ci, a, letter, rej, acc) {
+  const key = u + "_" + ci;
+  if (rej[key] || !startsWithLetter(a, letter)) return false;
+  return !!acc[key] || inDict(ci, a);
+}
 async function startHhnj() {
   const ps = order();
   if (ps.length < 2) return toast("تحتاجون لاعبين على الأقل");
@@ -910,24 +942,29 @@ async function startHhnj() {
   const names = {}; ps.forEach(u => names[u] = pname(u));
   await setRoom({ game: "hhnj", phase: "hq", round: (room.round || 0) + 1, letter, deadline: Date.now() + HHNJ_SECS * 1000, roundPlayers: ps, names, result: null });
 }
-function hhnjScore(rows, letter, rej) {
+function hhnjScore(rows, letter, rej, acc = {}) {
   const out = {};
   const uids = Object.keys(rows);
   HCATS.forEach((_, ci) => {
     const seen = {};
     uids.forEach(u => {
       const a = rows[u].a[ci] || "";
-      if (rej[u + "_" + ci] || !startsWithLetter(a, letter)) return;
+      if (!hAnsOk(u, ci, a, letter, rej, acc)) return;
       const k = stripAl(normAr(a)); seen[k] = (seen[k] || 0) + 1;
     });
     uids.forEach(u => {
-      out[u] = out[u] || { a: rows[u].a, p: [], total: 0 };
+      out[u] = out[u] || { a: rows[u].a, p: [], nd: [], total: 0 };
       const a = rows[u].a[ci] || "";
       let p = 0;
-      if (!rej[u + "_" + ci] && startsWithLetter(a, letter)) p = seen[stripAl(normAr(a))] > 1 ? 5 : 10;
+      if (hAnsOk(u, ci, a, letter, rej, acc)) p = seen[stripAl(normAr(a))] > 1 ? 5 : 10;
+      // nd = الكلمة تبدأ بالحرف بس مو موجودة بالقاموس (المضيف يقدر يقبلها)
+      out[u].nd[ci] = !p && !!a && startsWithLetter(a, letter) && !rej[u + "_" + ci] && !acc[u + "_" + ci] && !inDict(ci, a) ? 1 : 0;
       out[u].p[ci] = p; out[u].total += p;
     });
   });
+  // الفايز بالجولة: أعلى مجموع (لو فيه تعادل يفوزون كلهم)
+  const top = Math.max(0, ...uids.map(u => out[u]?.total || 0));
+  uids.forEach(u => out[u].win = top > 0 && out[u].total === top);
   return out;
 }
 async function revealHhnj() {
@@ -944,15 +981,21 @@ async function revealHhnj() {
   } catch (e) { console.error(e); toast("ما قدرنا نجيب الأجوبة"); }
   ui.hReveal = false;
 }
+// المضيف يضغط على جواب: لو محسوب يلغيه، ولو مو محسوب (مو بالقاموس) يقبله
 async function toggleReject(u, ci) {
   const r = room.result; if (!r) return;
-  const rej = { ...(r.rej || {}) }, key = u + "_" + ci;
-  if (rej[key]) delete rej[key]; else rej[key] = true;
+  const rej = { ...(r.rej || {}) }, acc = { ...(r.acc || {}) }, key = u + "_" + ci;
+  const cur = r.rows?.[u]?.p?.[ci] || 0, a = r.rows?.[u]?.a?.[ci] || "";
+  if (rej[key]) delete rej[key];
+  else if (acc[key]) delete acc[key];
+  else if (cur > 0) rej[key] = true;
+  else if (a && startsWithLetter(a, room.letter)) acc[key] = true;
+  else return toast("هذا الجواب فاضي أو ما يبدأ بالحرف");
   const rows = {}; Object.entries(r.rows).forEach(([k, v]) => rows[k] = { a: v.a });
-  const scored = hhnjScore(rows, room.letter, rej);
+  const scored = hhnjScore(rows, room.letter, rej, acc);
   const scores = { ...(room.scores || {}) }, applied = {};
   Object.entries(scored).forEach(([k, v]) => { scores[k] = (scores[k] || 0) - ((r.applied || {})[k] || 0) + v.total; applied[k] = v.total; });
-  await setRoom({ result: { rows: scored, rej, applied }, scores });
+  await setRoom({ result: { rows: scored, rej, acc, applied }, scores });
 }
 async function submitHhnj(done) {
   const a = [0, 1, 2, 3].map(i => (document.getElementById("h" + i)?.value || "").trim().slice(0, 40));
@@ -1068,10 +1111,12 @@ async function unoProcess(list) {
         upd.scores = scores; upd.phase = "unoend";
       }
       b.update(roomRef(), upd);
+      const prev = room.uno, prevPhase = room.phase;
       room.uno = uno; if (upd.phase) room.phase = upd.phase;
-      await b.commit();
+      try { await b.commit(); }
+      catch (e) { room.uno = prev; room.phase = prevPhase; delete UNO.processed[u]; UNO.st = null; throw e; }
     }
-  } catch (e) { console.error(e); }
+  } catch (e) { console.error(e); UNO.busy = false; UNO.queue = []; setTimeout(() => resyncRoom("commit"), 800); return; }
   UNO.busy = false;
 }
 function unoCleanup() {
@@ -1109,8 +1154,11 @@ function watchUnoMoves() {
 }
 async function unoMove(type, card, color) {
   const uno = unoState(); if (!uno) return;
-  ui.unoWait = uno.v; setTimeout(() => { if (ui.unoWait === uno.v) { ui.unoWait = null; render(false); } }, 5000);
-  try { await setDoc(doc(db, "rooms", roomCode, "moves", me.uid), { round: room.round, seq: Date.now(), type, card: card || "", color: color || "" }); }
+  ui.unoWait = uno.v; const v0 = uno.v, mv = { round: room.round, seq: Date.now(), type, card: card || "", color: color || "" };
+  // لو الحركة ما وصلت خلال ٤ ثواني نعيد إرسالها مرة، وبعدها نفك الانتظار ونعيد الربط
+  setTimeout(() => { if (ui.unoWait === v0 && room?.uno?.v === v0) setDoc(doc(db, "rooms", roomCode, "moves", me.uid), { ...mv, seq: Date.now() }).catch(() => {}); }, 4000);
+  setTimeout(() => { if (ui.unoWait === v0) { ui.unoWait = null; resyncRoom("move"); render(false); } }, 9000);
+  try { await setDoc(doc(db, "rooms", roomCode, "moves", me.uid), mv); }
   catch (e) { console.error(e); ui.unoWait = null; toast("ما انرسلت الحركة، جرّب مرة ثانية"); }
   render(false);
 }
@@ -1130,7 +1178,11 @@ function unoTimerStart() {
     const { left } = unoTimeLeft(uno);
     const el = document.getElementById("uSec");
     if (el) { el.textContent = "⏱ " + ar(Math.ceil(left)); el.classList.toggle("hot", left <= 5); }
-    if (left <= 0 && isHost() && ui.unoKickV !== uno.v) { ui.unoKickV = uno.v; unoKick(); }
+    if (left <= 0 && isHost() && ui.unoKickV !== uno.v) { ui.unoKickV = uno.v; ui.unoKickAt = Date.now(); unoKick(); }
+    // الدور علّق: الوقت خلص من زمان وما تغيّر شي، نعيد الربط مع السيرفر
+    const over = (Date.now() - ui.unoSeen.t) / 1000 - unoTimeLeft(uno).dur;
+    const uh = document.getElementById("uHost"); if (uh) uh.hidden = !(over > 12);
+    if (over > 8 && ui.unoStallV !== uno.v) { ui.unoStallV = uno.v; if (isHost()) ui.unoKickV = null; resyncRoom("stall"); }
   }, 500);
 }
 // نقاط الخبرة: كل ما تخلص جولة لعبت فيها
@@ -1249,6 +1301,7 @@ function wrapCheck(tries = 0) { const p = me?.monPrev; if (!p?.r || p.m === monK
   setTimeout(() => { const el = sheet(`<div class="ref-gift"><span class="rg-ic" aria-hidden="true">📊</span><b class="pf-name">ملخصك لشهر ${monName(p.m)} جاهز 🎉</b><p class="hint">شوف وش لقبك، وكم لعبت، ومين أكثر واحد لعبت معه. وشاركه في السناب 👻</p><button class="btn" id="wrapGo">شوف ملخصي</button><button class="btn ghost" data-close>بعدين</button></div>`);
     el.querySelector("#wrapGo").addEventListener("click", () => { el.remove(); openWrap(true); }); }, 300); }
 async function awardXp() {
+  if (me?._q) { setTimeout(awardXp, 1500); return; } // ننتظر بيانات الحساب من السيرفر قبل نكتب
   if (!me?.uid || me.guest || !room || !roomCode) return;
   const myScore = room.scores?.[me.uid] || 0;
   if (!ui.xpBase || ui.xpBase.room !== roomCode) ui.xpBase = { room: roomCode, score: myScore, done: new Set() };
@@ -1259,7 +1312,7 @@ async function awardXp() {
   ui.xpBase.done.add(key);
   if (!(room.roundPlayers || []).includes(me.uid)) return;
   const gained = Math.max(0, myScore - ui.xpBase.score); ui.xpBase.score = myScore;
-  const won = game === "uno" ? room.uno?.winner === me.uid : gained > 0;
+  const won = game === "uno" ? room.uno?.winner === me.uid : game === "hhnj" ? !!room.result?.rows?.[me.uid]?.win : gained > 0;
   const add = Math.min(45, 10 + Math.min(gained, 4) * 5 + (game === "uno" && won ? 15 : 0));
   const s = { ...(me.stats || {}) };
   s.games = (s.games || 0) + 1; s["g_" + game] = (s["g_" + game] || 0) + 1;
@@ -2149,11 +2202,12 @@ function sendRx(e) {
 function showRxBar() {
   let bar = document.getElementById("rxBar");
   if (!roomCode || screen !== "room") { bar?.remove(); return; }
-  if (bar) return;
+  if (bar) { bar.classList.toggle("top", room?.phase === "uno"); return; }
   bar = document.createElement("div"); bar.id = "rxBar"; bar.className = "rx-bar";
   bar.innerHTML = `<div class="rx-tray" role="group" aria-label="رياكشن">${RX.map(e => `<button data-rx="${e}" aria-label="${e}">${e}</button>`).join("")}</div><button class="rx-tog" aria-label="رياكشن" aria-expanded="false">😂</button>`;
   bar.querySelector(".rx-tog").addEventListener("click", () => { const o = bar.classList.toggle("open"); bar.querySelector(".rx-tog").setAttribute("aria-expanded", o); });
   bar.querySelectorAll("[data-rx]").forEach(b => b.addEventListener("click", () => sendRx(b.dataset.rx)));
+  bar.classList.toggle("top", room?.phase === "uno");
   document.body.appendChild(bar);
 }
 
@@ -3016,6 +3070,8 @@ function pushNotify(to, kind) {
 const pushState = () => !("Notification" in window) || !("serviceWorker" in navigator) ? (isIOS() && !isStandalone() ? "ios" : "no") : Notification.permission;
 async function pushSaveToken(quiet) {
   try {
+    // مكتبة الإشعارات تنحمّل بس لما نحتاجها (عشان روق يفتح أسرع)
+    const { getMessaging, getToken, isSupported: pushSupported } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js");
     if (!(await pushSupported())) throw new Error("unsupported");
     const reg = await navigator.serviceWorker.register("./sw.js");
     await navigator.serviceWorker.ready;
@@ -3055,6 +3111,7 @@ function sheet(html) {
 const dayKey = ms => new Date(ms + 3 * 3600e3).toISOString().slice(0, 10); // بتوقيت السعودية
 const streakNow = () => { const last = me?.streakAt?.toMillis?.() || 0; if (!last) return 0; const d = (Date.parse(dayKey(Date.now())) - Date.parse(dayKey(last))) / 864e5; return d <= 1 ? me.streak || 0 : 0; };
 async function claimStreak() {
+  if (me?._q) { setTimeout(claimStreak, 1500); return; }
   if (!me?.uid || ui.streakBusy) return;
   const last = me.streakAt?.toMillis?.() || 0, now = Date.now();
   if (last && dayKey(last) === dayKey(now)) return;           // أخذها اليوم
@@ -3266,7 +3323,7 @@ VIEWS.home = () => {
   const rest = list.filter(g => !(showFeat && g.id === feat.id)), rem = rest.length % 3;
   const n = dailyNo(), st = dState(n);
   V.innerHTML = `<section class="home2">
-    <div class="hcard">
+    <div class="hwcard">
       <div class="hc-row">
         <button class="hc-av" id="hProf" aria-label="بروفايلي" style="--p:${pc}%">${avF(prof(me.uid), 58)}</button>
         <div class="hc-t"><span class="hint">هلا والله</span><b dir="ltr">${at(me.username)}</b>
@@ -3936,19 +3993,21 @@ const ROOM_VIEWS = {
   },
 
   hres() {
-    const r = room.result || {}, rows = r.rows || {}, rej = r.rej || {};
+    const r = room.result || {}, rows = r.rows || {}, rej = r.rej || {}, acc = r.acc || {};
     const ids = Object.keys(rows).sort((a, b) => rows[b].total - rows[a].total);
+    const winners = ids.filter(u => rows[u].win);
     V.innerHTML = `<section>${statusBar()}
       <div class="row-h"><h2>النتيجة · حرف <span class="hl-s">${esc(room.letter)}</span></h2></div>
-      ${isHost() ? `<p class="hint">اضغط على أي جواب غلط عشان تلغيه (يصير صفر).</p>` : ""}
-      <div class="htable">${ids.map(u => `<div class="hcard">
-        <div class="hc-top">${avatar(pname(u), prof(u)?.photo, 32)}<span class="nm" dir="ltr">${at(pname(u))}</span><span class="hc-tot">+${ar(rows[u].total)}</span></div>
+      ${winners.length ? `<div class="card safe pop hwin"><span class="eyebrow">فايز الجولة 🏆</span><span class="big" dir="ltr">${winners.map(u => at(pname(u))).join(" و ")}</span><span class="hint">بـ ${ar(rows[winners[0]].total)} نقطة</span></div>` : ""}
+      ${isHost() ? `<p class="hint">اضغط على أي جواب: لو صح وتبي تلغيه يصير صفر، ولو الكلمة صح بس القاموس ما يعرفها اضغطها عشان تنقبل.</p>` : ""}
+      <div class="htable">${ids.map(u => `<div class="hcard ${rows[u].win ? "win" : ""}">
+        <div class="hc-top">${avatar(pname(u), prof(u)?.photo, 32)}<span class="nm" dir="ltr">${at(pname(u))}</span>${rows[u].win ? `<span class="hc-crown" aria-label="فايز">👑</span>` : ""}<span class="hc-tot">+${ar(rows[u].total)}</span></div>
         <div class="hc-ans">${HCATS.map((c, i) => {
-          const a = rows[u].a[i] || "", p = rows[u].p[i] || 0, x = rej[u + "_" + i];
-          return `<button class="ha ${x ? "rej" : p === 10 ? "p10" : p === 5 ? "p5" : "p0"}" ${isHost() && a ? `data-rej="${esc(u)}|${i}"` : "disabled"}>
-            <span class="ha-c">${c}</span><span class="ha-a">${a ? esc(a) : "—"}</span><span class="ha-p">${ar(p)}</span></button>`;
+          const a = rows[u].a[i] || "", p = rows[u].p[i] || 0, x = rej[u + "_" + i], nd = rows[u].nd?.[i], ok = acc[u + "_" + i];
+          return `<button class="ha ${x ? "rej" : nd ? "nd" : p === 10 ? "p10" : p === 5 ? "p5" : "p0"}" ${isHost() && a ? `data-rej="${esc(u)}|${i}"` : "disabled"}>
+            <span class="ha-c">${c}</span><span class="ha-a">${a ? esc(a) : "—"}</span><span class="ha-p">${nd ? "❓" : ok && p ? "✓" + ar(p) : ar(p)}</span></button>`;
         }).join("")}</div></div>`).join("")}</div>
-      <p class="hint">١٠ = جواب صح ومحد كتبه غيرك · ٥ = صح بس فيه أحد كاتبه · ٠ = فاضي أو ما يبدأ بالحرف</p>
+      <p class="hint">١٠ = صح ومحد كتبه غيرك · ٥ = صح بس فيه أحد كاتبه · ❓ = الكلمة مو موجودة بالقاموس (صفر) · ٠ = فاضي أو ما يبدأ بالحرف</p>
       <div class="field"><span class="label">النقاط</span>${scoreBoard(order())}</div>
       <div class="foot">${shareBtn()}${isHost() ? `<button class="btn" id="again">حرف جديد</button><button class="btn ghost" id="lobby">رجوع للغرفة</button>` : `<p class="hint center">المضيف يبدأ الجولة الجاية.</p>`}${leaveBtn()}</div></section>`;
     onAll("[data-rej]", b => { const [u, i] = b.dataset.rej.split("|"); toggleReject(u, Number(i)); });
@@ -4001,6 +4060,7 @@ const ROOM_VIEWS = {
       </div>
       ${uno.winner ? "" : `<div class="utime ${myTurn ? "mine" : ""}" aria-hidden="true"><i style="--s:${(tm.left / tm.dur).toFixed(3)};--d:${tm.left.toFixed(2)}s"></i></div>`}
       <p class="ulast">${esc(uno.last || "")}</p>
+      ${isHost() ? "" : `<p class="hint center uhost" id="uHost" hidden>📵 يمكن المضيف طالع من اللعبة، الدور بيمشي أول ما يرجع</p>`}
       ${uno.flash && uno.flash !== me.uid ? `<div class="uno-call pop">أونو! 🔥 ${at(pname(uno.flash))}</div>` : uno.flash === me.uid ? `<div class="uno-call pop">أونو! 🔥 باقي لك ورقة</div>` : ""}
       <div class="uhand ${myTurn ? "" : "wait"}" id="uHand">${hand.map(({ c, i }, k) => `<button class="ucard ${playable(c) ? "ok" : myTurn ? "no" : ""}" style="${fan(k)}" data-card="${esc(c)}" data-i="${i}" ${playable(c) ? "" : "aria-disabled=\"true\""} aria-label="${esc(cardName(c))}">${cardSVG(c)}</button>`).join("")}</div>
       <p class="hint center">عندك ${ar(myHand.length)} ${myHand.length === 1 ? "ورقة" : "أوراق"}</p>
@@ -4881,16 +4941,22 @@ if (configured) {
       else if (!GUEST_OK.has(screen)) go("auth"); else renderHeader();
       return;
     }
+    // فتح سريع: نعرض آخر نسخة محفوظة من حسابك فورًا، ونتأكد من السيرفر بنفس الوقت
+    const cached = store.get("me:" + user.uid, null), meOf = d => ({ uid: user.uid, username: d.username, photo: d.photo || "", bio: d.bio || "", xp: d.xp || 0, stats: d.stats || {}, look: d.look || null, owned: d.owned || [], vipUntil: d.vipUntil || 0, frame: d.frame || "", banner: d.banner || "", streak: d.streak || 0, streakAt: d.streakAt || null, renamedAt: d.usernameChangedAt || null, warns: d.warns || 0, mutedUntil: d.mutedUntil || 0, refs: d.refs || 0, mon: d.mon || null, monPrev: d.monPrev || null, lvlSet: d.lvlSet || 0, verified: !!d.verified, badges: d.badges || [] });
+    let quick = false;
+    if (cached?.username && !store.get("bannedMe:" + user.uid, false)) { me = { ...cached, uid: user.uid, _q: true }; quick = true; startGlobal(); afterLogin(); }
     try {
-      const s = await getDoc(doc(db, "users", user.uid));
-      if (!s.exists()) { me = { uid: user.uid }; go("username"); return; }
-      me = { uid: user.uid, username: s.data().username, photo: s.data().photo || "", bio: s.data().bio || "", xp: s.data().xp || 0, stats: s.data().stats || {}, look: s.data().look || null, owned: s.data().owned || [], vipUntil: s.data().vipUntil || 0, frame: s.data().frame || "", banner: s.data().banner || "", streak: s.data().streak || 0, streakAt: s.data().streakAt || null, renamedAt: s.data().usernameChangedAt || null, warns: s.data().warns || 0, mutedUntil: s.data().mutedUntil || 0, refs: s.data().refs || 0, mon: s.data().mon || null, monPrev: s.data().monPrev || null };
-      startGlobal();
-      const b = await getDoc(doc(db, "bans", user.uid)).catch(() => null);
-      if (b?.exists()) { banned = true; go("banned"); return; }
-      afterLogin();
+      const [s, b] = await Promise.all([getDoc(doc(db, "users", user.uid)), getDoc(doc(db, "bans", user.uid)).catch(() => null)]);
+      if (auth.currentUser?.uid !== user.uid) return;
+      if (!s.exists()) { store.set("me:" + user.uid, null); stopGlobal(); me = { uid: user.uid }; go("username"); return; }
+      const d = s.data(), fresh = meOf(d);
+      store.set("me:" + user.uid, { username: d.username, photo: d.photo || "", xp: d.xp || 0, frame: d.frame || "", vipUntil: d.vipUntil || 0, look: d.look || null, owned: d.owned || [], streak: d.streak || 0 });
+      if (b?.exists()) { store.set("bannedMe:" + user.uid, true); banned = true; me = fresh; if (!quick) startGlobal(); go("banned"); return; }
+      store.set("bannedMe:" + user.uid, false);
+      if (quick) { Object.assign(me, fresh, { _q: false }); refresh(); return; }
+      me = fresh; startGlobal(); afterLogin();
     } catch (e) {
-      console.error(e); me = { uid: user.uid }; toast("فيه مشكلة في الاتصال"); go("username");
+      console.error(e); if (quick) return; me = { uid: user.uid }; toast("فيه مشكلة في الاتصال"); go("username");
     }
   });
 } else {

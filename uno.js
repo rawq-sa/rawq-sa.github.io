@@ -40,6 +40,10 @@ export function cardName(c) {
 
 // ---------- رسم الأوراق (شكل واقعي) ----------
 const FONT = 'font-family="Lalezar,Tahoma,sans-serif"';
+// أرقام الورقة: إنجليزية عريضة مثل أونو الأصلي (أوضح من العربي على الكرت)
+const NUM = 'font-family="\'Arial Black\',\'Helvetica Neue\',Arial,sans-serif" font-weight="900"';
+const NV = v => v === "D" ? "+2" : v === "F" ? "+4" : v;
+const ul = (v, w, y) => v === "6" || v === "9" ? `<rect x="${-w / 2}" y="${y}" width="${w}" height="${w * .16}" rx="1" fill="currentColor"/>` : "";
 const OUT = 'stroke="#1a1426" stroke-linejoin="round" paint-order="stroke"';
 function glyph(v, fill, size) {
   if (v === "S") return `<g fill="none" stroke="#1a1426" stroke-width="${size * .26}"><circle r="${size * .42}"/><path d="M${-size * .3} ${size * .3} L${size * .3} ${-size * .3}"/></g>
@@ -48,9 +52,9 @@ function glyph(v, fill, size) {
     const a = `M${-size * .45} ${-size * .05} q0 ${-size * .35} ${size * .35} ${-size * .35} h${size * .12} v${-size * .16} l${size * .3} ${size * .28} l${-size * .3} ${size * .28} v${-size * .16} h${-size * .12} q${-size * .2} 0 ${-size * .2} ${size * .2}z`;
     return `<g fill="${fill}" stroke="#1a1426" stroke-width="1.6" stroke-linejoin="round" paint-order="stroke"><path d="${a}"/><path transform="rotate(180)" d="${a}"/></g>`;
   }
-  const t = v === "D" ? "+٢" : AD(v), fs = v === "D" ? size * 1.05 : size * 1.35, y = v === "D" ? size * .36 : size * .44;
-  return `<text x="1.6" y="${y + 1.8}" text-anchor="middle" ${FONT} font-size="${fs}" fill="#1a1426" opacity=".55">${t}</text>
-    <text x="0" y="${y}" text-anchor="middle" ${FONT} font-size="${fs}" fill="${fill}" ${OUT} stroke-width="2.6">${t}</text>`;
+  const t = NV(v), fs = v === "D" ? size * 1.02 : size * 1.42, y = v === "D" ? size * .36 : size * .5;
+  return `<text x="1.4" y="${y + 1.6}" text-anchor="middle" ${NUM} font-size="${fs}" fill="#1a1426" opacity=".5">${t}</text>
+    <g style="color:${fill}"><text x="0" y="${y}" text-anchor="middle" ${NUM} font-size="${fs}" fill="${fill}" ${OUT} stroke-width="2.4">${t}</text>${ul(v, fs * .5, y + fs * .1)}</g>`;
 }
 function quad(rx, ry, id) {
   const c = UCOLORS;
@@ -75,15 +79,17 @@ export function cardSVG(c, back = "classic") {
   if (!c) return backSVG(id, back);
   const k = cColor(c), v = cVal(c), wild = k === "w";
   const col = wild ? { fill: "#2a2140", dark: "#0c0816" } : UCOLORS[k];
-  const corner = v === "W" ? "" : v === "F" ? "+٤" : v === "D" ? "+٢" : v === "S" ? "⊘" : v === "R" ? "⇄" : AD(v);
+  const corner = v === "W" || v === "S" || v === "R" ? "" : NV(v);
+  const mini = v === "S" || v === "R" ? `<g transform="translate(11 13)">${glyph(v, "#fff", 9)}</g><g transform="translate(49 77) rotate(180)">${glyph(v, "#fff", 9)}</g>` : "";
   const center = wild
     ? `<g transform="translate(30 45) rotate(-30)">${quad(20, 31, id)}<ellipse rx="20" ry="31" fill="none" stroke="#fff" stroke-width="2.4"/></g>
-       ${v === "F" ? `<text x="30" y="55" text-anchor="middle" ${FONT} font-size="25" fill="#fff" ${OUT} stroke-width="3">+٤</text>` : ""}`
+       ${v === "F" ? `<text x="30" y="54" text-anchor="middle" ${NUM} font-size="22" fill="#fff" ${OUT} stroke-width="3">+4</text>` : ""}`
     : `<g transform="translate(30 45) rotate(-30)"><ellipse rx="21" ry="33" fill="#fff"/></g><g transform="translate(30 45)">${glyph(v, col.fill, 22)}</g>`;
+  const cfs = corner.length > 1 ? 10.5 : 13;
   return `<svg viewBox="0 0 60 90" class="ucard-svg" aria-hidden="true">${frame(id, col.fill, col.dark)}
     ${center}
-    ${corner ? `<text x="9" y="17" ${FONT} font-size="12.5" fill="#fff" ${OUT} stroke-width="2">${corner}</text>
-    <text x="51" y="80" text-anchor="end" ${FONT} font-size="12.5" fill="#fff" ${OUT} stroke-width="2" transform="rotate(180 46 76)">${corner}</text>` : ""}
+    ${corner ? `<g style="color:#fff"><text x="7" y="18" ${NUM} font-size="${cfs}" fill="#fff" ${OUT} stroke-width="2">${corner}</text></g>
+    <g transform="rotate(180 30 45)" style="color:#fff"><text x="7" y="18" ${NUM} font-size="${cfs}" fill="#fff" ${OUT} stroke-width="2">${corner}</text></g>` : ""}${mini}
     ${gloss(id)}</svg>`;
 }
 
