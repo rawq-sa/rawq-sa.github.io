@@ -2650,6 +2650,7 @@ VIEWS.setup = () => {
 };
 
 VIEWS.auth = () => {
+  const gOpen = !!ui.guestOpen;
   V.innerHTML = `<section>
     <div class="hero">
       <div class="hero-icons" aria-hidden="true">
@@ -2657,22 +2658,26 @@ VIEWS.auth = () => {
       </div>
       <h2>أهلًا في روق</h2>
       <p class="lead">ألعاب جلسات تلعبها مع أصحابك. أونلاين كل واحد من جواله، أو بجوال واحد يتمرر بينكم.</p>
-      <ul class="perks"><li>الدخيل</li><li>مين أكثر واحد</li><li>خمسة بعشر</li></ul>
     </div>
     <div class="foot">
       ${APPLE_ON ? `<button class="btn apple" id="loginApple"><span class="a-logo" aria-hidden="true">${APPLE_LOGO}</span>كمّل بحساب أبل</button>` : ""}
-      ${IN_APP ? `<button class="btn" id="byEmail">تسجيل الدخول بالإيميل</button>` : `<button class="btn google" id="login"><span class="g-logo" aria-hidden="true">${GOOGLE_G}</span>كمّل بحساب قوقل</button>
-      <button class="btn ghost" id="byEmail">تسجيل الدخول</button>`}
-      <div class="or"><span>أو</span></div>
-      <button class="btn ghost" id="local">العب بجوال واحد</button>
-      <button class="btn ghost" id="gjGo">عندك كود غرفة؟ ادخل بدون حساب</button>
-      <button class="btn ghost" id="dGo">📅 كلمة اليوم</button>
-      <p class="hint center">بدون حساب تقدر تدخل غرف ربعك أو تلعبون بجوال واحد. عشان تسوي غرف وتضيف أصحاب تحتاج حساب.</p>
+      ${IN_APP ? `<button class="btn" id="byEmail">تسجيل الدخول</button>
+      <button class="btn ghost" id="newAcc">سوّ حساب جديد</button>` : `<button class="btn google" id="login"><span class="g-logo" aria-hidden="true">${GOOGLE_G}</span>كمّل بحساب قوقل</button>
+      <button class="btn ghost" id="byEmail">تسجيل الدخول بالإيميل</button>`}
+      <button class="guest-tg" id="guestTg" aria-expanded="${gOpen}">العب بدون حساب <span aria-hidden="true">${gOpen ? "▴" : "▾"}</span></button>
+      ${gOpen ? `<div class="guest-box">
+        <button class="btn ghost" id="local">العب بجوال واحد</button>
+        <button class="btn ghost" id="gjGo">عندي كود غرفة</button>
+        <button class="btn ghost" id="dGo">📅 كلمة اليوم</button>
+        <p class="hint center">عشان تسوي غرف وتضيف أصحاب تحتاج حساب.</p>
+      </div>` : ""}
       <p class="hint center legal-hint">بدخولك توافق على ${LEGAL_LINKS}، وتأكد إن عمرك ١٨ أو أكثر.</p>
     </div></section>`;
   on("login", "click", login);
   on("loginApple", "click", loginApple);
   on("byEmail", "click", () => { ui.emailMode = "login"; go("email"); });
+  on("newAcc", "click", () => { ui.emailMode = "signup"; go("email"); });
+  on("guestTg", "click", () => { ui.guestOpen = !gOpen; render(false); });
   on("local", "click", () => go("local"));
   on("gjGo", "click", () => go("gjoin"));
   on("dGo", "click", () => go("daily"));
