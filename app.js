@@ -3,7 +3,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
   onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendPasswordResetEmail, signInAnonymously, deleteUser, reauthenticateWithPopup,
-  reauthenticateWithCredential, EmailAuthProvider, updateCurrentUser, OAuthProvider
+  reauthenticateWithCredential, EmailAuthProvider, updateCurrentUser, OAuthProvider, signInWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot,
@@ -383,7 +383,25 @@ const MEGAPHONE = `<svg viewBox="0 0 120 100"><g transform="rotate(-14 60 50)">
 const annKey = a => (a?.at?.toMillis?.() || 0) + ":" + (a?.text || "");
 
 /* ================= auth ================= */
+// داخل تطبيق الآيفون: دخول قوقل وأبل يصير من الجوال نفسه (قوقل يمنع الدخول من داخل التطبيقات)
+const HAS_NAUTH = () => (window.Capacitor?.PluginHeaders || []).some(h => h.name === "FirebaseAuthentication") || !!window.Capacitor?.isPluginAvailable?.("FirebaseAuthentication");
+const NATIVE_LOGIN = () => IN_APP && HAS_NAUTH();
+const nCall = (m, o) => window.Capacitor.nativePromise ? window.Capacitor.nativePromise("FirebaseAuthentication", m, o) : window.Capacitor.Plugins.FirebaseAuthentication[m](o);
+async function nativeCred(kind) {
+  if (kind === "google") {
+    const r = await nCall("signInWithGoogle", { skipNativeAuth: true });
+    return GoogleAuthProvider.credential(r?.credential?.idToken || null, r?.credential?.accessToken || null);
+  }
+  const r = await nCall("signInWithApple", { skipNativeAuth: true, scopes: ["email", "name"] });
+  return new OAuthProvider("apple.com").credential({ idToken: r?.credential?.idToken, rawNonce: r?.credential?.nonce });
+}
+const nCancelled = e => /cancel|1001|12501|canceled/i.test(String(e?.message || "") + " " + String(e?.code || ""));
+async function loginNative(kind) {
+  try { await signInWithCredential(auth, await nativeCred(kind)); }
+  catch (e) { if (nCancelled(e)) return; console.error(e); toast(kind === "google" ? "ما زبط الدخول بقوقل، جرّب مرة ثانية" : "ما زبط الدخول بأبل، جرّب مرة ثانية"); }
+}
 async function login() {
+  if (NATIVE_LOGIN()) return loginNative("google");
   const provider = new GoogleAuthProvider();
   try { await signInWithPopup(auth, provider); }
   catch (e) {
@@ -399,6 +417,7 @@ async function login() {
 const APPLE_ON = false;
 const appleProvider = () => { const p = new OAuthProvider("apple.com"); p.addScope("email"); p.setCustomParameters({ locale: "ar" }); return p; };
 async function loginApple() {
+  if (NATIVE_LOGIN()) return loginNative("apple");
   const provider = appleProvider();
   try { await signInWithPopup(auth, provider); }
   catch (e) {
@@ -600,9 +619,9 @@ function openSwitcher() {
     } catch (e) { console.error(e); }
     if (a.google) {
       const p = new GoogleAuthProvider(); p.setCustomParameters({ prompt: "select_account", ...(a.email ? { login_hint: a.email } : {}) });
-      doSwitch(() => signInWithPopup(auth, p));
+      doSwitch(async () => NATIVE_LOGIN() ? signInWithCredential(auth, await nativeCred("google")) : signInWithPopup(auth, p));
     } else if (a.apple) {
-      doSwitch(() => signInWithPopup(auth, appleProvider()));
+      doSwitch(async () => NATIVE_LOGIN() ? signInWithCredential(auth, await nativeCred("apple")) : signInWithPopup(auth, appleProvider()));
     } else {
       const f = el.querySelector(`[data-swf="${CSS.escape(a.uid)}"]`);
       el.querySelectorAll("[data-swf]").forEach(x => x.hidden = x !== f);
@@ -2660,8 +2679,9 @@ VIEWS.auth = () => {
       <p class="lead">ألعاب جلسات تلعبها مع أصحابك. أونلاين كل واحد من جواله، أو بجوال واحد يتمرر بينكم.</p>
     </div>
     <div class="foot">
-      ${APPLE_ON ? `<button class="btn apple" id="loginApple"><span class="a-logo" aria-hidden="true">${APPLE_LOGO}</span>كمّل بحساب أبل</button>` : ""}
-      ${IN_APP ? `<button class="btn" id="byEmail">تسجيل الدخول</button>
+      ${APPLE_ON || NATIVE_LOGIN() ? `<button class="btn apple" id="loginApple"><span class="a-logo" aria-hidden="true">${APPLE_LOGO}</span>كمّل بحساب أبل</button>` : ""}
+      ${NATIVE_LOGIN() ? `<button class="btn google" id="login"><span class="g-logo" aria-hidden="true">${GOOGLE_G}</span>كمّل بحساب قوقل</button>
+      <button class="btn ghost" id="byEmail">تسجيل الدخول بالإيميل</button>` : IN_APP ? `<button class="btn" id="byEmail">تسجيل الدخول</button>
       <button class="btn ghost" id="newAcc">سوّ حساب جديد</button>` : `<button class="btn google" id="login"><span class="g-logo" aria-hidden="true">${GOOGLE_G}</span>كمّل بحساب قوقل</button>
       <button class="btn ghost" id="byEmail">تسجيل الدخول بالإيميل</button>`}
       <button class="guest-tg" id="guestTg" aria-expanded="${gOpen}">العب بدون حساب <span aria-hidden="true">${gOpen ? "▴" : "▾"}</span></button>
@@ -3764,8 +3784,8 @@ function openDeleteAccount() {
   go2.addEventListener("click", async () => {
     go2.disabled = true; go2.textContent = "لحظة…"; msg.className = "hint";
     try {
-      if (viaGoogle) await reauthenticateWithPopup(user, new GoogleAuthProvider());
-      else if (viaApple) await reauthenticateWithPopup(user, appleProvider());
+      if (viaGoogle) await (NATIVE_LOGIN() ? reauthenticateWithCredential(user, await nativeCred("google")) : reauthenticateWithPopup(user, new GoogleAuthProvider()));
+      else if (viaApple) await (NATIVE_LOGIN() ? reauthenticateWithCredential(user, await nativeCred("apple")) : reauthenticateWithPopup(user, appleProvider()));
       else if (viaPass) {
         const pw = el.querySelector("#delPw").value;
         if (!pw) throw { code: "need-pw" };
