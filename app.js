@@ -671,6 +671,7 @@ function startGlobal() {
   setTimeout(claimStreak, 1500);
   setTimeout(wrapCheck, 4000);
   if (pushState() === "granted") setTimeout(() => pushSaveToken(true), 3000);
+  if (NPUSH()) setTimeout(nPushAuto, 2500);
   const ping = () => { if (document.visibilityState === "visible") { ui.playAt = 0; if (roomCode && room?.game) { const pd = playData(); ui.playKey = [roomCode, pd.g, pd.n, pd.s].join(":"); ui.playAt = Date.now(); updateDoc(doc(db, "users", me.uid), { lastSeen: serverTimestamp(), playing: pd }).catch(() => {}); } else updateDoc(doc(db, "users", me.uid), { lastSeen: serverTimestamp() }).catch(() => {}); } };
   ping();
   presenceTimer = setInterval(ping, 180000);
@@ -3188,6 +3189,13 @@ async function nPushInit() {
   try { nPushSt = nPushMap((await mCall("checkPermissions")).receive); } catch (e) { console.error(e); }
   if (me?.uid && screen !== "loading") render(false);
   if (nPushSt === "granted" && me?.uid) pushSaveToken(true);
+}
+// في التطبيق: نطلب إذن الإشعارات من آبل مباشرة أول ما يدخل (آيفون ما يسأل إلا مرة وحدة)
+async function nPushAuto() {
+  if (!NPUSH() || !me?.uid || nPushSt === "denied") return;
+  try { nPushSt = nPushMap((await mCall("requestPermissions")).receive); } catch (e) { console.error(e); return; }
+  if (nPushSt === "granted") { await pushSaveToken(true); store.set("pushOk", 1); }
+  if (screen !== "loading") render(false);
 }
 const pushState = () => IN_APP ? (NPUSH() ? nPushSt : "app") : !("Notification" in window) || !("serviceWorker" in navigator) ? (isIOS() && !isStandalone() ? "ios" : "no") : Notification.permission;
 async function pushSaveToken(quiet) {
