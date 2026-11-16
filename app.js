@@ -3180,7 +3180,7 @@ const pushLast = {};
 function pushNotify(to, kind) {
   if (!PUSH_URL || !to || !auth?.currentUser || auth.currentUser.isAnonymous) return;
   const k = kind + to;
-  if (kind === "dm" && Date.now() - (pushLast[k] || 0) < 60e3) return;
+  if (kind === "dm" && Date.now() - (pushLast[k] || 0) < 4e3) return;
   pushLast[k] = Date.now();
   auth.currentUser.getIdToken().then(t => fetch(PUSH_URL, { method: "POST", headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" }, body: JSON.stringify({ to, kind }) })).catch(() => {});
 }

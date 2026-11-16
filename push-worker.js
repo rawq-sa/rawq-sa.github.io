@@ -51,7 +51,7 @@ export default {
         const r = await fetch(`https://fcm.googleapis.com/v1/projects/${PROJECT}/messages:send`, {
           method: "POST",
           headers: { Authorization: "Bearer " + at, "Content-Type": "application/json" },
-          body: JSON.stringify({ message: { token: t, data: { title, body, link, tag: kind + "_" + from }, webpush: { headers: { Urgency: "high", TTL: "3600" } }, apns: { headers: { "apns-priority": "10", "apns-collapse-id": (kind + "_" + from).slice(0, 64) }, payload: { aps: { alert: { title, body }, sound: "default", "thread-id": kind } } } } })
+          body: JSON.stringify({ message: { token: t, data: { title, body, link, tag: kind + "_" + from }, webpush: { headers: { Urgency: "high", TTL: "3600" } }, apns: { headers: { "apns-priority": "10" }, payload: { aps: { alert: { title, body }, sound: "default", "thread-id": kind } } } } })
         });
         if (r.status !== 404 && r.status !== 400) alive.push(t);
       }
