@@ -207,6 +207,20 @@ function prof(uid) {
   return null;
 }
 let pendingJoin = (new URLSearchParams(location.search).get("r") || "").toUpperCase() || null;
+// فتح من إشعار: ?dm=uid (محادثة) أو ?go=friends (طلبات الصداقة)
+let pendingOpen = (() => { const q = new URLSearchParams(location.search), dm = q.get("dm") || "", g = q.get("go") || "";
+  if (/^[A-Za-z0-9]{10,40}$/.test(dm)) return { dm }; if (g === "friends") return { go: "friends" }; return null; })();
+if (pendingOpen) history.replaceState(null, "", location.pathname);
+function runOpen(o) {
+  if (!o || !me?.uid) return false;
+  if (o.go === "friends") { go("friends"); return true; }
+  if (o.dm) {
+    let n = 0;
+    const tryDm = () => { if (!me?.uid) return; if (friends.get(o.dm)?.username && friends.get(o.dm).username !== "…") return openDm(o.dm); if (++n < 20) setTimeout(tryDm, 300); else if (friends.has(o.dm)) openDm(o.dm); else go("inbox"); };
+    tryDm(); return true;
+  }
+  return false;
+}
 // رابط دعوة صاحب: ?ref=يوزره
 (() => { const r = (new URLSearchParams(location.search).get("ref") || "").toLowerCase();
   if (/^[a-z0-9_-]{2,20}$/.test(r)) { try { localStorage.setItem("jalsa:ref", JSON.stringify({ u: r, at: Date.now() })); } catch (e) {}
@@ -649,7 +663,8 @@ function afterLogin() {
     const c = pendingJoin; pendingJoin = null;
     history.replaceState(null, "", location.pathname);
     joinRoom(c);
-  } else go("home");
+  } else if (pendingOpen) { const o = pendingOpen; pendingOpen = null; go("home"); runOpen(o); }
+  else go("home");
 }
 
 async function claimUsername(name) {
@@ -3179,8 +3194,12 @@ function nPushOpen(link) {
   try {
     const u = new URL(link || "./", location.href);
     if (u.origin !== location.origin) return;
-    if (u.href !== location.href) location.href = u.href;
-  } catch (e) {}
+    const q = u.searchParams, r = (q.get("r") || "").toUpperCase(), dm = q.get("dm") || "", g = q.get("go") || "";
+    const o = /^[A-Za-z0-9]{10,40}$/.test(dm) ? { dm } : g === "friends" ? { go: "friends" } : null;
+    if (!me?.uid || me.guest) { if (r) pendingJoin = r; else if (o) pendingOpen = o; return; }
+    if (r) { if (roomCode !== r) joinRoom(r); return; }
+    if (o) runOpen(o);
+  } catch (e) { console.error(e); }
 }
 async function nPushInit() {
   if (!NPUSH()) return;
