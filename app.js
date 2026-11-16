@@ -3168,8 +3168,33 @@ function pushNotify(to, kind) {
   pushLast[k] = Date.now();
   auth.currentUser.getIdToken().then(t => fetch(PUSH_URL, { method: "POST", headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" }, body: JSON.stringify({ to, kind }) })).catch(() => {});
 }
-const pushState = () => IN_APP ? "app" : !("Notification" in window) || !("serviceWorker" in navigator) ? (isIOS() && !isStandalone() ? "ios" : "no") : Notification.permission;
+/* إشعارات التطبيق (آيفون) — تشتغل بس في نسخة التطبيق اللي فيها إضافة FirebaseMessaging */
+const NPUSH = () => IN_APP && capPlug("FirebaseMessaging");
+const mCall = (m, o = {}) => window.Capacitor.nativePromise ? window.Capacitor.nativePromise("FirebaseMessaging", m, o) : window.Capacitor.Plugins.FirebaseMessaging[m](o);
+const mListen = (ev, cb) => { try { window.Capacitor.nativeCallback ? window.Capacitor.nativeCallback("FirebaseMessaging", "addListener", { eventName: ev }, cb) : window.Capacitor.Plugins.FirebaseMessaging.addListener(ev, cb); } catch (e) { console.error(e); } };
+let nPushSt = "default";
+const nPushMap = r => r === "granted" ? "granted" : r === "denied" ? "denied" : "default";
+function nPushOpen(link) {
+  try {
+    const u = new URL(link || "./", location.href);
+    if (u.origin !== location.origin) return;
+    if (u.href !== location.href) location.href = u.href;
+  } catch (e) {}
+}
+async function nPushInit() {
+  if (!NPUSH()) return;
+  mListen("notificationActionPerformed", e => nPushOpen(e?.notification?.data?.link));
+  mListen("tokenReceived", e => { if (e?.token && me?.uid && nPushSt === "granted") pushTokSave(e.token).catch(() => {}); });
+  try { nPushSt = nPushMap((await mCall("checkPermissions")).receive); } catch (e) { console.error(e); }
+  if (me?.uid && screen !== "loading") render(false);
+  if (nPushSt === "granted" && me?.uid) pushSaveToken(true);
+}
+const pushState = () => IN_APP ? (NPUSH() ? nPushSt : "app") : !("Notification" in window) || !("serviceWorker" in navigator) ? (isIOS() && !isStandalone() ? "ios" : "no") : Notification.permission;
 async function pushSaveToken(quiet) {
+  if (NPUSH()) {
+    try { const r = await mCall("getToken"); return await pushTokSave(r?.token); }
+    catch (e) { if (!quiet) console.error(e); return false; }
+  }
   try {
     // مكتبة الإشعارات تنحمّل بس لما نحتاجها (عشان روق يفتح أسرع)
     const { getMessaging, getToken, isSupported: pushSupported } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js");
@@ -3177,20 +3202,30 @@ async function pushSaveToken(quiet) {
     const reg = await navigator.serviceWorker.register("./sw.js");
     await navigator.serviceWorker.ready;
     const token = await getToken(getMessaging(), { vapidKey: VAPID, serviceWorkerRegistration: reg });
-    if (!token || !me?.uid) return false;
-    const ref = doc(db, "pushTokens", me.uid);
-    const cur = await getDoc(ref).catch(() => null);
-    const list = (cur?.exists() ? cur.data().tokens || [] : []).filter(t => t !== token);
-    list.push(token);
-    if (!cur?.exists() || (cur.data().tokens || []).at(-1) !== token) await setDoc(ref, { tokens: list.slice(-5), at: serverTimestamp() });
-    return true;
+    return await pushTokSave(token);
   } catch (e) { if (!quiet) console.error(e); return false; }
+}
+async function pushTokSave(token) {
+  if (!token || !me?.uid) return false;
+  const ref = doc(db, "pushTokens", me.uid);
+  const cur = await getDoc(ref).catch(() => null);
+  const list = (cur?.exists() ? cur.data().tokens || [] : []).filter(t => t !== token);
+  list.push(token);
+  if (!cur?.exists() || (cur.data().tokens || []).at(-1) !== token) await setDoc(ref, { tokens: list.slice(-5), at: serverTimestamp() });
+  return true;
 }
 async function enablePush() {
   const st = pushState();
   if (st === "ios") { toast("أضف روق للشاشة الرئيسية أول، وافتحها من هناك"); doInstall(); return; }
   if (st === "no") return toast("جهازك أو متصفحك ما يدعم الإشعارات");
   if (st === "denied") return toast("الإشعارات مقفلة. فعّلها من إعدادات الجوال لروق");
+  if (NPUSH()) {
+    try { nPushSt = nPushMap((await mCall("requestPermissions")).receive); } catch (e) { console.error(e); }
+    if (nPushSt !== "granted") { render(false); return toast(nPushSt === "denied" ? "الإشعارات مقفلة. فعّلها من الإعدادات ← روق" : "ما تفعّلت الإشعارات"); }
+    toast("لحظة…");
+    if (await pushSaveToken()) { store.set("pushOk", 1); toast("تفعّلت الإشعارات 🔔"); } else toast("ما قدرنا نفعّلها، جرّب مرة ثانية");
+    render(false); return;
+  }
   const p = await Notification.requestPermission();
   if (p !== "granted") { render(false); return toast("ما تفعّلت الإشعارات"); }
   toast("لحظة…");
@@ -3762,7 +3797,7 @@ VIEWS.profile = () => {
       <button class="btn small" id="saveBio" ${draft === (me.bio || "") ? "disabled" : ""}>احفظ</button></div>
     </div>
 
-    ${IN_APP ? "" : `
+    ${IN_APP && !NPUSH() ? "" : `
     <div class="field"><span class="label">🔔 الإشعارات</span>
       <div class="li"><span class="nm">${{ granted: "مفعّلة ✓", denied: "مقفلة من إعدادات الجوال", ios: "تحتاج تضيف روق للشاشة الرئيسية", app: "قريب في التطبيق ✨", no: "جهازك ما يدعمها" }[pushState()] || "مو مفعّلة"}</span>
       ${pushState() === "granted" ? `<button class="btn small ghost" id="pushRe">حدّث</button>` : ["default", "ios"].includes(pushState()) ? `<button class="btn small" id="pushOn">فعّل</button>` : ""}</div>
@@ -5142,6 +5177,7 @@ if (configured) {
     promo = s.exists() ? s.data() : null; renderBanner(); if (screen === "home") render(false); if (screen === "admin") render(false);
   }, err);
   const GUEST_OK = new Set(["auth", "email", "forgot", "local", "setup", "l-players", "l-imp", "l-pass", "l-play", "l-most", "l-five", "l-scores", "l-hhnj", "l-kal", "l-kq", "l-draw", "l-tf", "l-who", "gjoin", "daily"]);
+  nPushInit();
   onAuthStateChanged(auth, async user => {
     if (user?.isAnonymous && me?.guest && me.uid === user.uid) return; // ضيف داخل غرفة، لا نقطع عليه
     stopGlobal(); stopGuest();
