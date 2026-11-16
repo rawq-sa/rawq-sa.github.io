@@ -3762,10 +3762,12 @@ VIEWS.profile = () => {
       <button class="btn small" id="saveBio" ${draft === (me.bio || "") ? "disabled" : ""}>احفظ</button></div>
     </div>
 
+    ${IN_APP ? "" : `
     <div class="field"><span class="label">🔔 الإشعارات</span>
       <div class="li"><span class="nm">${{ granted: "مفعّلة ✓", denied: "مقفلة من إعدادات الجوال", ios: "تحتاج تضيف روق للشاشة الرئيسية", app: "قريب في التطبيق ✨", no: "جهازك ما يدعمها" }[pushState()] || "مو مفعّلة"}</span>
       ${pushState() === "granted" ? `<button class="btn small ghost" id="pushRe">حدّث</button>` : ["default", "ios"].includes(pushState()) ? `<button class="btn small" id="pushOn">فعّل</button>` : ""}</div>
       <p class="hint">توصلك العزايم وطلبات الصداقة والرسائل حتى لو روق مقفل.</p></div>
+    `}
 
     <div class="field"><span class="label">🎖️ إنجازاتك (${ar(achGot(me.stats, me.xp, me.username).length)} من ${ar(ACH.length)})</span>
       <div class="achs">${ACH.map(x => { const ok = STAFF(me.username) || x.ok(me.stats || {}, me.xp || 0); return `<div class="ach ${ok ? "on" : ""}">${medal(x, ok)}<b>${x.t}</b><span>${x.d}</span></div>`; }).join("")}</div></div>
