@@ -121,7 +121,8 @@ const favCard = p => { const g = favOf(p); if (!g) return ""; const c = CATALOG.
 const frameOf = p => p?.frame && FRAMES[p.frame] && owns(p, p.frame) ? p.frame : "";
 // الصورة مع الإطار (لو عنده)
 const avF = (p, size) => { const f = frameOf(p), av = avatar(p?.username, p?.photo, size); return f ? `<span class="fr ${f}" style="--fs:${Math.max(3, Math.round(size / 18))}px">${av}</span>` : av; };
-const vipTag = p => vipOn(p) && !STAFF(p?.username) ? `<span class="vip">VIP</span>` : "";
+const isKing = p => (p?.owned || []).includes("king");
+const vipTag = p => STAFF(p?.username) ? "" : isKing(p) ? `<span class="vip king" title="اشترى باقة الملك">الملك 👑</span>` : vipOn(p) ? `<span class="vip">VIP</span>` : "";
 
 const OFFICIAL = "jalsah"; // حساب روق الرسمي (@Jalsah)، تحت تصرف المالك
 const isOwner = () => [OWNER, OFFICIAL].includes(String(me?.username || "").toLowerCase());
@@ -251,14 +252,17 @@ const playingOf = f => { const p = f?.playing, t = p?.at?.toMillis?.() || 0; ret
 // داخل تطبيق الآب ستور: نخفي قوقل والمتجر والأكواد (شروط آبل)
 const IN_APP = /RawqApp/.test(navigator.userAgent) || !!window.Capacitor?.isNativePlatform?.();
 if (IN_APP) document.documentElement.classList.add("inapp");
-const SHOP_TAG = IN_APP ? "✨ حصري" : "🛍️ من المتجر";
-const SHOP_MSG = IN_APP ? "هذا من الحصريات ✨" : "هذا من متجر روق 🛍️";
+const capPlug = name => (window.Capacitor?.PluginHeaders || []).some(h => h.name === name) || !!window.Capacitor?.isPluginAvailable?.(name);
+// الشراء من آبل: يشتغل لما يكون التطبيق فيه إضافة المشتريات (النسخ الجديدة)
+const IAP_ON = IN_APP && capPlug("NativePurchases");
+const SHOP_TAG = IN_APP && !IAP_ON ? "✨ حصري" : "🛍️ من المتجر";
+const SHOP_MSG = IN_APP && !IAP_ON ? "هذا من الحصريات ✨" : "هذا من متجر روق 🛍️";
 /* ================= navigation & rendering ================= */
 const REFRESH = new Set(["home", "friends", "room", "profile", "admin", "inbox", "shop"]);
 const GUEST_NO = new Set(["home", "profile", "friends", "shop", "inbox", "dm", "pub", "admin", "rename", "welcome"]);
 function go(name) {
   if (me?.guest && GUEST_NO.has(name)) name = roomCode ? "room" : "auth";
-  if (IN_APP && name === "shop") return;
+  if (IN_APP && !IAP_ON && name === "shop") return;
   stopLocalTimers();
   if (screen === "dm" && name !== "dm") { off("dm"); ui.dmWith = null; }
   if (name !== "pub") { off("pub"); pubRooms = null; }
@@ -304,7 +308,7 @@ function renderHeader() {
   if (me?.username && !me.guest && !back && screen !== "room" && screen !== "welcome") {
     if (isOwner()) h += `<button class="pill hot" id="hAdmin" aria-label="لوحة المالك">👑</button>`;
     h += `<button class="pill add" id="hFriends"><span aria-hidden="true">+</span> أضف صديق${reqIn.length ? `<span class="badge">${ar(reqIn.length)}</span>` : ""}</button>`;
-    if (!IN_APP) h += `<button class="pill shop ${isOwner() ? "mini" : ""}" id="hShop" aria-label="متجر روق"><span class="ps-ic" aria-hidden="true">${ICONS.shop}</span><span class="ps-t">المتجر</span></button>`;
+    if (!IN_APP || IAP_ON) h += `<button class="pill shop ${isOwner() ? "mini" : ""}" id="hShop" aria-label="متجر روق"><span class="ps-ic" aria-hidden="true">${ICONS.shop}</span><span class="ps-t">المتجر</span></button>`;
     const un = unreadCount();
     h += `<button class="pill icon" id="hChat" aria-label="الرسائل">💬${un ? `<span class="badge">${ar(un)}</span>` : ""}</button>`;
     h += `<button class="me-btn" id="hMe" aria-label="بروفايلي">${avatar(me.username, me.photo, 38)}</button>`;
@@ -384,7 +388,7 @@ const annKey = a => (a?.at?.toMillis?.() || 0) + ":" + (a?.text || "");
 
 /* ================= auth ================= */
 // داخل تطبيق الآيفون: دخول قوقل وأبل يصير من الجوال نفسه (قوقل يمنع الدخول من داخل التطبيقات)
-const HAS_NAUTH = () => (window.Capacitor?.PluginHeaders || []).some(h => h.name === "FirebaseAuthentication") || !!window.Capacitor?.isPluginAvailable?.("FirebaseAuthentication");
+const HAS_NAUTH = () => capPlug("FirebaseAuthentication");
 const NATIVE_LOGIN = () => IN_APP && HAS_NAUTH();
 const nCall = (m, o) => window.Capacitor.nativePromise ? window.Capacitor.nativePromise("FirebaseAuthentication", m, o) : window.Capacitor.Plugins.FirebaseAuthentication[m](o);
 async function nativeCred(kind) {
@@ -637,6 +641,7 @@ function openSwitcher() {
 }
 
 function afterLogin() {
+  setTimeout(() => iapRetry(), 5000);
   rememberAccount();
   setTimeout(termsSheet, 400);
   setTimeout(refCheck, 2500);
@@ -1344,7 +1349,8 @@ async function awardXp() {
   if (!(room.roundPlayers || []).includes(me.uid)) return;
   const gained = Math.max(0, myScore - ui.xpBase.score); ui.xpBase.score = myScore;
   const won = game === "uno" ? room.uno?.winner === me.uid : game === "hhnj" ? !!room.result?.rows?.[me.uid]?.win : gained > 0;
-  const add = Math.min(45, 10 + Math.min(gained, 4) * 5 + (game === "uno" && won ? 15 : 0));
+  const base = Math.min(45, 10 + Math.min(gained, 4) * 5 + (game === "uno" && won ? 15 : 0));
+  const boost = vipOn(me) && !STAFF(me.username), add = boost ? Math.min(68, Math.round(base * 1.5)) : base;
   const s = { ...(me.stats || {}) };
   s.games = (s.games || 0) + 1; s["g_" + game] = (s["g_" + game] || 0) + 1;
   if (won) { s.wins = (s.wins || 0) + 1; s["w_" + game] = (s["w_" + game] || 0) + 1; }
@@ -1357,7 +1363,7 @@ async function awardXp() {
     if (s.games <= 3) setTimeout(refCheck, 4000);
     const fresh = achGot(s, me.xp, me.username).filter(x => !before.includes(x.id));
     setTimeout(() => {
-      toast(`+${ar(add)} خبرة ⭐`);
+      toast(`+${ar(add)} خبرة ⭐${boost ? " (VIP ×١٫٥)" : ""}`);
       if (myLvl() > oldL) setTimeout(() => toast(`🎉 وصلت المستوى ${ar(myLvl())}!`), 1400);
       fresh.forEach((x, i) => setTimeout(() => toast(`🎖️ إنجاز جديد: ${x.t}`), 2800 + i * 1400));
     }, 600);
@@ -2142,6 +2148,7 @@ async function setVerified(name, on) {
 // يوزر من حرفين: المالك بس يعطيه، ويتبدل يوزر اللاعب
 async function giveShortName(raw) {
   const p = adm.player; if (!p) return;
+  if (p.uid === me.uid || STAFF(p.username)) return toast("ما تقدر تغيّر يوزر حسابك أو الحساب الرسمي من هنا");
   const v = String(raw || "").trim().replace(/^@/, ""), k = v.toLowerCase();
   if (!/^[A-Za-z0-9_-]{2}$/.test(v)) return toast("اليوزر لازم يكون حرفين بالضبط (حروف إنجليزية أو أرقام)");
   if (RESERVED.has(k) || k === OWNER) return toast("هذا اليوزر محجوز");
@@ -3305,7 +3312,116 @@ async function redeemCode(raw) {
     else { console.error(e); toast("ما زبط، جرّب مرة ثانية"); }
   }
 }
+/* ================= متجر آبل (داخل تطبيق الآيفون) ================= */
+const IAP_ALL = ["t_royal", "b_royal", "f_gold", "f_fire", "f_sadu", "e_royal", "ns_rainbow"];
+const IAP_LIST = [
+  { id: "starter", name: "عرض البداية 🎁", desc: "إطار ذهبي + ظهر ورق ملكي + VIP أسبوع. مرة وحدة بس", sar: "4.99", tag: "وفّر ٨٤٪", g: ["starter"], pv: `<span class="sp-king">🎁</span>` },
+  { id: "vip.month", name: "VIP شهر", desc: "كل الحصريات + شارة VIP + خبرة ×١٫٥", sar: "29.99", pv: { days: 30, grants: [] } },
+  { id: "vip.quarter", name: "VIP ٣ شهور", desc: "كل الحصريات + شارة VIP + خبرة ×١٫٥", sar: "69.99", tag: "الأكثر طلبًا 🔥", hot: 1, pv: { days: 90, grants: [] } },
+  { id: "vip.year", name: "VIP سنة", desc: "كل الحصريات + شارة VIP + خبرة ×١٫٥", sar: "199.99", tag: "وفّر ٤٤٪", pv: { days: 365, grants: [] } },
+  { id: "king", name: "باقة الملك", desc: "كل الحصريات للأبد + VIP سنة + شارة الملك 👑", sar: "299.99", tag: "أفضل قيمة 👑", hot: 1, g: ["king"], pv: { id: "king" } },
+  { id: "entry_royal", name: "الدخلة الملكية", desc: "لما تدخل أي غرفة يطلع للكل إعلان دخولك 👑", sar: "24.99", g: ["e_royal"] },
+  { id: "table_royal", name: "الطاولة الملكية", desc: "مخمل أحمر وإطار ذهبي يلمع", sar: "19.99", g: ["t_royal"] },
+  { id: "frames3", name: "باقة الإطارات الثلاثة", desc: "الذهبي والناري والسدو مع بعض", sar: "34.99", tag: "وفّر ٢٢٪", g: ["f_gold", "f_fire", "f_sadu"] },
+  { id: "frame_gold", name: "إطار ذهبي", desc: "إطار يدور حول صورتك ويشوفه الكل", sar: "14.99", g: ["f_gold"] },
+  { id: "frame_fire", name: "إطار ناري", desc: "إطار يدور حول صورتك ويشوفه الكل", sar: "14.99", g: ["f_fire"] },
+  { id: "frame_sadu", name: "إطار سدو", desc: "إطار يدور حول صورتك ويشوفه الكل", sar: "14.99", g: ["f_sadu"] },
+  { id: "back_royal", name: "ظهر الورق الملكي", desc: "عنابي بتاج ذهبي في أونو", sar: "9.99", g: ["b_royal"] }
+];
+const IAP_PID = id => "sa.rawq.app." + id;
+let iapPrices = null, iapBusy = null;
+const iCall = (m, o = {}) => window.Capacitor.nativePromise ? window.Capacitor.nativePromise("NativePurchases", m, o) : window.Capacitor.Plugins.NativePurchases[m](o);
+// رقم ثابت يربط الشراء بحساب روق (السيرفر يحسبه بنفس الطريقة)
+async function iapAcct(uid) {
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("rawq:" + uid))).slice(0, 16);
+  h[6] = (h[6] & 0x0f) | 0x40; h[8] = (h[8] & 0x3f) | 0x80;
+  const x = [...h].map(b => b.toString(16).padStart(2, "0")).join("");
+  return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
+}
+async function iapLoadPrices() {
+  if (iapPrices || !IAP_ON) return;
+  iapPrices = {};
+  try {
+    const r = await iCall("getProducts", { productIdentifiers: IAP_LIST.map(x => IAP_PID(x.id)), productType: "inapp" });
+    (r?.products || []).forEach(x => { const id = x.identifier || x.productIdentifier; if (id && x.priceString) iapPrices[id] = x.priceString; });
+    if (screen === "shop") render(false);
+  } catch (e) { console.warn("iap prices", e); }
+}
+const iapPend = () => store.get("iapPend:" + me?.uid, []);
+async function iapSend(jws, show) {
+  const key = "iapPend:" + me.uid, keep = store.get(key, []);
+  if (!keep.includes(jws)) store.set(key, [...keep, jws].slice(-10));
+  const t = await auth.currentUser.getIdToken();
+  const r = await fetch(PUSH_URL, { method: "POST", headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" }, body: JSON.stringify({ kind: "iap", jws }) });
+  const j = await r.json().catch(() => ({}));
+  if (j.ok || j.err === "other-account" || j.err === "revoked" || r.status === 400) store.set(key, store.get(key, []).filter(x => x !== jws));
+  if (j.ok) {
+    if (j.owned) me.owned = j.owned; if (j.vipUntil) me.vipUntil = j.vipUntil;
+    const it = IAP_LIST.find(x => IAP_PID(x.id) === j.product);
+    if (show) toast(`🎉 انفتح لك: ${it ? it.name : "اللي شريته"}`);
+    return true;
+  }
+  if (j.err === "other-account") { if (show) toast("هذي الشراية مسجلة على حساب روق ثاني"); return false; }
+  if (r.status >= 500 || !r.status) throw new Error("iap " + r.status);
+  return false;
+}
+// لو انقطع النت بعد الدفع: نكمّل فتح المنتج أول ما يرجع
+async function iapRetry() {
+  if (!IAP_ON || !me?.uid || me.guest) return;
+  for (const jws of iapPend()) { try { await iapSend(jws, true); } catch (e) { break; } }
+}
+async function iapBuy(id) {
+  if (iapBusy) return;
+  iapBusy = id; render(false);
+  try {
+    const r = await iCall("purchaseProduct", { productIdentifier: IAP_PID(id), productType: "inapp", quantity: 1, appAccountToken: await iapAcct(me.uid) });
+    const jws = r?.jwsRepresentation || r?.transaction?.jwsRepresentation;
+    if (!jws) throw new Error("no-jws");
+    try { await iapSend(jws, true); }
+    catch (e) { console.error(e); toast("وصلت الشراية ✅ بتنفتح لك أول ما يرجع الاتصال"); setTimeout(iapRetry, 15000); }
+  } catch (e) {
+    if (!nCancelled(e)) { console.error(e); toast("ما تمت عملية الشراء، ما انخصم منك شي"); }
+  }
+  iapBusy = null; render(false);
+}
+async function iapRestore() {
+  if (iapBusy) return;
+  iapBusy = "restore"; render(false);
+  try {
+    await iCall("restorePurchases").catch(() => {});
+    const r = await iCall("getPurchases", { productType: "inapp" });
+    let n = 0;
+    for (const x of r?.purchases || []) { if (!x.jwsRepresentation) continue; try { if (await iapSend(x.jwsRepresentation, false)) n++; } catch (e) { console.warn(e); } }
+    toast(n ? "✅ رجّعنا مشترياتك" : "ما لقينا مشتريات على حساب آبل هذا");
+  } catch (e) { console.error(e); toast("ما زبط الاسترجاع، جرّب مرة ثانية"); }
+  iapBusy = null; render(false);
+}
+function iapShop() {
+  const p = { ...(prof(me.uid) || {}), owned: me.owned || [], vipUntil: me.vipUntil || 0, username: me.username }, mine = new Set(p.owned), vip = vipOn(p);
+  iapLoadPrices();
+  const list = IAP_LIST.filter(x => !(x.id === "starter" && mine.has("starter")));
+  V.innerHTML = `<section>
+    <div><h2>متجر روق 🛍️</h2><p class="lead">تميّز قدام أصحابك. تدفع بحساب آبل، وينفتح لك على طول.</p></div>
+    ${isKing(p) ? `<div class="vipbox">👑 أنت من الملوك، وكل الحصريات لك للأبد${vip ? `. و VIP لين <b>${new Date(p.vipUntil).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" })}</b>` : ""}.</div>`
+      : vip ? `<div class="vipbox">⭐ أنت VIP لين <b>${new Date(p.vipUntil).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" })}</b>. أي VIP تشتريه ينضاف على مدتك.</div>` : ""}
+    <div class="shop">${list.map(it => {
+      const have = it.g ? it.g.every(g => mine.has(g)) : false;
+      const pv = typeof it.pv === "string" ? it.pv : shopPreview(it.pv || { grants: it.g });
+      const price = iapPrices?.[IAP_PID(it.id)] || `${it.sar} ر.س`;
+      return `<div class="sitem ${it.hot ? "hot" : ""}">
+        ${it.tag ? `<span class="s-hot">${it.tag}</span>` : ""}
+        <div class="s-pv">${pv}</div>
+        <b class="s-name">${it.name}</b><span class="s-desc">${it.desc}</span>
+        ${have ? `<span class="s-own">✓ عندك للأبد</span>` : `<button class="btn small" data-iap="${it.id}" ${iapBusy ? "disabled" : ""}>${iapBusy === it.id ? "لحظة…" : `<span class="s-price">${esc(price)}</span>`}</button>`}
+      </div>`; }).join("")}</div>
+    <button class="btn ghost" id="iapRestore" ${iapBusy ? "disabled" : ""}>${iapBusy === "restore" ? "لحظة…" : "استرجع مشترياتي"}</button>
+    <p class="hint center">الدفع عن طريق حساب آبل. اشتراكات VIP ما تتجدد لحالها، وتقدر تمددها متى ما تبي.</p>
+  </section>`;
+  onAll("[data-iap]", b => iapBuy(b.dataset.iap));
+  on("iapRestore", "click", iapRestore);
+}
 VIEWS.shop = () => {
+  if (IN_APP) { if (IAP_ON) iapShop(); return; }
   const p = prof(me.uid), vip = vipOn(p);
   V.innerHTML = `<section>
     <div><h2>متجر روق 🛍️</h2><p class="lead">تميّز قدام أصحابك. تشتري من متجر روق، ويوصلك كود تكتبه هنا.</p></div>
@@ -3664,7 +3780,7 @@ VIEWS.profile = () => {
       <span class="hint">إطار الصورة</span>
       <div class="looks">${[["", "بدون"], ...Object.entries(FRAMES)].map(([k, n]) => { const open = !k || owns(prof(me.uid), k), sel = (frameOf(prof(me.uid)) || "") === k;
         return `<button class="look frm ${sel ? "sel" : ""} ${k ? "excl" : ""}" data-lf="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}"><span class="look-pv">${k ? `<span class="fr ${k}" style="--fs:4px">${avatar(me.username, me.photo, 56)}</span>` : avatar(me.username, me.photo, 56)}</span><b>${n}</b><span class="hint">${open ? (sel ? "مختار ✓" : "متاح") : SHOP_TAG}</span></button>`; }).join("")}</div>
-      ${IN_APP ? "" : `<button class="btn ghost" id="toShop">🛍️ متجر روق</button>`}</div>
+      ${IN_APP && !IAP_ON ? "" : `<button class="btn ghost" id="toShop">🛍️ متجر روق</button>`}</div>
     <div class="field"><button class="btn wrapbtn" id="wrapBtn">📊 ملخصي لشهر ${monName(monKey())}</button>${me.monPrev?.r ? `<button class="btn ghost" id="wrapPrev">ملخص شهر ${monName(me.monPrev.m)}</button>` : ""}</div>
 
     <div class="field"><span class="label">✨ زينة بروفايلك</span>
