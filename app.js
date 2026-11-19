@@ -59,7 +59,7 @@ const CLAIM_RE = /^[A-Za-z0-9_-]{3,20}$/;  // اللاعب يختار يوزر �
 const HAS_UPPER = /[A-Z]/;
 const PW_MIN = 8;
 // صاحب اللعبة: يطلع جنب يوزره تاج
-const OWNER = "b_1";
+const OWNER = "b1", OWNER_OLD = "b_1"; // usernames/b_1 يبقى محجوز للمالك دايم
 const RESERVED = new Set(["admin", "owner", "jalsah", "jalsa", "support", "official", "moderator", "mod", "staff", "team"]);
 /* ================= المستويات والإنجازات ================= */
 // المستوى L يحتاج 25×L×(L-1) نقطة خبرة: ٢=٥٠، ٣=١٥٠، ٥=٥٠٠، ١٠=٢٢٥٠
@@ -67,7 +67,7 @@ const MAXL = 500;
 const lvlOf = xp => Math.min(MAXL, Math.max(1, Math.floor((1 + Math.sqrt(1 + (xp || 0) * 4 / 25)) / 2)));
 const lvlXp = L => 25 * L * (L - 1);
 // المالك والحساب الرسمي: أعلى مستوى وكل شي مفتوح
-const STAFF = n => [OWNER, OFFICIAL].includes(String(n || "").toLowerCase());
+const STAFF = n => [OWNER, OWNER_OLD, OFFICIAL].includes(String(n || "").toLowerCase());
 const lvlOfP = p => STAFF(p?.username) ? MAXL : lvlOf(p?.xp);
 const myLvl = () => lvlOfP(me);
 const lvlTag = p => `<span class="lvl ${STAFF(p?.username) ? "max" : ""}" title="المستوى">${STAFF(p?.username) ? "👑" : "⭐"} ${ar(lvlOfP(p))}</span>`;
@@ -137,13 +137,13 @@ const isKing = p => (p?.owned || []).includes("king");
 const vipTag = p => STAFF(p?.username) ? "" : isKing(p) ? `<span class="vip king" title="اشترى باقة الملك">الملك 👑</span>` : vipOn(p) ? `<span class="vip">VIP</span>` : "";
 
 const OFFICIAL = "jalsah"; // حساب روق الرسمي (@Jalsah)، تحت تصرف المالك
-const isOwner = () => [OWNER, OFFICIAL].includes(String(me?.username || "").toLowerCase());
+const isOwner = () => [OWNER, OWNER_OLD, OFFICIAL].includes(String(me?.username || "").toLowerCase());
 // علامة التوثيق: سودا وفيها صح أبيض. للمالك والرسمي، ولأي أحد يوثّقه المالك من اللوحة
 let VERIFIED = new Set();
-const isVerified = name => { const k = String(name || "").toLowerCase(); return k === OWNER || k === OFFICIAL || VERIFIED.has(k); };
+const isVerified = name => { const k = String(name || "").toLowerCase(); return k === OWNER || k === OWNER_OLD || k === OFFICIAL || VERIFIED.has(k); };
 const VBADGE = `<span class="vbadge" title="حساب موثّق" aria-label="حساب موثّق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6l2.5 1.9 3.1-.3 1.2 2.9 2.9 1.2-.3 3.1L23.3 12l-1.9 2.5.3 3.1-2.9 1.2-1.2 2.9-3.1-.3L12 23.3l-2.5-1.9-3.1.3-1.2-2.9-2.9-1.2.3-3.1L.7 12l1.9-2.5-.3-3.1 2.9-1.2 1.2-2.9 3.1.3z" fill="#0b0b0f" stroke="#fff" stroke-opacity=".25" stroke-width=".8"/><path d="M7.4 12.3l3.1 3.1 6.1-6.3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
 const at = name => { const k = String(name).toLowerCase();
-  return `@${esc(name)}${isVerified(k) ? " " + VBADGE : ""}${k === OWNER ? ' <span class="crown" title="صاحب اللعبة" aria-label="صاحب اللعبة">👑</span>' : ""}`; };
+  return `@${esc(name)}${isVerified(k) ? " " + VBADGE : ""}${k === OWNER || k === OWNER_OLD ? ' <span class="crown" title="صاحب اللعبة" aria-label="صاحب اللعبة">👑</span>' : ""}`; };
 // صورة البروفايل: صورة اللاعب، أو أول حرف من يوزره بلون ثابت
 const AV_COLORS = ["#ef6f6c", "#f2b134", "#74d6b8", "#8f7bea", "#5fb0f0", "#f08a24", "#e66aa8", "#4fc48a"];
 const avColor = name => { let h = 0; for (const c of String(name || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return AV_COLORS[h % AV_COLORS.length]; };
@@ -521,7 +521,7 @@ function openInvite() {
 }
 
 /* ================= الدخول ضيف من رابط الغرفة ================= */
-const GUEST_BAD = new Set([OWNER, OFFICIAL, "jalsa", "admin", "owner", "support", "official", "روق", "الادارة", "الإدارة"]);
+const GUEST_BAD = new Set([OWNER, OWNER_OLD, OFFICIAL, "jalsa", "admin", "owner", "support", "official", "روق", "الادارة", "الإدارة"]);
 async function guestJoin(name, code) {
   name = cleanMsg(name).replace(/\s+/g, " ").slice(0, 14);
   code = roomCodeFrom(code);
@@ -2256,7 +2256,7 @@ async function loadRetention() {
 async function banUser(raw) {
   const typed = raw.trim().replace(/^@/, ""), key = typed.toLowerCase();
   if (!USER_RE.test(typed)) return toast("اكتب يوزر صحيح");
-  if (key === OWNER) return toast("ما تقدر تحظر نفسك 😄");
+  if (key === OWNER || key === OWNER_OLD) return toast("ما تقدر تحظر نفسك 😄");
   try {
     const s = await getDoc(doc(db, "usernames", key));
     if (!s.exists()) return toast("ما لقينا هذا اليوزر");
@@ -2315,20 +2315,22 @@ async function setVerified(name, on) {
 // يوزر من حرفين: المالك بس يعطيه، ويتبدل يوزر اللاعب
 async function giveShortName(raw) {
   const p = adm.player; if (!p) return;
-  if (p.uid === me.uid || STAFF(p.username)) return toast("ما تقدر تغيّر يوزر حسابك أو الحساب الرسمي من هنا");
+  const self = p.uid === me.uid && [OWNER, OWNER_OLD].includes(me.username.toLowerCase());
+  if (!self && (p.uid === me.uid || STAFF(p.username))) return toast("ما تقدر تغيّر يوزر حسابك أو الحساب الرسمي من هنا");
   const v = String(raw || "").trim().replace(/^@/, ""), k = v.toLowerCase();
   if (!/^[A-Za-z0-9_-]{2}$/.test(v)) return toast("اليوزر لازم يكون حرفين بالضبط (حروف إنجليزية أو أرقام)");
-  if (RESERVED.has(k) || k === OWNER) return toast("هذا اليوزر محجوز");
+  if (RESERVED.has(k) || (k === OWNER && !self) || k === OWNER_OLD) return toast("هذا اليوزر محجوز");
   try {
     await runTransaction(db, async tx => {
       const nRef = doc(db, "usernames", k), n = await tx.get(nRef);
       if (n.exists() && n.data().uid !== p.uid) throw new Error("taken");
       tx.set(nRef, { uid: p.uid });
-      if (p.username.toLowerCase() !== k) tx.delete(doc(db, "usernames", p.username.toLowerCase()));
+      if (p.username.toLowerCase() !== k && p.username.toLowerCase() !== OWNER_OLD) tx.delete(doc(db, "usernames", p.username.toLowerCase()));
       tx.update(doc(db, "users", p.uid), { username: v });
     });
     const wasV = VERIFIED.has(p.username.toLowerCase());
     toast(`صار يوزره @${v} 🔥`);
+    if (self) { me.username = v; render(false); }
     if (wasV) { await setVerified(p.username, false); await setVerified(v, true); }
     await findPlayer(v);
   } catch (e) { console.error(e); toast(e.message === "taken" ? "اليوزر مأخوذ" : "ما زبط"); }
@@ -2664,7 +2666,7 @@ VIEWS.admin = () => {
 
     <div class="field" data-at="players"><span class="label">✔️ الحسابات الموثّقة</span>
       <p class="hint">توثّق أي أحد من بطاقته فوق (ابحث عنه واضغط «وثّقه»). العلامة سودا وفيها صح أبيض ${VBADGE}</p>
-      <div class="list">${[OWNER, OFFICIAL, ...[...VERIFIED].filter(k => k !== OWNER && k !== OFFICIAL)].map(k => `<div class="li"><span class="nm" dir="ltr">${at(k)}</span>${STAFF(k) ? `<span class="tag">دايم</span>` : `<button class="btn small ghost" data-unver="${esc(k)}">شيل</button>`}</div>`).join("")}</div>
+      <div class="list">${[OWNER, OFFICIAL, ...[...VERIFIED].filter(k => k !== OWNER && k !== OWNER_OLD && k !== OFFICIAL)].map(k => `<div class="li"><span class="nm" dir="ltr">${at(k)}</span>${STAFF(k) ? `<span class="tag">دايم</span>` : `<button class="btn small ghost" data-unver="${esc(k)}">شيل</button>`}</div>`).join("")}</div>
     </div>
 
     <div class="field" data-at="ann"><span class="label">🔔 إشعار لكل اللاعبين</span>
@@ -3069,13 +3071,13 @@ VIEWS.rename = () => {
   const check = () => {
     const v = inp.value.replace(/\s+/g, "");
     if (v !== inp.value) inp.value = v;
-    const ok = CLAIM_RE.test(v) && HAS_UPPER.test(v) && !RESERVED.has(v.toLowerCase()) && v.toLowerCase() !== OWNER && v !== me.username && !roomCode;
+    const ok = CLAIM_RE.test(v) && HAS_UPPER.test(v) && !RESERVED.has(v.toLowerCase()) && v.toLowerCase() !== OWNER && v.toLowerCase() !== OWNER_OLD && v !== me.username && !roomCode;
     btn.disabled = !ok;
     if (!v) { msg.className = "hint"; msg.textContent = UNAME_HINT; }
     else if (/[^A-Za-z0-9_-]/.test(v)) { msg.className = "hint msg-bad"; msg.textContent = "مسموح بس: حروف إنجليزية وأرقام و _ و -"; }
     else if (v.length < 3) { msg.className = "hint msg-bad"; msg.textContent = "اليوزر لازم يكون ٣ خانات أو أكثر"; }
     else if (!HAS_UPPER.test(v)) { msg.className = "hint msg-bad"; msg.textContent = "لازم فيه حرف كبير واحد على الأقل، مثل D-A-L-P"; }
-    else if (RESERVED.has(v.toLowerCase()) || v.toLowerCase() === OWNER) { msg.className = "hint msg-bad"; msg.textContent = "هذا اليوزر محجوز، جرّب غيره"; }
+    else if (RESERVED.has(v.toLowerCase()) || v.toLowerCase() === OWNER || v.toLowerCase() === OWNER_OLD) { msg.className = "hint msg-bad"; msg.textContent = "هذا اليوزر محجوز، جرّب غيره"; }
     else if (v === me.username) { msg.className = "hint msg-bad"; msg.textContent = "هذا يوزرك الحالي"; }
     else { msg.className = "hint msg-ok"; msg.textContent = "@" + v + " شكله حلو"; }
   };
@@ -3987,7 +3989,7 @@ VIEWS.profile = () => {
         <input type="file" id="photoIn" accept="image/*" hidden>
       </div>
       <b class="pf-name${nsC(prof(me.uid))}" dir="ltr">${at(me.username)}</b>
-      ${STAFF(me.username) ? `<div class="lvlbox max"><div class="row-h"><b>👑 المستوى ${ar(MAXL)}</b><span class="hint">${me.username.toLowerCase() === OWNER ? "صاحب اللعبة" : "الحساب الرسمي"}</span></div><div class="lvlbar"><i style="width:100%"></i></div><span class="hint">كل الأشكال والإنجازات مفتوحة لك.</span></div>` : (() => { const L = lvlOf(me.xp), a0 = lvlXp(L), a1 = lvlXp(L + 1), pc = Math.round(((me.xp || 0) - a0) / (a1 - a0) * 100);
+      ${STAFF(me.username) ? `<div class="lvlbox max"><div class="row-h"><b>👑 المستوى ${ar(MAXL)}</b><span class="hint">${[OWNER, OWNER_OLD].includes(me.username.toLowerCase()) ? "صاحب اللعبة" : "الحساب الرسمي"}</span></div><div class="lvlbar"><i style="width:100%"></i></div><span class="hint">كل الأشكال والإنجازات مفتوحة لك.</span></div>` : (() => { const L = lvlOf(me.xp), a0 = lvlXp(L), a1 = lvlXp(L + 1), pc = Math.round(((me.xp || 0) - a0) / (a1 - a0) * 100);
         return `<div class="lvlbox"><div class="row-h"><b>⭐ المستوى ${ar(L)}</b><span class="hint">${ar((me.xp || 0) - a0)} / ${ar(a1 - a0)} خبرة</span></div><div class="lvlbar"><i style="width:${pc}%"></i></div><span class="hint">العب جولات واكسب خبرة. الفوز يعطيك أكثر.</span></div>`; })()}
       <div class="row pf-acts">
         <label class="btn small ghost" for="photoIn">${me.photo ? "غيّر الصورة" : "أضف صورة"}</label>

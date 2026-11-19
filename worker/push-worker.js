@@ -96,6 +96,7 @@ async function broadcast(env, from, email, { title, body, cursor }) {
   const me = await fsGet(at, `users/${from}`);
   const name = String(me?.fields?.username?.stringValue || "").toLowerCase();
   let ok = name === "b_1";
+  if (!ok) { const o = await fsGet(at, "usernames/b_1"); ok = o?.fields?.uid?.stringValue === from; } // المالك لو غيّر يوزره
   if (!ok && name === "jalsah" && email === "jalsahofficial4@gmail.com") {
     const u = await fsGet(at, "usernames/jalsah");
     ok = u?.fields?.uid?.stringValue === from;
