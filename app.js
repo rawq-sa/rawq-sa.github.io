@@ -3814,7 +3814,6 @@ VIEWS.home = () => {
         <button class="btn small">دخول</button>
       </form>
     </div>
-    ${SA_RIBBON}
 
     ${showInstallCard() ? `<div class="inst"><img src="icon-180.png" alt="" width="52" height="52">
       <div class="inst-t"><b>ثبّت روق على شاشتك</b><span class="hint">تفتح بضغطة مثل التطبيق، وبدون متصفح</span></div>
