@@ -106,13 +106,24 @@ export function jWinner(g) {
 export const jHomeCount = (g, s) => (g.pos[s] || []).filter(r => r >= TRACK).length;
 
 /* ================= الرسم ================= */
-const CX = 210, CY = 210, R = 176;
-const ang = (cell, rot) => Math.PI / 2 + ((cell - rot * SIDE) / TRACK) * Math.PI * 2;
-const pt = (a, r) => [CX + r * Math.cos(a), CY + r * Math.sin(a)];
+// اللوح «المربع»: مسار بشكل مربع حوافه منفوخة شوي، ٧٦ خانة بمسافات متساوية
+const CX = 210, CY = 210, A = 166, NSQ = 6;
+const sqR = t => A / Math.pow(Math.pow(Math.abs(Math.cos(t)), NSQ) + Math.pow(Math.abs(Math.sin(t)), NSQ), 1 / NSQ);
+const sqPath = (a, n = 360) => { const P = []; for (let i = 0; i < n; i++) { const t = Math.PI / 2 + i / n * Math.PI * 2, r = sqR(t) * a / A; P.push([CX + r * Math.cos(t), CY + r * Math.sin(t)]); } return P; };
+const CELLS = (() => { // نبدأ من نص الجهة اللي تحت ونمشي يسار (مع اتجاه اللعب)
+  const P = sqPath(A, 2000); P.push(P[0]); const L = [0];
+  for (let i = 1; i < P.length; i++) L.push(L[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+  const tot = L[L.length - 1], out = []; let j = 0;
+  for (let k = 0; k < TRACK; k++) { const d = (k + .5) * tot / TRACK; while (L[j + 1] < d) j++; const t = (d - L[j]) / (L[j + 1] - L[j]); out.push([P[j][0] + (P[j + 1][0] - P[j][0]) * t, P[j][1] + (P[j + 1][1] - P[j][1]) * t]); }
+  return out;
+})();
+const dirOf = d => { const a = Math.PI / 2 + d * Math.PI / 2; return [Math.cos(a), Math.sin(a)]; }; // تحت، يسار، فوق، يمين
+const rotIdx = (cell, rot) => ((cell - rot * SIDE) % TRACK + TRACK) % TRACK;
 export function jSpot(s, i, r, rot) {
-  if (r < 0) { const [x, y] = pt(ang(s * SIDE + 5, rot), R - 50); return [x + (i % 2 ? 9 : -9), y + (i < 2 ? -9 : 9)]; }
-  if (r >= TRACK) return pt(ang(s * SIDE - 1, rot), R - 23 * (r - TRACK + 1));
-  return pt(ang(jAbs(s, r), rot), R);
+  const d = ((s - rot) % 4 + 4) % 4;
+  if (r < 0) { const a = Math.PI / 2 + d * Math.PI / 2 + Math.PI / 4, bx = CX + Math.cos(a) * 112, by = CY + Math.sin(a) * 112; return [bx + (i % 2 ? 9 : -9), by + (i < 2 ? -9 : 9)]; }
+  if (r >= TRACK) { const [dx, dy] = dirOf(d), q = A - 28 - (r - TRACK) * 19; return [CX + dx * q, CY + dy * q]; }
+  return CELLS[rotIdx(jAbs(s, r), rot)];
 }
 const f1 = n => n.toFixed(1);
 // الأوراق بنفس شكل أونو روق: كل شكل بلون (♥ أحمر، ♦ أصفر، ♣ أخضر، ♠ بنفسجي)
@@ -122,36 +133,55 @@ export function jCardSVG(c, attrs = "") {
   return attrs ? svg.replace("<svg ", `<svg ${attrs} `) : svg;
 }
 // اللوح: rot = مقعدي (عشان أكون تحت)، cand = الكورات اللي تنختار، pick = المختارة، prev = مواقع قبل للحركة
+const D = P => "M" + P.map(p => f1(p[0]) + " " + f1(p[1])).join("L") + "Z";
+const PALM = (() => { // نخلة ذهبية: جذع بحلقات وسعف عريض
+  const fr = (ang, len, bend) => `<path transform="rotate(${ang})" d="M0 0 C${len * .3} ${-bend} ${len * .7} ${-bend * .6} ${len} ${bend * .5} C${len * .7} ${bend * .15} ${len * .35} ${bend * .25} 0 0Z" fill="url(#jGold)" stroke="#7a5212" stroke-width=".7"/>`;
+  return `<g><path d="M-3.5 40 Q-2 16 -1.6 0 L1.6 0 Q2 16 3.5 40Z" fill="url(#jGold)" stroke="#7a5212" stroke-width=".8"/>
+  ${[6, 12, 18, 24, 30, 36].map(y => `<path d="M-3 ${y} Q0 ${y + 2} 3 ${y}" fill="none" stroke="#7a5212" stroke-width=".9"/>`).join("")}
+  ${fr(12, 30, 11)}${fr(-15, 37, 11)}${fr(-45, 38, 9)}${fr(-75, 30, 6)}${fr(192, 30, -11)}${fr(-165, 37, -11)}${fr(-135, 38, -9)}${fr(-105, 30, -6)}
+  <circle cx="-4" cy="4" r="3" fill="#b8862b"/><circle cx="3.5" cy="5" r="3" fill="#a87420"/><circle cx="0" cy="8.5" r="3" fill="#b8862b"/></g>`;
+})();
 export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, top = null, turnSeat = null } = {}) {
-  const seats = jSeats(g), now = {};
+  const seats = jSeats(g), now = {}, AR = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
   let s = `<svg class="jsvg" viewBox="0 0 420 420" direction="ltr" style="direction:ltr" role="img" aria-label="لوح الجكارو">
   <defs>
-    <radialGradient id="jWood" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#8a5530"/><stop offset=".7" stop-color="#5e341a"/><stop offset="1" stop-color="#3a1f0e"/></radialGradient>
-    <radialGradient id="jFelt" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#2e1f55"/><stop offset="1" stop-color="#160f2c"/></radialGradient>
-    <radialGradient id="jHole" cx="50%" cy="35%" r="65%"><stop offset="0" stop-color="#1a0c04"/><stop offset="1" stop-color="#3b2010"/></radialGradient>
-    ${JCOL.map((c, k) => `<radialGradient id="jM${k}" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".25" stop-color="${c.fill}"/><stop offset="1" stop-color="${c.dark}"/></radialGradient>`).join("")}
-    <pattern id="jGrain" width="40" height="8" patternUnits="userSpaceOnUse"><path d="M0 4 Q10 1 20 4 T40 4" fill="none" stroke="#2a1508" stroke-opacity=".18" stroke-width="1"/></pattern>
+    <radialGradient id="jFelt" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#3d2a72"/><stop offset="1" stop-color="#140f28"/></radialGradient>
+    <radialGradient id="jWood" cx="50%" cy="38%" r="72%"><stop offset="0" stop-color="#f6e4c0"/><stop offset=".65" stop-color="#e2c38f"/><stop offset="1" stop-color="#c49a5c"/></radialGradient>
+    <radialGradient id="jHole" cx="50%" cy="35%" r="62%"><stop offset="0" stop-color="#2a1606"/><stop offset=".8" stop-color="#4a2c12"/><stop offset="1" stop-color="#c89c62"/></radialGradient>
+    <linearGradient id="jGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1b8"/><stop offset=".45" stop-color="#e6b54a"/><stop offset="1" stop-color="#a8761c"/></linearGradient>
+    <pattern id="jGrain" width="70" height="10" patternUnits="userSpaceOnUse"><path d="M0 5 Q17 2 35 5 T70 5" fill="none" stroke="#3a1c06" stroke-opacity=".16"/></pattern>
+    ${JCOL.map((c, k) => `<radialGradient id="jM${k}" cx="34%" cy="28%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".22" stop-color="${c.fill}" stop-opacity=".9"/><stop offset=".6" stop-color="${c.fill}"/><stop offset="1" stop-color="${c.dark}"/></radialGradient>`).join("")}
   </defs>
-  <circle cx="${CX}" cy="${CY}" r="207" fill="url(#jWood)"/><circle cx="${CX}" cy="${CY}" r="207" fill="url(#jGrain)"/>
-  <circle cx="${CX}" cy="${CY}" r="205" fill="none" stroke="#f7d77a" stroke-width="2.2" opacity=".85"/>
-  <circle cx="${CX}" cy="${CY}" r="${R + 14}" fill="none" stroke="#2a1508" stroke-opacity=".35" stroke-width="1"/>
-  <circle cx="${CX}" cy="${CY}" r="${R - 14}" fill="url(#jFelt)" stroke="#f7d77a" stroke-opacity=".35" stroke-width="1"/>`;
-  // ظل الدور على قسم اللاعب
-  if (turnSeat != null) { const a0 = ang(turnSeat * SIDE - 2, rot), a1 = ang(turnSeat * SIDE + SIDE - 2, rot), [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R); s += `<path d="M${f1(x0)} ${f1(y0)} A${R} ${R} 0 0 1 ${f1(x1)} ${f1(y1)}" fill="none" stroke="${JCOL[turnSeat].fill}" stroke-opacity=".28" stroke-width="20" stroke-linecap="round"/>`; }
+  <rect width="420" height="420" rx="30" fill="url(#jFelt)"/><rect x="8" y="8" width="404" height="404" rx="24" fill="none" stroke="#f2cf72" stroke-opacity=".28" stroke-dasharray="3 5"/>
+  <path d="${D(sqPath(A + 30))}" fill="#000" opacity=".45" transform="translate(0 7)"/><path d="${D(sqPath(A + 30))}" fill="url(#jGold)"/><path d="${D(sqPath(A + 25))}" fill="#8a5a2b"/>
+  <path d="${D(sqPath(A + 21))}" fill="url(#jWood)"/><path d="${D(sqPath(A + 21))}" fill="url(#jGrain)"/>
+  <path d="${D(sqPath(A))}" fill="none" stroke="#8a5a2b" stroke-width="15" stroke-linejoin="round" opacity=".22"/>`;
+  // دور مين: نلوّن جهته
+  if (turnSeat != null) { const d0 = ((turnSeat - rot) % 4 + 4) % 4, idx = Array.from({ length: SIDE }, (_, k) => CELLS[(d0 * SIDE + k - 1 + TRACK) % TRACK]); s += `<path d="M${idx.map(p => f1(p[0]) + " " + f1(p[1])).join("L")}" fill="none" stroke="${JCOL[turnSeat].fill}" stroke-opacity=".35" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>`; }
+  for (const k of seats) {
+    const d = ((k - rot) % 4 + 4) % 4, col = JCOL[k].fill, [dx, dy] = dirOf(d);
+    // الدار: ممر ملوّن من المسار للنص
+    const q0 = A - 28 + 10, q1 = A - 28 - 3 * 19 - 10;
+    s += `<line x1="${f1(CX + dx * q0)}" y1="${f1(CY + dy * q0)}" x2="${f1(CX + dx * q1)}" y2="${f1(CY + dy * q1)}" stroke="${col}" stroke-opacity=".28" stroke-width="22" stroke-linecap="round"/>`;
+    for (let h = 0; h < 4; h++) { const [x, y] = jSpot(k, 0, TRACK + h, rot); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="6" fill="url(#jHole)"/>`; }
+    // البيت بالزاوية
+    const a = Math.PI / 2 + d * Math.PI / 2 + Math.PI / 4, bx = CX + Math.cos(a) * 112, by = CY + Math.sin(a) * 112;
+    s += `<circle cx="${f1(bx)}" cy="${f1(by)}" r="27" fill="${col}" fill-opacity=".16" stroke="${col}" stroke-width="2"/>`;
+    for (let i = 0; i < 4; i++) { const [x, y] = jSpot(k, i, -1, rot); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="6" fill="url(#jHole)"/>`; }
+  }
+  // خانات المسار + خانة الطلعة لكل لاعب + أرقام تساعد على العد
   for (let c = 0; c < TRACK; c++) {
-    const [x, y] = pt(ang(c, rot), R), st = c % SIDE === 0 ? c / SIDE : -1;
-    s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5" fill="url(#jHole)"/>`;
-    if (st >= 0 && g.pos[st]) s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="9" fill="none" stroke="${JCOL[st].fill}" stroke-width="2"/>`;
+    const [x, y] = CELLS[c]; s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.3" fill="url(#jHole)"/>`;
   }
   for (const k of seats) {
-    const col = JCOL[k].fill;
-    for (let h = 0; h < 4; h++) { const [x, y] = jSpot(k, 0, TRACK + h, rot); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="7" fill="${col}" fill-opacity=".14" stroke="${col}" stroke-opacity=".7" stroke-width="1.3"/>`; }
-    const [bx, by] = pt(ang(k * SIDE + 5, rot), R - 50);
-    s += `<rect x="${f1(bx - 19)}" y="${f1(by - 19)}" width="38" height="38" rx="11" fill="${col}" fill-opacity=".13" stroke="${col}" stroke-opacity=".55"/>`;
-    for (let i = 0; i < 4; i++) { const [x, y] = jSpot(k, i, -1, rot); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5" fill="url(#jHole)"/>`; }
+    const [x, y] = jSpot(k, 0, 0, rot), col = JCOL[k].fill;
+    s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="11" fill="${col}" fill-opacity=".25" stroke="${col}" stroke-width="2.6"/><circle cx="${f1(x)}" cy="${f1(y)}" r="5.3" fill="url(#jHole)"/>`;
+    for (const n of [5, 10, 15]) { const [px, py] = jSpot(k, 0, n - 1, rot), L = Math.hypot(px - CX, py - CY), ox = CX + (px - CX) * (L + 15) / L, oy = CY + (py - CY) * (L + 15) / L; s += `<text x="${f1(ox)}" y="${f1(oy + 3)}" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="9" fill="#6b3f17">${AR(n)}</text>`; }
   }
-  // الورقة اللي انلعبت آخر شي بالنص
-  s += top ? `<g transform="translate(${CX - 24} ${CY - 34}) rotate(-6 24 34)">${jCardSVG(top, 'width="46" height="69"')}</g>` : `<text x="${CX}" y="${CY + 8}" text-anchor="middle" font-family="Lalezar,Tahoma,sans-serif" font-size="26" fill="#f7d77a" fill-opacity=".7">جكارو</text>`;
+  // النص: نخلة ذهبية وروق بخط رقعة
+  s += `<circle cx="${CX}" cy="${CY}" r="58" fill="#1c1530" stroke="url(#jGold)" stroke-width="2.5"/><circle cx="${CX}" cy="${CY}" r="52" fill="none" stroke="#e6b54a" stroke-opacity=".4"/>
+    <g transform="translate(${CX} ${CY - 18}) scale(.82)">${PALM}</g>
+    <text x="${CX}" y="${CY + 42}" text-anchor="middle" font-family="RawqRuqaa,'Aref Ruqaa',Lalezar,serif" font-size="32" fill="url(#jGold)">روق</text>`;
   const marbles = [];
   for (const k of seats) for (let i = 0; i < 4; i++) {
     const key = k + ":" + i, r = g.pos[k][i], [x, y] = jSpot(k, i, r, rot), p = prev[key];
@@ -159,8 +189,8 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
     const dx = p ? p[0] - x : 0, dy = p ? p[1] - y : 0, moved = Math.abs(dx) + Math.abs(dy) > .5;
     const cl = `jm${cand.has(key) ? " can" : ""}${pick === key ? " pick" : ""}`;
     marbles.push({ z: cand.has(key) || pick === key ? 1 : 0, h: `<g class="${cl}" data-m="${key}" transform="translate(${f1(x)} ${f1(y)})"><g class="${moved ? "mv" : ""}" style="${moved ? `--dx:${f1(dx)}px;--dy:${f1(dy)}px` : ""}">
-      ${cand.has(key) || pick === key ? `<circle r="12" class="ring" fill="none" stroke="#fff" stroke-width="2"/>` : ""}
-      <circle r="13" fill="transparent"/><ellipse cx="1" cy="3" rx="6.5" ry="4.6" fill="#000" opacity=".35"/><circle r="6.8" fill="url(#jM${k})" stroke="${JCOL[k].dark}" stroke-width=".8"/></g></g>` });
+      ${cand.has(key) || pick === key ? `<circle r="11.5" class="ring" fill="none" stroke="#fff" stroke-width="2"/>` : ""}
+      <circle r="12" fill="transparent"/><ellipse cx="1" cy="3.6" rx="6.6" ry="3" fill="#000" opacity=".4"/><circle cy="-.6" r="7.4" fill="url(#jM${k})" stroke="${JCOL[k].dark}" stroke-width=".6"/></g></g>` });
   }
   s += marbles.sort((a, b) => a.z - b.z).map(m => m.h).join("") + `</svg>`;
   return { svg: s, now };

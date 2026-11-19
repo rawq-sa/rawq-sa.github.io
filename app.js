@@ -15,7 +15,7 @@ import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } fr
 import { ICONS } from "./icons.js?v=32";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=38";
-import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=3";
+import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=4";
 
 /* ================= helpers ================= */
 const ar = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
@@ -4614,7 +4614,7 @@ const ROOM_VIEWS = {
         <span class="jp-s"><i></i>${ord.length === 4 ? (teamOf(u) === (playing ? teamOf(me.uid) : 0) ? "فريقك" : "الخصم") : ""} · 🏠 ${ar(jHomeCount(g, s))}/${ar(4)}</span></button>`; }).join("")}</div>
       <div class="jboard">${svg}</div>
       ${ctrl != null && ctrl !== mySeat ? `<p class="jnote">خلّصت كوراتك 👑 الحين تلعب بكورات خويك</p>` : ""}
-      <div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 8 ? "hot" : ""}" id="jSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
+      <div class="ubar ${myTurn ? "mine" : ""}">${g.top ? jCardSVG(g.top, 'class="jtop"') : ""}<span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 8 ? "hot" : ""}" id="jSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
       ${g.winner != null ? "" : `<div class="utime ${myTurn ? "mine" : ""}" aria-hidden="true"><i style="--s:${(tm.left / tm.dur).toFixed(3)};--d:${tm.left.toFixed(2)}s"></i></div>`}
       ${steps.length ? `<div class="jsteps">${steps.map(k => `<button class="chip" data-k="${k}">${ar(k)}${k === 7 ? " كلها" : ""}</button>`).join("")}<button class="chip ghost" data-k="x">إلغاء</button></div>` : ""}
       <p class="ulast">${esc(g.last || "")}</p>
