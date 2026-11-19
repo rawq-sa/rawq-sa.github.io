@@ -3,10 +3,10 @@ import { cardSVG } from "./uno.js?v=38";
 // موقع الكورة نسبةً لصاحبها: -1 بالبيت، 0..75 على المسار (0 = خانة الطلعة)، 76..79 داخل الدار
 export const SIDE = 19, TRACK = 76, END = 79;
 export const JCOL = [
-  { fill: "#ff5a6e", dark: "#a3162f", name: "الأحمر" },
-  { fill: "#4b9bff", dark: "#173f8f", name: "الأزرق" },
-  { fill: "#ffc93d", dark: "#9a6a00", name: "الأصفر" },
-  { fill: "#34d69a", dark: "#0c6b4a", name: "الأخضر" }
+  { fill: "#d42a3c", light: "#ff8a8a", dark: "#6e0c18", name: "الأحمر" },
+  { fill: "#2266d8", light: "#8ec0ff", dark: "#0b2a6b", name: "الأزرق" },
+  { fill: "#f0b21c", light: "#ffe38a", dark: "#8a5a00", name: "الأصفر" },
+  { fill: "#1f9a5a", light: "#86e3ad", dark: "#0a4a2a", name: "الأخضر" }
 ];
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"], SUITS = ["s", "h", "d", "c"];
 export const jDeck = () => SUITS.flatMap(s => RANKS.map(r => r + s));
@@ -108,7 +108,7 @@ export const jHomeCount = (g, s) => (g.pos[s] || []).filter(r => r >= TRACK).len
 /* ================= الرسم ================= */
 // اللوح الثماني الأسود (مثل الطاولة الخشب المعروفة): ٤ أذرع على الأقطار، كل لاعب له ذراع
 // المسار: من رأس الذراع يرجع للنص، يلف للذراع اللي بعده ويطلع لرأسه… ٧٦ خانة متساوية
-const CX = 210, CY = 210, R0 = 62, R1 = 150, AW = 27;
+const CX = 210, CY = 210, R0 = 52, R1 = 165, AW = 30;
 const armAng = d => Math.PI / 4 + d * Math.PI / 2; // تحت-يمين، تحت-يسار، فوق-يسار، فوق-يمين
 const P2 = (r, off, a) => [CX + r * Math.cos(a) - off * Math.sin(a), CY + r * Math.sin(a) + off * Math.cos(a)];
 const TRACK_PTS = (() => {
@@ -162,7 +162,7 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
     <pattern id="jGrain" width="14" height="160" patternUnits="userSpaceOnUse"><path d="M4 0 Q7 40 3.5 80 T4.5 160" fill="none" stroke="#2a1205" stroke-opacity=".22" stroke-width="1.2"/><path d="M10 0 Q12 50 9 95 T10.5 160" fill="none" stroke="#c48a55" stroke-opacity=".12"/></pattern>
     <radialGradient id="jHole" cx="50%" cy="35%" r="62%"><stop offset="0" stop-color="#1e0d03"/><stop offset=".78" stop-color="#3a1d09"/><stop offset="1" stop-color="#b47a46"/></radialGradient>
     <linearGradient id="jGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1b8"/><stop offset=".45" stop-color="#e6b54a"/><stop offset="1" stop-color="#a8761c"/></linearGradient>
-    ${JCOL.map((c, k) => `<radialGradient id="jM${k}" cx="34%" cy="28%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".22" stop-color="${c.fill}" stop-opacity=".9"/><stop offset=".6" stop-color="${c.fill}"/><stop offset="1" stop-color="${c.dark}"/></radialGradient>`).join("")}
+    ${JCOL.map((c, k) => `<radialGradient id="jM${k}" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="${c.light}"/><stop offset=".38" stop-color="${c.fill}"/><stop offset=".88" stop-color="${c.dark}"/><stop offset="1" stop-color="${c.dark}"/></radialGradient>`).join("")}
   </defs>
   <path d="${D(OCT(205, CX, CY + 5))}" fill="#000" opacity=".45"/>
   <path d="${D(OCT(205))}" fill="url(#jBlk)"/><path d="${D(OCT(205))}" fill="url(#jGrain)"/>
@@ -171,32 +171,18 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
   if (turnSeat != null) { const d0 = ((turnSeat - rot) % 4 + 4) % 4, a = armAng(d0), p0 = P2(R0 - 4, 0, a), p1 = P2(R1 + AW, 0, a); s += `<line x1="${f1(p0[0])}" y1="${f1(p0[1])}" x2="${f1(p1[0])}" y2="${f1(p1[1])}" stroke="#ffe7a3" stroke-opacity=".13" stroke-width="64" stroke-linecap="round"/>`; }
   // الدار (بدون ألوان) + البيوت
   for (let d = 0; d < 4; d++) {
-    for (let h = 0; h < 4; h++) { const [x, y] = P2(R1 - 6 - (h + 1) * 19, 0, armAng(d)); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.6" fill="url(#jHole)"/>`; }
+    for (let h = 0; h < 4; h++) { const [x, y] = P2(R1 - 6 - (h + 1) * 19, 0, armAng(d)); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5" fill="url(#jHole)"/>`; }
     const a = armAng(d) + Math.PI / 4, [bx, by] = P2(170, 34, a);
     s += `<rect x="${f1(bx - 19)}" y="${f1(by - 19)}" width="38" height="38" rx="5" fill="none" stroke="${GOLD}" stroke-width="1.4"/>`;
-    for (let i = 0; i < 4; i++) s += `<circle cx="${f1(bx + (i % 2 ? 8.5 : -8.5))}" cy="${f1(by + (i < 2 ? -8.5 : 8.5))}" r="5.6" fill="url(#jHole)"/>`;
+    for (let i = 0; i < 4; i++) s += `<circle cx="${f1(bx + (i % 2 ? 8.5 : -8.5))}" cy="${f1(by + (i < 2 ? -8.5 : 8.5))}" r="5" fill="url(#jHole)"/>`;
   }
   // خانات المسار + أرقام صغيرة للعد (من خانة طلعة كل لاعب)
-  const placed = [], HOLES = [...CELLS, ...[0, 1, 2, 3].flatMap(d => [0, 1, 2, 3].map(h => P2(R1 - 6 - (h + 1) * 19, 0, armAng(d))))];
-  CELLS.forEach(([x, y]) => s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.6" fill="url(#jHole)"/>`);
-  CELLS.forEach(([x, y], c) => {
-    const n = c % SIDE; // رقم الخانة من بداية الربع
-    // على الصفوف: الرقم بين الصف والدار (داخل الذراع). باللفة والوصلة: الرقم لبرا
-    const L = Math.hypot(x - CX, y - CY);
-    let best = null;
-    for (let d = 0; d < 4; d++) { const a = armAng(d), ax = Math.cos(a), ay = Math.sin(a), along = (x - CX) * ax + (y - CY) * ay, perp = -(x - CX) * ay + (y - CY) * ax; if (along > R0 + 4 && along < R1 + 2 && Math.abs(perp) > AW - 4 && Math.abs(perp) < AW + 4) best = { ax, ay, along, perp }; }
-    let tx, ty;
-    if (best) { const q = best.perp * .5; tx = CX + best.ax * best.along - best.ay * q; ty = CY + best.ay * best.along + best.ax * q; }
-    else { tx = x + (x - CX) / L * 11.5; ty = y + (y - CY) / L * 11.5; }
-    if (HOLES.some(([hx, hy]) => Math.hypot(hx - tx, hy - ty) < 8) || placed.some(([px2, py2]) => Math.hypot(px2 - tx, py2 - ty) < 9)) return;
-    placed.push([tx, ty]);
-    s += `<text x="${f1(tx)}" y="${f1(ty)}" text-anchor="middle" dominant-baseline="central" font-family="'IBM Plex Sans Arabic',Tahoma,sans-serif" font-weight="600" font-size="7.5" fill="#f6dc9a">${AR(n + 1)}</text>`;
-  });
+  CELLS.forEach(([x, y]) => s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.3" fill="url(#jHole)"/>`);
   // خانة الطلعة: حلقة ذهبية (بدون ألوان)
   for (let d = 0; d < 4; d++) { const [x, y] = CELLS[d * SIDE]; s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="9.8" fill="none" stroke="${GOLD}" stroke-width="1.8"/>`; }
   // النص: ثماني أسود وروق ذهبي
-  s += `<path d="${D(OCT(44))}" fill="#000" stroke="url(#jGold)" stroke-width="2.4"/><path d="${D(OCT(39))}" fill="none" stroke="${GOLD}" stroke-opacity=".35"/>
-    <text x="${CX}" y="${CY}" text-anchor="middle" dominant-baseline="central" font-family="RawqRuqaa,Amiri,Lalezar,serif" font-weight="700" font-size="38" fill="url(#jGold)">روق</text>`;
+  s += `<path d="${D(OCT(36))}" fill="#000" stroke="url(#jGold)" stroke-width="2.4"/><path d="${D(OCT(31.5))}" fill="none" stroke="${GOLD}" stroke-opacity=".35"/>
+    <text x="${CX}" y="${CY}" text-anchor="middle" dominant-baseline="central" font-family="RawqRuqaa,Amiri,Lalezar,serif" font-weight="700" font-size="31" fill="url(#jGold)">روق</text>`;
   const marbles = [];
   for (const k of seats) for (let i = 0; i < 4; i++) {
     const key = k + ":" + i, r = g.pos[k][i], [x, y] = jSpot(k, i, r, rot), p = prev[key];
@@ -205,7 +191,7 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
     const cl = `jm${cand.has(key) ? " can" : ""}${pick === key ? " pick" : ""}`;
     marbles.push({ z: cand.has(key) || pick === key ? 1 : 0, h: `<g class="${cl}" data-m="${key}" transform="translate(${f1(x)} ${f1(y)})"><g class="${moved ? "mv" : ""}" style="${moved ? `--dx:${f1(dx)}px;--dy:${f1(dy)}px` : ""}">
       ${cand.has(key) || pick === key ? `<circle r="11" class="ring" fill="none" stroke="#fff" stroke-width="2"/>` : ""}
-      <circle r="12" fill="transparent"/><ellipse cx="1" cy="3.4" rx="6.2" ry="2.8" fill="#000" opacity=".5"/><circle cy="-.5" r="7.2" fill="url(#jM${k})" stroke="${JCOL[k].dark}" stroke-width=".6"/></g></g>` });
+      <circle r="12" fill="transparent"/><ellipse cx="1" cy="3.2" rx="5.8" ry="2.6" fill="#000" opacity=".5"/><circle cy="-.5" r="6.8" fill="url(#jM${k})"/><ellipse cx="-2.2" cy="-3.2" rx="2.3" ry="1.5" fill="#fff" opacity=".85" transform="rotate(-30 -2.2 -3.2)"/></g></g>` });
   }
   s += marbles.sort((a, b) => a.z - b.z).map(m => m.h).join("") + `</svg>`;
   return { svg: s, now };
