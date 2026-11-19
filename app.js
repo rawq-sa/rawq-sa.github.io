@@ -3478,9 +3478,10 @@ function sheet(html) {
   return el;
 }
 /* ================= تقييم الآب ستور ================= */
+document.addEventListener("click", e => { if (e.target.closest?.("#rateApp")) store.set("rateDone", true); });
 // بعد فوز: نطلب نافذة التقييم الرسمية من آبل (آبل نفسها تتحكم كم مرة تطلع، وقوانينها تمنع نافذة خاصة)
 function maybeAskRating(won) {
-  if (!won || !IN_APP || !capPlug("InAppReview") || (me.stats?.games || 0) < 3) return;
+  if (!won || !IN_APP || store.get("rateDone", false) || !capPlug("InAppReview") || (me.stats?.games || 0) < 3) return;
   if (Date.now() - store.get("rateAt", 0) < 14 * 864e5) return;
   store.set("rateAt", Date.now());
   setTimeout(() => {
@@ -4084,7 +4085,7 @@ VIEWS.profile = () => {
       <div class="li"><span class="nm" dir="ltr">@${esc(me.username)}</span><button class="btn small ghost" id="copy">انسخ</button>${isOwner() ? "" : `<button class="btn small ghost" id="rename">غيّر</button>`}</div>
       <p class="hint">أرسله لأصحابك عشان يضيفونك.</p></div>
 
-    <div class="foot">${IN_APP ? `<a class="btn" id="rateApp" href="itms-apps://apps.apple.com/app/id6835195359?action=write-review">قيّم روق ⭐ وساعدنا ننتشر</a>` : `<a class="btn" href="https://apps.apple.com/app/id6835195359" target="_blank" rel="noopener">حمّل روق من الآب ستور ⭐</a>`}<button class="btn ghost" id="tour">شرح اللعبة</button><button class="btn ghost" id="switchAcc">🔄 بدّل الحساب</button><button class="btn ghost" id="out">تسجيل خروج</button>
+    <div class="foot">${IN_APP ? `<a class="btn ${store.get("rateDone", false) ? "ghost" : ""}" id="rateApp" href="itms-apps://apps.apple.com/app/id6835195359?action=write-review">${store.get("rateDone", false) ? "شكرًا على تقييمك 💛" : "قيّم روق ⭐ وساعدنا ننتشر"}</a>` : `<a class="btn" href="https://apps.apple.com/app/id6835195359" target="_blank" rel="noopener">حمّل روق من الآب ستور ⭐</a>`}<button class="btn ghost" id="tour">شرح اللعبة</button><button class="btn ghost" id="switchAcc">🔄 بدّل الحساب</button><button class="btn ghost" id="out">تسجيل خروج</button>
       <div class="row legal"><a class="link" href="terms.html" target="_blank" rel="noopener">شروط الاستخدام</a><a class="link" href="privacy.html" target="_blank" rel="noopener">سياسة الخصوصية</a>${isOwner() ? "" : `<button class="link danger-link" id="delAcc">احذف حسابي</button>`}</div></div></section>`;
   on("tour", "click", () => { ui.slide = 0; go("welcome"); });
   on("delAcc", "click", openDeleteAccount);
