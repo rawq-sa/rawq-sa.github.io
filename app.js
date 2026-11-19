@@ -2349,7 +2349,7 @@ async function giveShortName(raw) {
     await runTransaction(db, async tx => {
       const nRef = doc(db, "usernames", k), n = await tx.get(nRef);
       if (n.exists() && n.data().uid !== p.uid) throw new Error("taken");
-      tx.set(nRef, { uid: p.uid });
+      if (!n.exists()) tx.set(nRef, { uid: p.uid }); // لو محجوز له من قبل ما نعيد إنشاءه
       if (p.username.toLowerCase() !== k && p.username.toLowerCase() !== OWNER_OLD) tx.delete(doc(db, "usernames", p.username.toLowerCase()));
       tx.update(doc(db, "users", p.uid), { username: v });
     });
