@@ -21,6 +21,13 @@ export const ICONS = {
     <text x="14.5" y="37" text-anchor="middle" font-family="Lalezar,Tahoma,sans-serif" font-size="14" fill="#d9475b">ف</text>
     <text x="49.5" y="37" text-anchor="middle" font-family="Lalezar,Tahoma,sans-serif" font-size="14" fill="#3a5bd5">ن</text>
     <rect x="9" y="45" width="20" height="5" rx="2.5" fill="#d9475b"/><rect x="35" y="45" width="20" height="5" rx="2.5" fill="#3a5bd5"/>`),
+  // جكارو: لوح خشب وكور ملونة وورقة
+  jak: wrap(bg("gJak", "#c98a4b", "#6b3a17") + shine + `
+    <circle cx="30" cy="34" r="20" fill="#4a2810" stroke="#f7d77a" stroke-width="1.6"/>
+    <circle cx="30" cy="34" r="13" fill="none" stroke="#2a1508" stroke-width="3" stroke-dasharray="1.5 3.2" opacity=".8"/>
+    <circle cx="30" cy="21" r="4" fill="#ff5a6e"/><circle cx="43" cy="34" r="4" fill="#4b9bff"/><circle cx="30" cy="47" r="4" fill="#ffc93d"/><circle cx="17" cy="34" r="4" fill="#34d69a"/>
+    <circle cx="29" cy="20" r="1.3" fill="#fff" opacity=".8"/><circle cx="42" cy="33" r="1.3" fill="#fff" opacity=".8"/><circle cx="29" cy="46" r="1.3" fill="#fff" opacity=".8"/><circle cx="16" cy="33" r="1.3" fill="#fff" opacity=".8"/>
+    <g transform="rotate(14 48 44)"><rect x="40" y="33" width="15" height="21" rx="2.5" fill="#fffdf6" stroke="#e2d7bd" stroke-width=".6"/><text x="47.5" y="47" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="10" fill="#d8283f">7</text></g>`),
   // أونو روق: أوراق مروحة
   uno: wrap(bg("gUno", "#ff9b6b", "#d9475b") + shine + `
     <g transform="rotate(-22 32 50)"><rect x="18" y="16" width="20" height="30" rx="4" fill="#fff8ec"/><rect x="20" y="18" width="16" height="26" rx="3" fill="#8f7bea"/></g>

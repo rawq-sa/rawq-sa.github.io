@@ -37,10 +37,11 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=93">
+<link rel="modulepreload" href="./app.js?v=94">
 <link rel="modulepreload" href="./content.js?v=31">
-<link rel="modulepreload" href="./icons.js?v=29">
+<link rel="modulepreload" href="./icons.js?v=30">
 <link rel="modulepreload" href="./uno.js?v=37">
+<link rel="modulepreload" href="./jakaro.js?v=1">
 <link rel="modulepreload" href="./deco.js?v=1">
 <link rel="modulepreload" href="./firebase-config.js?v=27">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -521,6 +522,35 @@ body:has(#chatFab) main{padding-bottom:78px}
 .usec{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);margin-inline-end:8px}
 .usec.hot{color:var(--rose);animation:pulse .5s ease-in-out infinite}
 .ulast{margin:0;text-align:center;color:var(--muted);font-size:13.5px}
+.jak{gap:12px}
+.jplayers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.jp{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:7px 10px;color:var(--ink);font:inherit;text-align:start;min-width:0}
+.jp.turn{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 25%,transparent)}
+.jp-n{font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:9em}
+.jp-s{width:100%;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.jp-s i{width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 6px var(--c)}
+.jboard{width:100%;max-width:460px;margin:0 auto;aspect-ratio:1;filter:drop-shadow(0 14px 28px rgba(0,0,0,.45))}
+.jsvg{width:100%;height:100%;display:block}
+.jm{cursor:pointer}
+.jm .mv{animation:jmv .55s cubic-bezier(.3,1.35,.5,1)}
+@keyframes jmv{from{transform:translate(var(--dx),var(--dy))}}
+.jm.can .ring{animation:jring 1s ease-in-out infinite;stroke:#fff}
+.jm.pick .ring{stroke:#f7d77a;stroke-width:3;animation:none}
+@keyframes jring{50%{opacity:.25}}
+.jnote{margin:0;text-align:center;color:var(--saffron);font-weight:700}
+.jsteps{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.jhand{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:420px;margin:0 auto;width:100%}
+.jhand.wait{opacity:.75}
+.jcard{background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink);font:inherit;font-size:12px;transition:transform .18s}
+.jcard svg{width:100%;height:auto;border-radius:8px;box-shadow:0 6px 14px rgba(0,0,0,.35)}
+.jcard.on{transform:translateY(-10px)}
+.jcard.on svg{outline:3px solid var(--saffron);outline-offset:2px}
+.jcard.no{opacity:.4}
+.jcard span{color:var(--muted);white-space:nowrap}
+.jrules{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:13.5px}
+.jrules summary{cursor:pointer;font-weight:700}
+.jrules ul{margin:8px 0 0;padding-inline-start:18px;display:grid;gap:4px;color:var(--muted)}
+.jwin{display:flex;justify-content:center;gap:10px}
 .uno-call{align-self:center;font-family:var(--display);font-size:24px;color:var(--bg);background:var(--rose);border-radius:999px;padding:4px 18px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
 .uhand{position:relative;height:160px;margin-top:4px;touch-action:none;overflow:visible}
 .uhand .ucard{position:absolute;left:calc(50% - 37px);bottom:8px;width:74px;aspect-ratio:2/3;background:none;border:none;padding:0;cursor:pointer;transform-origin:50% 100%;transform:translate(var(--x),var(--y)) rotate(var(--r));transition:transform .18s ease,filter .18s;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5));touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -1081,6 +1111,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=93"></script>
+<script type="module" src="./app.js?v=94"></script>
 </body>
 </html>
