@@ -108,7 +108,7 @@ export const jHomeCount = (g, s) => (g.pos[s] || []).filter(r => r >= TRACK).len
 /* ================= الرسم ================= */
 // اللوح الثماني الأسود (مثل الطاولة الخشب المعروفة): ٤ أذرع على الأقطار، كل لاعب له ذراع
 // المسار: من رأس الذراع يرجع للنص، يلف للذراع اللي بعده ويطلع لرأسه… ٧٦ خانة متساوية
-const CX = 210, CY = 210, R0 = 62, R1 = 178, AW = 19;
+const CX = 210, CY = 210, R0 = 60, R1 = 158, AW = 18;
 const armAng = d => Math.PI / 4 + d * Math.PI / 2; // تحت-يمين، تحت-يسار، فوق-يسار، فوق-يمين
 const P2 = (r, off, a) => [CX + r * Math.cos(a) - off * Math.sin(a), CY + r * Math.sin(a) + off * Math.cos(a)];
 const TRACK_PTS = (() => {
@@ -182,15 +182,16 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
     const n = c % SIDE; // رقم الخانة من بداية الربع
     const L = Math.hypot(x - CX, y - CY), dd = ((Math.floor(c / SIDE)) % 4), a = armAng(dd), ax = Math.cos(a), ay = Math.sin(a);
     const along = (x - CX) * ax + (y - CY) * ay, px = CX + ax * along, py = CY + ay * along; let ox = x - px, oy = y - py, ol = Math.hypot(ox, oy);
-    if (ol < 6 || along < R0 + 4 || along > R1) { ox = x - CX; oy = y - CY; ol = L; }
-    const tx = x + ox / ol * 11.5, ty = y + oy / ol * 11.5;
-    s += `<text x="${f1(tx)}" y="${f1(ty + 2.6)}" text-anchor="middle" font-family="Georgia,serif" font-size="7" fill="${GOLD}" fill-opacity=".85">${AR(n + 1)}</text>`;
+    if (along > R1 - 2) { ox = CX - x; oy = CY - y; ol = L; } // عند راس الذراع الرقم يروح لجهة النص عشان ما يطلع برا
+    else if (ol < 6 || along < R0 + 4) { ox = x - CX; oy = y - CY; ol = L; }
+    const tx = x + ox / ol * 11, ty = y + oy / ol * 11;
+    s += `<text x="${f1(tx)}" y="${f1(ty)}" text-anchor="middle" dominant-baseline="central" font-family="'IBM Plex Sans Arabic',Tahoma,sans-serif" font-weight="600" font-size="7.5" fill="#f6dc9a">${AR(n + 1)}</text>`;
   });
   // خانة الطلعة: حلقة ذهبية (بدون ألوان)
   for (let d = 0; d < 4; d++) { const [x, y] = CELLS[d * SIDE]; s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="9.8" fill="none" stroke="${GOLD}" stroke-width="1.8"/>`; }
   // النص: ثماني أسود وروق ذهبي
   s += `<path d="${D(OCT(44))}" fill="#000" stroke="url(#jGold)" stroke-width="2.4"/><path d="${D(OCT(39))}" fill="none" stroke="${GOLD}" stroke-opacity=".35"/>
-    <text x="${CX}" y="${CY + 13}" text-anchor="middle" font-family="RawqRuqaa,Amiri,Lalezar,serif" font-weight="700" font-size="38" fill="url(#jGold)">روق</text>`;
+    <text x="${CX}" y="${CY}" text-anchor="middle" dominant-baseline="central" font-family="RawqRuqaa,Amiri,Lalezar,serif" font-weight="700" font-size="38" fill="url(#jGold)">روق</text>`;
   const marbles = [];
   for (const k of seats) for (let i = 0; i < 4; i++) {
     const key = k + ":" + i, r = g.pos[k][i], [x, y] = jSpot(k, i, r, rot), p = prev[key];
