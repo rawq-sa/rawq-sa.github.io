@@ -53,8 +53,10 @@ function glyph(v, fill, size) {
     return `<g fill="${fill}" stroke="#1a1426" stroke-width="1.6" stroke-linejoin="round" paint-order="stroke"><path d="${a}"/><path transform="rotate(180)" d="${a}"/></g>`;
   }
   const t = NV(v), fs = v === "D" ? size * 1.02 : size * 1.42, y = v === "D" ? size * .36 : size * .5;
-  return `<text x="1.4" y="${y + 1.6}" text-anchor="middle" ${NUM} font-size="${fs}" fill="#1a1426" opacity=".5">${t}</text>
-    <g style="color:${fill}"><text x="0" y="${y}" text-anchor="middle" ${NUM} font-size="${fs}" fill="${fill}" ${OUT} stroke-width="2.4">${t}</text>${ul(v, fs * .5, y + fs * .1)}</g>`;
+  // كلاسيكي مايل: ظل أسود بارز + حد أسود
+  const sh = [2, 1].map(i => `<text x="${i * .9}" y="${y + i * .9}" text-anchor="middle" ${NUM} font-size="${fs}" fill="#111" stroke="#111" stroke-width="2.4" stroke-linejoin="round">${t}</text>`).join("");
+  return `<g transform="skewX(-10)">${sh}
+    <g style="color:${fill}"><text x="0" y="${y}" text-anchor="middle" ${NUM} font-size="${fs}" fill="${fill}" stroke="#111" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke">${t}</text>${ul(v, fs * .5, y + fs * .1)}</g></g>`;
 }
 function quad(rx, ry, id) {
   const c = UCOLORS;
@@ -83,13 +85,15 @@ export function cardSVG(c, back = "classic") {
   const mini = v === "S" || v === "R" ? `<g transform="translate(11 13)">${glyph(v, "#fff", 9)}</g><g transform="translate(49 77) rotate(180)">${glyph(v, "#fff", 9)}</g>` : "";
   const center = wild
     ? `<g transform="translate(30 45) rotate(-30)">${quad(20, 31, id)}<ellipse rx="20" ry="31" fill="none" stroke="#fff" stroke-width="2.4"/></g>
-       ${v === "F" ? `<text x="30" y="54" text-anchor="middle" ${NUM} font-size="22" fill="#fff" ${OUT} stroke-width="3">+4</text>` : ""}`
+       ${v === "F" ? `<g transform="translate(30 54) skewX(-10)"><text x="1.8" y="1.8" text-anchor="middle" ${NUM} font-size="22" fill="#111" stroke="#111" stroke-width="3" stroke-linejoin="round">+4</text><text x="0" y="0" text-anchor="middle" ${NUM} font-size="22" fill="#fff" stroke="#111" stroke-width="3" stroke-linejoin="round" paint-order="stroke">+4</text></g>` : ""}`
     : `<g transform="translate(30 45) rotate(-30)"><ellipse rx="21" ry="33" fill="#fff"/></g><g transform="translate(30 45)">${glyph(v, col.fill, 22)}</g>`;
-  const cfs = corner.length > 1 ? 10.5 : 13;
+  // الركن: رقم أبيض مايل بحد أسود + خط ذهبي
+  const L = corner.length > 1, cfs = L ? 10 : 13.5, cx = L ? 12 : 10.5;
+  const cg = corner ? `<g transform="translate(${cx} 18) skewX(-10)"><text x="0" y="0" text-anchor="middle" ${NUM} font-size="${cfs}" fill="#fff" stroke="#111" stroke-width="1" stroke-linejoin="round" paint-order="stroke">${corner}</text>
+      <rect x="${L ? -6 : -4.5}" y="2.4" width="${L ? 12 : 9}" height="1.3" rx=".6" fill="#f7d77a"/></g>` : "";
   return `<svg viewBox="0 0 60 90" class="ucard-svg" aria-hidden="true">${frame(id, col.fill, col.dark)}
     ${center}
-    ${corner ? `<g style="color:#fff"><text x="7" y="18" ${NUM} font-size="${cfs}" fill="#fff" ${OUT} stroke-width="2">${corner}</text></g>
-    <g transform="rotate(180 30 45)" style="color:#fff"><text x="7" y="18" ${NUM} font-size="${cfs}" fill="#fff" ${OUT} stroke-width="2">${corner}</text></g>` : ""}${mini}
+    ${corner ? `<g>${cg}</g><g transform="rotate(180 30 45)">${cg}</g>` : ""}${mini}
     ${gloss(id)}</svg>`;
 }
 
