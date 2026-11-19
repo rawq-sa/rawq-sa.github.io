@@ -91,7 +91,7 @@ export function cardSVG(c, back = "classic") {
   const L = corner.length > 1, cfs = L ? 10 : 13.5, cx = L ? 12 : 10.5;
   const cg = corner ? `<g transform="translate(${cx} 18) skewX(-10)"><text x="0" y="0" text-anchor="middle" ${NUM} font-size="${cfs}" fill="#fff" stroke="#111" stroke-width="1" stroke-linejoin="round" paint-order="stroke">${corner}</text>
       <rect x="${L ? -6 : -4.5}" y="2.4" width="${L ? 12 : 9}" height="1.3" rx=".6" fill="#f7d77a"/></g>` : "";
-  return `<svg viewBox="0 0 60 90" class="ucard-svg" aria-hidden="true">${frame(id, col.fill, col.dark)}
+  return `<svg viewBox="0 0 60 90" class="ucard-svg" direction="ltr" style="direction:ltr" aria-hidden="true">${frame(id, col.fill, col.dark)}
     ${center}
     ${corner ? `<g>${cg}</g><g transform="rotate(180 30 45)">${cg}</g>` : ""}${mini}
     ${gloss(id)}</svg>`;
@@ -109,19 +109,19 @@ function backSVG(id, back) {
   const word = (fill, stroke = "#1a1426") => `<text x="30" y="51" text-anchor="middle" ${FONT} font-size="18" fill="${fill}" stroke="${stroke}" stroke-linejoin="round" paint-order="stroke" stroke-width="2.4" transform="rotate(-30 30 45)">روق</text>`;
   if (back === "sadu") {
     const rows = [10, 22, 34, 46, 58, 70].map((y, i) => `<path d="${Array.from({ length: 7 }, (_, k) => `M${4 + k * 8} ${y + 8} l4 -8 l4 8z`).join(" ")}" fill="${i % 2 ? "#f2b134" : "#fff3e0"}" opacity=".9"/>`).join("");
-    return `<svg viewBox="0 0 60 90" class="ucard-svg" aria-hidden="true">${frame(id, "#b8323a", "#6d1420")}
+    return `<svg viewBox="0 0 60 90" class="ucard-svg" direction="ltr" style="direction:ltr" aria-hidden="true">${frame(id, "#b8323a", "#6d1420")}
       <clipPath id="${id}c"><rect x="3.5" y="3.5" width="53" height="83" rx="5"/></clipPath><g clip-path="url(#${id}c)">${rows}<rect x="3.5" y="80" width="53" height="7" fill="#1a1426"/></g>
       <rect x="10" y="33" width="40" height="24" rx="12" fill="#1a1426" stroke="#f2b134" stroke-width="1.2"/>
       <text x="30" y="51" text-anchor="middle" ${FONT} font-size="16" fill="#f7c948">روق</text>${gloss(id)}</svg>`;
   }
   if (back === "night") {
     const stars = [[12, 14], [46, 12], [20, 74], [50, 70], [9, 48], [52, 40], [38, 80], [28, 10]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 3 ? .8 : 1.3}" fill="#fff" opacity=".85"/>`).join("");
-    return `<svg viewBox="0 0 60 90" class="ucard-svg" aria-hidden="true">${frame(id, "#3e2f8a", "#120c2e")}${stars}
+    return `<svg viewBox="0 0 60 90" class="ucard-svg" direction="ltr" style="direction:ltr" aria-hidden="true">${frame(id, "#3e2f8a", "#120c2e")}${stars}
       <path d="M38 24 a12 12 0 1 0 6 20 a10 10 0 1 1 -6 -20z" fill="#f7c948"/>
       <text x="30" y="68" text-anchor="middle" ${FONT} font-size="15" fill="#fff" stroke="#120c2e" stroke-width="2" paint-order="stroke">روق</text>${gloss(id)}</svg>`;
   }
   if (back === "royal") {
-    return `<svg viewBox="0 0 60 90" class="ucard-svg" aria-hidden="true">${frame(id, "#8e1430", "#3a0612")}
+    return `<svg viewBox="0 0 60 90" class="ucard-svg" direction="ltr" style="direction:ltr" aria-hidden="true">${frame(id, "#8e1430", "#3a0612")}
       <defs><linearGradient id="${id}au" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1b8"/><stop offset=".5" stop-color="#f2c14e"/><stop offset="1" stop-color="#b8862b"/></linearGradient></defs>
       <rect x="7" y="7" width="46" height="76" rx="4" fill="none" stroke="url(#${id}au)" stroke-width="1.6"/>
       ${[[11, 11], [49, 11], [11, 79], [49, 79]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6" fill="url(#${id}au)"/>`).join("")}
@@ -131,13 +131,13 @@ function backSVG(id, back) {
       <text x="30" y="64" text-anchor="middle" ${FONT} font-size="13" fill="url(#${id}au)">روق</text>${gloss(id)}</svg>`;
   }
   if (back === "gold") {
-    return `<svg viewBox="0 0 60 90" class="ucard-svg" aria-hidden="true">${frame(id, "#1d1d22", "#050506")}
+    return `<svg viewBox="0 0 60 90" class="ucard-svg" direction="ltr" style="direction:ltr" aria-hidden="true">${frame(id, "#1d1d22", "#050506")}
       <rect x="7" y="7" width="46" height="76" rx="4" fill="none" stroke="#e8c25a" stroke-width="1.2"/>
       <rect x="10" y="10" width="40" height="70" rx="3" fill="none" stroke="#e8c25a" stroke-width=".5" stroke-dasharray="2 2"/>
       <g transform="translate(30 45) rotate(45)"><rect x="-13" y="-13" width="26" height="26" fill="none" stroke="#e8c25a" stroke-width="1.4"/></g>
       ${word("#f7d77a", "#000")}${gloss(id)}</svg>`;
   }
-  return `<svg viewBox="0 0 60 90" class="ucard-svg" aria-hidden="true">${frame(id, "#2a2140", "#0c0816")}
+  return `<svg viewBox="0 0 60 90" class="ucard-svg" direction="ltr" style="direction:ltr" aria-hidden="true">${frame(id, "#2a2140", "#0c0816")}
       <g transform="translate(30 45) rotate(-30)"><ellipse rx="22" ry="34" fill="#e8483f" stroke="#1a1426" stroke-width="1"/><ellipse rx="19" ry="31" fill="none" stroke="#f2b134" stroke-width="1.2"/></g>
       ${word("#f7c948")}${gloss(id)}</svg>`;
 }
