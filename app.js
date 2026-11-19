@@ -989,10 +989,14 @@ function hAnsOk(u, ci, a, letter, rej, acc) {
 async function startHhnj() {
   const ps = order();
   if (ps.length < 2) return toast("تحتاجون لاعبين على الأقل");
-  let letter = pick(LETTERS);
-  if (letter === room.letter) letter = pick(LETTERS);
+  // حرف ما انلعب قبل؛ ولما تخلص كل الحروف نبدأ من جديد
+  let used = Array.isArray(room.usedLetters) ? room.usedLetters.filter(l => LETTERS.includes(l)) : [];
+  let left = LETTERS.filter(l => !used.includes(l));
+  if (!left.length) { used = []; left = LETTERS.filter(l => l !== room.letter); }
+  const letter = pick(left);
+  used = [...used, letter];
   const names = {}; ps.forEach(u => names[u] = pname(u));
-  await setRoom({ game: "hhnj", phase: "hq", round: (room.round || 0) + 1, letter, deadline: Date.now() + HHNJ_SECS * 1000, roundPlayers: ps, names, result: null });
+  await setRoom({ game: "hhnj", phase: "hq", round: (room.round || 0) + 1, letter, usedLetters: used, deadline: Date.now() + HHNJ_SECS * 1000, roundPlayers: ps, names, result: null });
 }
 function hhnjScore(rows, letter, rej, acc = {}) {
   const out = {};
@@ -4795,7 +4799,12 @@ VIEWS["l-five"] = () => {
 };
 
 VIEWS["l-hhnj"] = () => {
-  if (!L.letter) L.letter = pick(LETTERS);
+  if (!L.letter) {
+    L.usedLetters = (L.usedLetters || []).filter(l => LETTERS.includes(l));
+    let left = LETTERS.filter(l => !L.usedLetters.includes(l));
+    if (!left.length) { left = LETTERS.filter(l => l !== L.lastLetter); L.usedLetters = []; }
+    L.letter = pick(left); L.lastLetter = L.letter; L.usedLetters.push(L.letter);
+  }
   const SECS = 60;
   V.innerHTML = `<section>
     <div class="hletter pop"><span class="eyebrow">الحرف</span><span class="hl">${esc(L.letter)}</span>
