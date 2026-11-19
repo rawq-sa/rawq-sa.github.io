@@ -20,6 +20,8 @@ export function jHelp(c) {
   return { A: "طلّع أو ١", K: "طلّع أو ١٣", "4": "ورا ٤", "7": "قسّم ٧", J: "بدّل", "5": "أي كورة ٥" }[r] || `امشِ ${AR(jVal(c))}`;
 }
 export const jTeam = s => s % 2;
+// الفريق داخل اللعبة: لو لاعبين بس (duo) كل واحد فريق لحاله
+export const jTeamOf = (g, s) => g && g.duo ? s : s % 2;
 export const jAbs = (s, r) => (s * SIDE + r) % TRACK;
 export const jSeats = g => Object.keys(g.pos).map(Number).sort((a, b) => a - b);
 
@@ -30,7 +32,7 @@ function at(g, cell) {
 // لو خلّصت كوراتك كلها تلعب بكورات خويك
 export function jCtrl(g, s) {
   const p = (s + 2) % 4;
-  return g.pos[s].every(r => r >= TRACK) && g.pos[p] ? p : s;
+  return !g.duo && g.pos[s].every(r => r >= TRACK) && g.pos[p] ? p : s;
 }
 function fwd(g, s, i, k) {
   const r = g.pos[s][i]; if (r < 0) return null;
@@ -38,23 +40,23 @@ function fwd(g, s, i, k) {
   for (let x = Math.max(r + 1, TRACK); x <= nr; x++) if (g.pos[s].includes(x)) return null; // ما تتخطى كوراتك داخل الدار
   if (nr >= TRACK) return { nr, kill: null };
   const o = at(g, jAbs(s, nr));
-  if (o && jTeam(o[0]) === jTeam(s)) return null;
+  if (o && jTeamOf(g, o[0]) === jTeamOf(g, s)) return null;
   return { nr, kill: o };
 }
 function back(g, s, i, k) {
   const r = g.pos[s][i]; if (r < 0 || r >= TRACK) return null;
   const nr = (r - k + TRACK) % TRACK;
   const o = at(g, jAbs(s, nr));
-  if (o && jTeam(o[0]) === jTeam(s)) return null;
+  if (o && jTeamOf(g, o[0]) === jTeamOf(g, s)) return null;
   return { nr, kill: o };
 }
 function out(g, s) {
   const i = g.pos[s].indexOf(-1); if (i < 0) return null;
   const o = at(g, jAbs(s, 0));
-  if (o && jTeam(o[0]) === jTeam(s)) return null;
+  if (o && jTeamOf(g, o[0]) === jTeamOf(g, s)) return null;
   return { i, nr: 0, kill: o };
 }
-const clone = g => ({ pos: Object.fromEntries(Object.entries(g.pos).map(([k, v]) => [k, [...v]])) });
+const clone = g => ({ duo: g.duo, pos: Object.fromEntries(Object.entries(g.pos).map(([k, v]) => [k, [...v]])) });
 function step(g, s, i, m, kills) { if (m.kill) { g.pos[m.kill[0]][m.kill[1]] = -1; kills.push(m.kill); } g.pos[s][i] = m.nr; }
 
 // كل الحركات الممكنة بورقة: t = o طلعة، f قدّام، b ورا، s تبديل، 7 تقسيم السبعة
@@ -66,7 +68,7 @@ export function jMoves(g, s, card) {
   else if (R === "5") jSeats(g).forEach(x => Q.forEach(i => fwd(g, x, i, 5) && L.push({ t: "f", a: [x, i], k: 5 })));
   else if (R === "J") Q.forEach(i => {
     const r = g.pos[c][i]; if (r < 0 || r >= TRACK) return;
-    jSeats(g).filter(x => jTeam(x) !== jTeam(c)).forEach(x => Q.forEach(j => { const q = g.pos[x][j]; if (q >= 0 && q < TRACK) L.push({ t: "s", a: [c, i], b: [x, j] }); }));
+    jSeats(g).filter(x => jTeamOf(g, x) !== jTeamOf(g, c)).forEach(x => Q.forEach(j => { const q = g.pos[x][j]; if (q >= 0 && q < TRACK) L.push({ t: "s", a: [c, i], b: [x, j] }); }));
   });
   else if (R === "7") Q.forEach(i => {
     if (fwd(g, c, i, 7)) L.push({ t: "f", a: [c, i], k: 7 });
@@ -98,7 +100,7 @@ export function jApply(g, s, card, mv) {
 }
 // الفريق اللي دخّل كل كوراته (هو وخويه)
 export function jWinner(g) {
-  for (const t of [0, 1]) { const ss = jSeats(g).filter(s => jTeam(s) === t); if (ss.length && ss.every(s => g.pos[s].every(r => r >= TRACK))) return t; }
+  for (const t of g.duo ? jSeats(g) : [0, 1]) { const ss = jSeats(g).filter(s => jTeamOf(g, s) === t); if (ss.length && ss.every(s => g.pos[s].every(r => r >= TRACK))) return t; }
   return null;
 }
 export const jHomeCount = (g, s) => (g.pos[s] || []).filter(r => r >= TRACK).length;

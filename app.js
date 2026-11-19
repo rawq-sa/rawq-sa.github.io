@@ -15,7 +15,7 @@ import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } fr
 import { ICONS } from "./icons.js?v=32";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=38";
-import { jDeck, jMoves, jApply, jWinner, jTeam, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=2";
+import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=3";
 
 /* ================= helpers ================= */
 const ar = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
@@ -1269,7 +1269,7 @@ async function startJak() {
   const deck = shuffle(jDeck()), hands = {};
   ord.forEach(u => hands[u] = deck.splice(0, 4));
   const round = (room.round || 0) + 1, names = {}; ps.forEach(u => names[u] = pname(u));
-  const jak = { order: ord, seats, pos, turn: 0, deck: deck.length, top: null, last: "بدأت اللعبة! أول دور لـ @" + names[ord[0]], v: 1, winner: null, end: "" };
+  const jak = { order: ord, seats, pos, duo: n === 2, turn: 0, deck: deck.length, top: null, last: "بدأت اللعبة! أول دور لـ @" + names[ord[0]], v: 1, winner: null, end: "" };
   JAK.st = { deck, discard: [], hands }; JAK.processed = {};
   const b = writeBatch(db);
   ps.forEach(u => b.set(doc(db, "rooms", roomCode, "secrets", u), { round, role: "jak", hand: hands[u] || [] }));
@@ -1315,7 +1315,7 @@ function jakApply(u, mv, g, st) {
   g.last = msg; g.v = (g.v || 0) + 1;
   return [u];
 }
-function jakTeamName(g, t) { return g.order.filter(u => jTeam(g.seats[u]) === t).map(u => "@" + (room?.names?.[u] || pname(u))).join(" و "); }
+function jakTeamName(g, t) { return g.order.filter(u => jTeamOf(g, g.seats[u]) === t).map(u => "@" + (room?.names?.[u] || pname(u))).join(" و "); }
 async function jakProcess(list) {
   if (!isHost() || room?.phase !== "jak") return;
   JAK.queue.push(...list);
@@ -1336,7 +1336,7 @@ async function jakProcess(list) {
       const upd = { jak: g };
       if (g.winner != null) {
         const scores = { ...(room.scores || {}) };
-        g.order.filter(x => jTeam(g.seats[x]) === g.winner).forEach(x => scores[x] = (scores[x] || 0) + 1);
+        g.order.filter(x => jTeamOf(g, g.seats[x]) === g.winner).forEach(x => scores[x] = (scores[x] || 0) + 1);
         upd.scores = scores; upd.phase = "jakend";
       }
       b.update(roomRef(), upd);
@@ -1522,7 +1522,7 @@ async function awardXp() {
   ui.xpBase.done.add(key);
   if (!(room.roundPlayers || []).includes(me.uid)) return;
   const gained = Math.max(0, myScore - ui.xpBase.score); ui.xpBase.score = myScore;
-  const won = game === "jak" ? room.jak?.winner != null && jTeam(room.jak.seats?.[me.uid] ?? -1) === room.jak.winner : game === "uno" ? room.uno?.winner === me.uid : game === "hhnj" ? !!room.result?.rows?.[me.uid]?.win : gained > 0;
+  const won = game === "jak" ? room.jak?.winner != null && jTeamOf(room.jak, room.jak.seats?.[me.uid] ?? -1) === room.jak.winner : game === "uno" ? room.uno?.winner === me.uid : game === "hhnj" ? !!room.result?.rows?.[me.uid]?.win : gained > 0;
   const base = Math.min(45, 10 + Math.min(gained, 4) * 5 + ((game === "uno" || game === "jak") && won ? 15 : 0));
   const boost = vipOn(me) && !STAFF(me.username), add = boost ? Math.min(68, Math.round(base * 1.5)) : base;
   const s = { ...(me.stats || {}) };
@@ -4601,7 +4601,7 @@ const ROOM_VIEWS = {
       : RJ ? "اختار كورتك اللي تبي تبدّلها"
       : jRank(J.card) === "5" ? "اختار أي كورة على اللوح (حتى كورة غيرك)"
       : "اختار الكورة اللي تبي تحركها";
-    const teamOf = u => jTeam(g.seats[u]);
+    const teamOf = u => jTeamOf(g, g.seats[u]);
     V.innerHTML = `<section class="jak">
       ${statusBar()}
       <div class="jplayers">${ord.map(u => { const s = g.seats[u]; return `<button class="jp ${u === turnU && g.winner == null ? "turn" : ""}" style="--c:${JCOL[s].fill}" data-pf="${esc(u)}">
@@ -4666,7 +4666,7 @@ const ROOM_VIEWS = {
 
   jakend() {
     const g = jakState() || {}, w = g.winner;
-    const team = w != null ? (g.order || []).filter(u => jTeam(g.seats[u]) === w) : [];
+    const team = w != null ? (g.order || []).filter(u => jTeamOf(g, g.seats[u]) === w) : [];
     V.innerHTML = `<section>${statusBar()}
       <div class="card safe pop uwin"><span class="eyebrow">انتهت الجولة</span>
         ${w != null ? `<div class="jwin">${team.map(u => avatar(pname(u), prof(u)?.photo, 72)).join("")}</div><span class="big" dir="ltr">${team.map(u => at(pname(u))).join(" و ")}</span><span class="hint">${team.length > 1 ? "فازوا" : "فاز"} بالجكارو 🏆🎲</span>` : `<span class="big">انتهت</span><span class="hint">${esc(g.last || "")}</span>`}</div>
