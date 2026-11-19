@@ -2215,22 +2215,37 @@ async function delReport(id) {
   try { await deleteDoc(doc(db, "reports", id)); adm.reports = adm.reports.filter(r => r.id !== id); render(false); }
   catch (e) { console.error(e); toast("ما قدرنا نحذفه"); }
 }
+// حسابات ما تنحسب بالإحصائيات: المالك والحساب الرسمي وحساب التجربة
+const STATS_SKIP = ["b_1", "b1", "jalsah", "rawq"];
+async function statsSkip() {
+  if (adm.skip) return adm.skip;
+  const out = new Map();
+  await Promise.all(STATS_SKIP.map(async n => {
+    const u = await getDoc(doc(db, "usernames", n)).catch(() => null); if (!u?.exists()) return;
+    const id = u.data().uid; if (out.has(id)) return;
+    const d = await getDoc(doc(db, "users", id)).catch(() => null);
+    if (d?.exists()) out.set(id, { c: d.data().createdAt?.toMillis?.() || 0, l: d.data().lastSeen?.toMillis?.() || 0 });
+  }));
+  return adm.skip = out;
+}
 async function loadStats() {
   if (adm.loading) return;
-  adm.loading = true; render(false);
+  adm.loading = true; adm.skip = null; render(false);
   try {
+    const skip = [...(await statsSkip()).values()], sk = f => skip.filter(f).length;
     const start = new Date(); start.setHours(0, 0, 0, 0);
     const since = Timestamp.fromMillis(Date.now() - ONLINE_MS);
     const [total, online, today, rooms, bans, gOnline, gToday] = await Promise.all([
       getCountFromServer(collection(db, "users")),
       getCountFromServer(query(collection(db, "users"), where("lastSeen", ">", since))),
       getCountFromServer(query(collection(db, "users"), where("createdAt", ">=", Timestamp.fromDate(start)))),
-      getCountFromServer(collection(db, "rooms")),
+      getCountFromServer(query(collection(db, "rooms"), where("createdAt", ">=", Timestamp.fromDate(start)))).catch(() => getCountFromServer(collection(db, "rooms"))),
       getDocs(collection(db, "bans")),
       getCountFromServer(query(collection(db, "guests"), where("lastSeen", ">", since))).catch(() => null),
       getCountFromServer(query(collection(db, "guests"), where("firstSeen", ">=", Timestamp.fromDate(start)))).catch(() => null)
     ]);
-    adm.stats = { total: total.data().count, online: online.data().count, today: today.data().count, rooms: rooms.data().count,
+    const nowMs = Date.now(), st0 = start.getTime();
+    adm.stats = { total: total.data().count - skip.length, online: online.data().count - sk(x => x.l > nowMs - ONLINE_MS), today: today.data().count - sk(x => x.c >= st0), rooms: rooms.data().count,
       gOnline: gOnline ? gOnline.data().count : null, gToday: gToday ? gToday.data().count : null, at: new Date() };
     adm.banned = bans.docs.map(d => ({ uid: d.id, ...d.data() }));
     // أرقام زيادة: ما توقف الباقي لو فشلت
@@ -2241,7 +2256,7 @@ async function loadStats() {
       getAggregateFromServer(collection(db, "users"), Object.fromEntries(Object.keys(GAMES).map(g => [g, sum("stats.g_" + g)]))).catch(() => null)
     ]);
     Object.assign(adm.stats, {
-      played: played ? played.data().count : null,
+      played: played ? played.data().count - sk(x => x.l >= st0) : null,
       cUsed: cUsed ? cUsed.data().count : null,
       cLeft: cAll && cUsed ? cAll.data().count - cUsed.data().count : null,
       games: gsum ? Object.keys(GAMES).map(g => ({ g, n: gsum.data()[g] || 0 })).sort((a, b) => b.n - a.n) : null
@@ -2254,10 +2269,11 @@ async function loadStats() {
 async function loadRetention() {
   const now = Date.now(), D = 864e5, T = ms => Timestamp.fromMillis(ms);
   try {
-    const cnt = since => getCountFromServer(query(collection(db, "users"), where("lastSeen", ">=", T(now - since)))).then(r => r.data().count).catch(() => null);
-    const cohort = (from, to) => getDocs(query(collection(db, "users"), where("createdAt", ">=", T(now - from)), where("createdAt", "<", T(now - to)), limit(500))).then(q => q.docs.map(d => d.data())).catch(() => []);
+    const skip = await statsSkip(), sv = [...skip.values()];
+    const cnt = since => getCountFromServer(query(collection(db, "users"), where("lastSeen", ">=", T(now - since)))).then(r => r.data().count - sv.filter(x => x.l >= now - since).length).catch(() => null);
+    const cohort = (from, to) => getDocs(query(collection(db, "users"), where("createdAt", ">=", T(now - from)), where("createdAt", "<", T(now - to)), limit(500))).then(q => q.docs.filter(d => !skip.has(d.id)).map(d => d.data())).catch(() => []);
     const [dau, wau, mau, c1, c7] = await Promise.all([cnt(D), cnt(7 * D), cnt(30 * D), cohort(8 * D, D), cohort(37 * D, 7 * D)]);
-    const back = (list, ms) => { const ok = list.filter(u => (u.lastSeen?.toMillis?.() || 0) - (u.createdAt?.toMillis?.() || 0) >= ms).length; return { n: list.length, pct: list.length ? Math.round(ok / list.length * 100) : null }; };
+    const back = (list, ms) => { const ok = list.filter(u => (u.lastSeen?.toMillis?.() || 0) - (u.createdAt?.toMillis?.() || 0) >= ms).length; return { n: list.length, ok, pct: list.length ? Math.round(ok / list.length * 100) : null }; };
     adm.ret = { dau, wau, mau, d1: back(c1, 20 * 3600e3), d7: back(c7, 6.5 * D) };
   } catch (e) { console.error(e); }
   if (screen === "admin") render(false);
@@ -2624,48 +2640,47 @@ VIEWS.admin = () => {
   if (!isOwner()) { go("home"); return; }
   if (!adm.stats && !adm.loading) { loadStats(); }
   const st = adm.stats;
-  const tile = (n, label, tone) => `<div class="stat ${tone || ""}"><span class="n">${st ? ar(n) : "…"}</span><span class="l">${label}</span></div>`;
+  const tile = (n, label, tone, hint) => `<div class="stat ${tone || ""}"><span class="n">${st ? ar(n) : "…"}</span><span class="l">${label}</span>${hint ? `<span class="h">${hint}</span>` : ""}</div>`;
   V.innerHTML = `<section class="adm" data-tab="${adm.tab || "stats"}">
     <div><h2>لوحة المالك 👑</h2><p class="lead">تشوفها أنت بس.</p></div>
     <div class="atabs" role="tablist">${[["stats", "📊 الأرقام"], ["players", "👤 اللاعبين"], ["ann", "📣 الإعلانات"], ["shop", "🛍️ المتجر"], ["safe", `🛡️ الحماية${adm.reports?.length ? ` (${ar(adm.reports.length)})` : ""}`]].map(([k, t]) => `<button class="atab ${(adm.tab || "stats") === k ? "on" : ""}" data-atab="${k}" role="tab" aria-selected="${(adm.tab || "stats") === k}">${t}</button>`).join("")}</div>
 
     <div class="field" data-at="stats"><div class="row-h"><span class="label">📊 الأرقام</span>
       <button class="link" id="reload">${adm.loading ? "يحدّث…" : "تحديث"}</button></div>
-      <div class="agrp"><span class="ag-h">🟢 الحين</span><div class="stats">
-        ${tile(st?.online, "لاعبين أونلاين", "good")}
-        ${tile(st?.gOnline ?? "—", "زوار بدون حساب")}
-        ${tile(st?.rooms, "غرف مفتوحة")}
+      ${st ? `<div class="asum"><b>باختصار:</b> اليوم دخل روق <b>${ar(st.played ?? 0)}</b> لاعب بحساب${st.gToday ? `، وجرّبه <b>${ar(st.gToday)}</b> زائر جديد بدون حساب` : ""}. سجّل اليوم <b>${ar(st.today)}</b> حساب جديد، وصار عندك <b>${ar(st.total)}</b> لاعب من البداية.</div>` : ""}
+      <div class="agrp"><span class="ag-h">🟢 الحين (آخر ٧ دقايق)</span><div class="stats">
+        ${tile(st?.online, "لاعبين داخلين الحين", "good", "عندهم حساب وفاتحين روق")}
+        ${tile(st?.gOnline ?? "—", "زوار الحين", "", "يجربون بدون حساب")}
       </div></div>
       <div class="agrp"><span class="ag-h">📅 اليوم</span><div class="stats">
-        ${tile(st?.played ?? "—", "دخلوا اليوم", "good")}
-        ${tile(st?.today, "حسابات جديدة")}
-        ${tile(st?.gToday ?? "—", "زوار جدد بدون حساب")}
+        ${tile(st?.played ?? "—", "دخلوا اليوم", "good", "كل اللي فتحوا روق اليوم بحساب")}
+        ${tile(st?.today, "سجّلوا اليوم", "", "حسابات جديدة انفتحت اليوم")}
+        ${tile(st?.gToday ?? "—", "زوار جدد", "", "أول مرة يدخلون، بدون حساب")}
+        ${tile(st?.rooms, "غرف انفتحت اليوم", "", "جلسات لعب بدأت اليوم")}
       </div></div>
-      <div class="agrp"><span class="ag-h">👥 الكل</span><div class="stats">
-        ${tile(st?.total, "كل اللاعبين")}
-        ${tile(VERIFIED.size, "حسابات موثّقة")}
-        ${tile(adm.banned?.length ?? 0, "محظورين", (adm.banned?.length ? "bad" : ""))}
+      <div class="agrp"><span class="ag-h">👥 من البداية</span><div class="stats">
+        ${tile(st?.total, "كل اللاعبين", "good", "كل الحسابات اللي سجّلت")}
+        ${tile(VERIFIED.size, "موثّقين", "", "عليهم علامة التوثيق")}
+        ${tile(adm.banned?.length ?? 0, "محظورين", (adm.banned?.length ? "bad" : ""), "ممنوعين من اللعب")}
       </div></div>
-      <div class="agrp"><span class="ag-h">💰 المبيعات</span><div class="stats">
-        ${tile(st?.cUsed ?? "—", "أكواد انشحنت", "good")}
-        ${tile(st?.cLeft ?? "—", "أكواد باقية")}
+      <div class="agrp"><span class="ag-h">💰 الأكواد (المبيعات)</span><div class="stats">
+        ${tile(st?.cUsed ?? "—", "أكواد انشحنت", "good", "ناس اشتروا واستخدموها")}
+        ${tile(st?.cLeft ?? "—", "أكواد باقية", "", "جاهزة للبيع")}
       </div></div>
-      ${st?.games ? (() => { const mx = Math.max(1, ...st.games.map(x => x.n)); return `<div class="agrp"><span class="ag-h">🎮 أكثر الألعاب لعبًا</span><div class="gbars">${st.games.map(x =>
+      ${st?.games ? (() => { const mx = Math.max(1, ...st.games.map(x => x.n)); return `<div class="agrp"><span class="ag-h">🎮 أكثر الألعاب لعبًا (عدد الجولات)</span><div class="gbars">${st.games.map(x =>
         `<div class="gbar"><span>${esc(GAMES[x.g])}</span><i style="--w:${Math.round(x.n / mx * 100)}%"></i><b>${ar(x.n)}</b></div>`).join("")}</div></div>`; })() : ""}
-      ${st ? `<p class="hint">آخر تحديث ${esc(st.at.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" }))}</p>` : ""}
+      ${st ? `<p class="hint">ما تنحسب فيها حساباتك أنت (المالك والرسمي وحساب التجربة). آخر تحديث ${esc(st.at.toLocaleTimeString("ar-SA", { hour: "numeric", minute: "2-digit" }))}</p>` : ""}
     </div>
 
-    ${(() => { const r = adm.ret; const pc = (x, good, ok) => x?.pct == null ? `<div class="stat"><span class="n">—</span><span class="l">ما فيه بيانات كافية</span></div>`
-        : `<div class="stat ${x.pct >= good ? "good" : x.pct >= ok ? "" : "bad"}"><span class="n">${ar(x.pct)}٪</span><span class="l">من ${ar(x.n)} لاعب جديد</span></div>`;
+    ${(() => { const r = adm.ret; const pc = (x, good, ok, when) => x?.pct == null ? `<div class="stat"><span class="n">—</span><span class="l">للحين ما فيه ناس كفاية نحسب منهم</span></div>`
+        : `<div class="stat ${x.pct >= good ? "good" : x.pct >= ok ? "" : "bad"}"><span class="n">${ar(x.pct)}٪</span><span class="l">رجع ${ar(x.ok)} من ${ar(x.n)}</span><span class="h">من اللي سجّلوا، كم واحد رجع ${when}</span></div>`;
       return `<div class="field" data-at="stats"><span class="label">📈 هل الناس يرجعون؟</span>
-      ${r ? `<div class="stats">
-        <div class="stat good"><span class="n">${r.dau == null ? "—" : ar(r.dau)}</span><span class="l">لعبوا آخر ٢٤ ساعة</span></div>
-        <div class="stat"><span class="n">${r.wau == null ? "—" : ar(r.wau)}</span><span class="l">لعبوا هالأسبوع</span></div>
-        <div class="stat"><span class="n">${r.mau == null ? "—" : ar(r.mau)}</span><span class="l">لعبوا هالشهر</span></div>
-        <div class="stat"><span class="n">${r.dau && r.mau ? ar(Math.round(r.dau / r.mau * 100)) + "٪" : "—"}</span><span class="l">يدخلون يوميًا من لاعبين الشهر</span></div></div>
-        <span class="label">رجعوا بعد يوم من تسجيلهم</span><div class="stats">${pc(r.d1, 30, 20)}</div>
-        <span class="label">رجعوا بعد أسبوع</span><div class="stats">${pc(r.d7, 12, 6)}</div>
-        <p class="hint">المقياس: الألعاب الناجحة يرجع لها تقريبًا ٢٠–٣٠٪ بعد يوم، و ٨–١٢٪ بعد أسبوع. أخضر = ممتاز، أحمر = يحتاج شغل.</p>` : `<p class="hint">نحسب…</p>`}</div>`; })()}
+      ${r ? `<div class="agrp"><span class="ag-h">كم واحد يلعب</span><div class="stats">
+        <div class="stat good"><span class="n">${r.dau == null ? "—" : ar(r.dau)}</span><span class="l">آخر ٢٤ ساعة</span></div>
+        <div class="stat"><span class="n">${r.wau == null ? "—" : ar(r.wau)}</span><span class="l">آخر ٧ أيام</span></div>
+        <div class="stat"><span class="n">${r.mau == null ? "—" : ar(r.mau)}</span><span class="l">آخر ٣٠ يوم</span></div></div></div>
+        <div class="agrp"><span class="ag-h">يرجعون بعد ما يجربون؟</span><div class="stats">${pc(r.d1, 30, 20, "ثاني يوم")}${pc(r.d7, 12, 6, "بعد أسبوع")}</div>
+        <p class="hint">🟢 ممتاز · ⚪ عادي · 🔴 يحتاج شغل. الألعاب الناجحة يرجع لها تقريبًا ٢٠–٣٠٪ ثاني يوم، و ٨–١٢٪ بعد أسبوع.</p></div>` : `<p class="hint">نحسب…</p>`}</div>`; })()}
 
     <div class="field" data-at="players"><span class="label">🔎 ابحث عن لاعب</span>
       <form class="addf" id="pFindF"><div class="uinput"><span>@</span><input id="pFind" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="21" placeholder="يوزر اللاعب" aria-label="يوزر اللاعب" value="${esc(adm.player?.username || "")}"></div><button class="btn small">${adm.pLoading ? "…" : "ابحث"}</button></form>
