@@ -25,6 +25,17 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem("jalsa:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem("jalsa:" + k, JSON.stringify(v)); } catch (e) {} }
 };
+// يختار عنصر ما انلعب قبل على هذا الجهاز (محفوظ حتى بعد إغلاق التطبيق)، ولما تخلص القائمة تبدأ من جديد
+function fresh(key, list) {
+  const all = [...new Set(list)];
+  let seen = store.get("seen:" + key, []);
+  if (!Array.isArray(seen)) seen = [];
+  let left = all.filter(x => !seen.includes(x));
+  if (!left.length) { const last = seen[seen.length - 1]; seen = []; left = all.filter(x => x !== last); if (!left.length) left = all; }
+  const v = pick(left);
+  seen.push(v); store.set("seen:" + key, seen);
+  return v;
+}
 function toast(msg) {
   const t = document.createElement("div");
   t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg;
@@ -911,7 +922,7 @@ async function startImp() {
   const ps = order();
   if (ps.length < 3) return toast("تحتاجون ٣ لاعبين على الأقل");
   const cat = room.cat === "عشوائي" || !WORDS[room.cat] ? pick(Object.keys(WORDS)) : room.cat;
-  const word = pick(WORDS[cat]);
+  const word = fresh("imp:" + cat, WORDS[cat]);
   const n = ps.length >= 7 && room.imps === 2 ? 2 : 1;
   const imps = shuffle(ps).slice(0, n);
   const round = (room.round || 0) + 1;
@@ -949,9 +960,8 @@ async function impGuessed() {
 async function startMost() {
   const ps = order();
   if (ps.length < 2) return toast("تحتاجون لاعبين على الأقل");
-  if (!mostDeck.length) mostDeck = shuffle(MOST);
   const names = {}; ps.forEach(u => names[u] = pname(u));
-  await setRoom({ game: "most", phase: "mq", round: (room.round || 0) + 1, prompt: mostDeck.pop(), roundPlayers: ps, names, result: null });
+  await setRoom({ game: "most", phase: "mq", round: (room.round || 0) + 1, prompt: fresh("most", MOST), roundPlayers: ps, names, result: null });
 }
 async function revealMost() {
   const tally = {}; const ps = roundPlayers();
@@ -1478,10 +1488,9 @@ const WHOS = { deck: [], authors: null, round: 0 };
 async function startWho() {
   const ps = order();
   if (ps.length < 3) return toast("تحتاجون ٣ لاعبين على الأقل");
-  if (!WHOS.deck.length) WHOS.deck = shuffle(WHO);
   const names = {}; ps.forEach(u => names[u] = pname(u));
   WHOS.authors = null;
-  await setRoom({ game: "who", phase: "wq", round: (room.round || 0) + 1, prompt: WHOS.deck.pop(), wDone: 0, wlist: [], wi: 0, wshow: false, wrev: [], roundPlayers: ps, names, result: null });
+  await setRoom({ game: "who", phase: "wq", round: (room.round || 0) + 1, prompt: fresh("who", WHO), wDone: 0, wlist: [], wi: 0, wshow: false, wrev: [], roundPlayers: ps, names, result: null });
 }
 async function whoReveal() {
   if (ui.wBusy || room?.phase !== "wq") return; ui.wBusy = true;
@@ -1688,8 +1697,7 @@ async function startDraw() {
   const ps = order();
   if (ps.length < 2) return toast("تحتاجون لاعبين على الأقل");
   const t = ((room.dTurn ?? -1) + 1) % ps.length, drawer = ps[t];
-  if (!DRAWS.deck.length) DRAWS.deck = shuffle([...new Set(DRAW)]);
-  const word = DRAWS.deck.pop(), round = (room.round || 0) + 1;
+  const word = fresh("draw", DRAW), round = (room.round || 0) + 1;
   const names = {}; ps.forEach(u => names[u] = pname(u));
   DRAWS.word = word; DRAWS.wRound = round; DRAWS.seen = {}; DRAWS.queue = [];
   const b = writeBatch(db);
@@ -1788,8 +1796,7 @@ async function startKal() {
   await kalWord({ n, secs, idx: 0, pts: { r: 0, b: 0 }, won: { r: 0, b: 0 }, ti: { r: -1, b: -1 }, teams, names });
 }
 async function kalWord(base) {
-  if (!KAL.deck.length) KAL.deck = shuffle([...new Set(KALIMA)]);
-  const word = KAL.deck.pop(), L = [...word];
+  const word = fresh("kal", KALIMA), L = [...word];
   const hideN = Math.max(2, Math.min(L.length - 1, Math.round(L.length * 0.6)));
   const hide = new Set(shuffle(L.map((_, i) => i)).slice(0, hideN));
   const mask = L.map((c, i) => hide.has(i) ? "" : c);
@@ -4758,7 +4765,7 @@ VIEWS["l-play"] = () => {
 };
 
 VIEWS["l-most"] = () => {
-  if (!L.mostPrompt) { if (!L.mostDeck.length) L.mostDeck = shuffle(MOST); L.mostPrompt = L.mostDeck.pop(); }
+  if (!L.mostPrompt) L.mostPrompt = fresh("most", MOST);
   V.innerHTML = `<section><div class="card prompt pop"><span class="eyebrow">مين أكثر واحد…</span><span class="mid">${esc(L.mostPrompt)}؟</span>
     <span class="count" id="cnt" hidden></span></div>
     <div class="foot"><button class="btn" id="cb">عدّ وأشّروا</button><button class="btn ghost" id="nx">سؤال ثاني</button></div></section>`;
@@ -4772,7 +4779,7 @@ VIEWS["l-most"] = () => {
 };
 
 VIEWS["l-five"] = () => {
-  if (!L.fivePrompt) { if (!L.fiveDeck.length) L.fiveDeck = shuffle(FIVE); L.fivePrompt = L.fiveDeck.pop(); }
+  if (!L.fivePrompt) L.fivePrompt = fresh("five", FIVE);
   L.fiveTurn = L.fiveTurn % L.count;
   V.innerHTML = `<section><div class="card prompt"><span class="eyebrow">الدور على ${esc(lname(L.fiveTurn))}</span><span class="eyebrow">اذكر خمسة…</span>
     <span class="mid">${esc(L.fivePrompt)}</span><div class="timer" aria-hidden="true"><i id="bar"></i></div><span class="count" id="sec">${ar(10)}</span></div>
@@ -4869,8 +4876,7 @@ VIEWS["l-kal"] = () => {
 };
 function lkWord() {
   const g = L.kg;
-  if (!g.deck.length) g.deck = shuffle([...new Set(KALIMA)]);
-  const word = g.deck.pop(), Ls = [...word];
+  const word = fresh("kal", KALIMA), Ls = [...word];
   const hideN = Math.max(2, Math.min(Ls.length - 1, Math.round(Ls.length * 0.6)));
   const hide = new Set(shuffle(Ls.map((_, i) => i)).slice(0, hideN));
   g.word = word; g.mask = Ls.map((c, i) => hide.has(i) ? "" : c);
@@ -4955,9 +4961,8 @@ VIEWS["l-kq"] = () => {
 const LDRAW_SECS = 80;
 function lDrawNew(next) {
   const d = L.dr || (L.dr = { turn: -1, deck: [] });
-  if (!d.deck.length) d.deck = shuffle([...new Set(DRAW)]);
   if (next !== false) d.turn = (d.turn + 1) % L.count;
-  d.word = d.deck.pop(); d.stage = "pass"; d.strokes = []; d.got = null;
+  d.word = fresh("draw", DRAW); d.stage = "pass"; d.strokes = []; d.got = null;
 }
 function lBindPad(cv, strokes) {
   let cur = null, raf = 0;
@@ -5070,8 +5075,7 @@ VIEWS["l-tf"] = () => {
 
 /* ---------- مين قالها؟ (بجوال واحد) ---------- */
 function lWhoNew() {
-  L.whoDeck = L.whoDeck?.length ? L.whoDeck : shuffle([...WHO]);
-  L.wh = { q: L.whoDeck.pop(), i: 0, shown: false, ans: [], stage: "write", k: 0, open: false };
+  L.wh = { q: fresh("who", WHO), i: 0, shown: false, ans: [], stage: "write", k: 0, open: false };
 }
 VIEWS["l-who"] = () => {
   if (L.count < 3) { V.innerHTML = `<section><h2>مين قالها؟</h2><p class="lead">تحتاجون ٣ لاعبين على الأقل.</p><div class="foot"><button class="btn" id="roster">✏️ عدّل اللاعبين</button></div></section>`; on("roster", "click", () => go("l-players")); return; }
