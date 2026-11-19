@@ -15,7 +15,7 @@ import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } fr
 import { ICONS } from "./icons.js?v=32";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=38";
-import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=10";
+import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=11";
 
 /* ================= helpers ================= */
 const ar = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
@@ -1380,7 +1380,7 @@ async function jakMove(type, card, m) {
   catch (e) { console.error(e); ui.jWait = null; toast("ما انرسلت الحركة، جرّب مرة ثانية"); }
   render(false);
 }
-const JAK_T = 45;
+const JAK_T = 15;
 function jakTimeLeft(g) {
   if (!ui.jSeen || ui.jSeen.v !== g.v || ui.jSeen.round !== room.round) ui.jSeen = { v: g.v, round: room.round, t: Date.now() };
   return { dur: JAK_T, left: Math.max(0, JAK_T - (Date.now() - ui.jSeen.t) / 1000) };
@@ -4621,8 +4621,10 @@ const ROOM_VIEWS = {
       if (RJ) LA.forEach(m => cand.add(bk(m)));
       if (R7) { if (J.k == null) steps = [...new Set(LA.map(m => m.t === "7" ? m.k : 7))].sort((a, b) => a - b); else LA.filter(m => m.t === "7" && m.k === J.k).forEach(m => cand.add(bk(m))); }
     }
+    // وين بتوصل كل كورة بالورقة المختارة
+    const dests = J.card && !J.a ? L.filter(m => m.t !== "s" && m.t !== "7").map(m => { const [s0, i0] = m.a, r0 = g.pos[s0][i0]; return [s0, m.t === "o" ? 0 : m.t === "b" ? (r0 - m.k + 76) % 76 : r0 + m.k]; }) : [];
     const rot = playing ? mySeat : 0;
-    const { svg, now } = jBoard(g, { rot, cand, pick: J.a, prev: ui.jPrev?.round === room.round ? ui.jPrev.p : {}, top: g.top, turnSeat: g.winner == null ? g.seats[turnU] : null });
+    const { svg, now } = jBoard(g, { rot, cand, dests, left: playing ? jCtrl(g, mySeat) : null, pick: J.a, prev: ui.jPrev?.round === room.round ? ui.jPrev.p : {}, top: g.top, turnSeat: g.winner == null ? g.seats[turnU] : null });
     ui.jPrev = { round: room.round, p: now };
     const tm = jakTimeLeft(g), ctrl = playing ? jCtrl(g, mySeat) : null;
     const tip = !myTurn ? (g.winner != null ? "" : `مو دورك، ننتظر ${at(pname(turnU))}`)
