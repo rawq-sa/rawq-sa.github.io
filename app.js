@@ -2947,19 +2947,40 @@ VIEWS.rename = () => {
 };
 
 /* ================= الترحيب وشرح اللعبة ================= */
+const WL_GAMES = ["imp", "draw", "who", "most", "hhnj", "kal", "tf"];
+const WL_ART = {
+  games: () => `<div class="wa wa-games">
+      <div class="wa-glow"></div>
+      <div class="wa-fan">${["yS", "bD", "r7", "wF", "g9"].map((c, i) => `<span class="wa-c" style="--i:${i - 2}">${cardSVG(c)}</span>`).join("")}</div>
+      <div class="wa-chips">${WL_GAMES.slice(0, 4).map((k, i) => `<span class="wa-chip" style="--d:${i * 0.08}s"><i aria-hidden="true">${ICONS[k]}</i>${GAMES[k]}</span>`).join("")}<span class="wa-chip more" style="--d:.32s">+${ar(WL_GAMES.length - 4)} ألعاب</span></div>
+    </div>`,
+  online: () => `<div class="wa wa-online">
+      <div class="wa-glow mint"></div>
+      <div class="wa-room">
+        <div class="wa-rh"><span>غرفة</span><b dir="ltr">K7Q2</b></div>
+        <div class="wa-avs">${[["سارة", "س"], ["فهد", "ف"], ["نورة", "ن"], ["خالد", "خ"]].map(([n, l], i) => `<span class="wa-p" style="--d:${i * 0.1}s">${avatar(n, null, 40, l)}<em>${n}</em></span>`).join("")}</div>
+        <div class="wa-bub">يلا ادخلوا، بدأنا 🔥</div>
+      </div>
+      <div class="wa-notif"><i aria-hidden="true">🔔</i><span><b>فهد</b> يبيك تلعب معه 🎮</span></div>
+    </div>`,
+  level: () => `<div class="wa wa-level">
+      <div class="wa-glow gold"></div>
+      <div class="wa-me"><span class="fr f_gold" style="--fs:5px">${avatar("روق", null, 78, "★")}</span><span class="wa-vip">VIP 👑</span></div>
+      <div class="wa-lv"><span>مستوى ١٢</span><i><b></b></i><span class="wa-xp">+٢٥ خبرة ⭐</span></div>
+      <div class="wa-unl">${["gold", "royal", "night"].map((b, i) => `<span class="wa-back" style="--i:${i - 1}">${cardSVG(null, b)}</span>`).join("")}</div>
+    </div>`
+};
 const SLIDES = [
-  { art: "local", t: "أهلًا فيك في روق 👋", d: "ألعاب جلسات عربية تلعبها مع أصحابك. خلنا نوريك كيف تمشي في دقيقة." },
-  { art: "create", t: "العب أونلاين", d: "سوّ غرفة، وأرسل الكود أو رابط الدعوة لأصحابك. كل واحد يلعب من جواله." },
-  { art: "imp", t: "الألعاب", d: "الدخيل، مين أكثر واحد، إنسان حيوان نبات جماد، وخمسة بعشر. تلقاها كلها في الصفحة الرئيسية تحت «الألعاب»." },
-  { art: "friends", t: "أصحابك والرسائل", d: "من زر «أضف صديق» فوق، أضف أصحابك بيوزراتهم. وبعدها تقدر تراسلهم في الخاص 💬، وتسولف معهم في شات الغرفة." },
-  { art: "five", t: "بجوال واحد", d: "ما عندكم نت أو قاعدين مع بعض؟ العبوا كل الألعاب على جوال واحد يتمرر بينكم." }
+  { art: "games", t: "سهرتكم صارت أحلى", d: "٨ ألعاب جماعية عربية في مكان واحد: أونو، الدخيل، ارسم وخمّن، وغيرها." },
+  { art: "online", t: "العب مع أصحابك من أي مكان", d: "سوّ غرفة وارسل الرابط، وكل واحد يلعب من جواله، مع شات وإشعارات. وبدون نت؟ العبوا على جوال واحد." },
+  { art: "level", t: "اجمع خبرة وتميّز 👑", d: "كل لعبة ترفع مستواك وتفتح لك أشكال ورق وإطارات وستايلات لاسمك." }
 ];
 VIEWS.welcome = () => {
   const i = Math.min(ui.slide || 0, SLIDES.length - 1), sl = SLIDES[i], last = i === SLIDES.length - 1;
   V.innerHTML = `<section class="welcome">
     <div class="wl-top"><span class="wl-step">${ar(i + 1)} / ${ar(SLIDES.length)}</span>${last ? "" : `<button class="link" id="wlSkip">تخطي</button>`}</div>
-    <div class="wl-art pop">${ICONS[sl.art]}</div>
-    <h2 class="center">${sl.t}</h2>
+    <div class="wl-stage" id="wlStage">${WL_ART[sl.art]()}</div>
+    <h2 class="center wl-t">${sl.t}</h2>
     <p class="lead center wl-d">${sl.d}</p>
     <div class="wl-dots" aria-hidden="true">${SLIDES.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
     <div class="foot">
@@ -2967,9 +2988,15 @@ VIEWS.welcome = () => {
       ${i > 0 ? `<button class="btn ghost" id="wlPrev">السابق</button>` : ""}
     </div></section>`;
   const done = () => { store.set("welcomed:" + me?.uid, true); ui.slide = 0; afterLogin(); };
+  const next = () => { if (last) done(); else { ui.slide = i + 1; render(true); } };
+  const prev = () => { if (i > 0) { ui.slide = i - 1; render(true); } };
   on("wlSkip", "click", done);
-  on("wlNext", "click", () => { if (last) done(); else { ui.slide = i + 1; render(true); } });
-  on("wlPrev", "click", () => { ui.slide = i - 1; render(true); });
+  on("wlNext", "click", next);
+  on("wlPrev", "click", prev);
+  // سحب يمين/يسار (الصفحة عربية: السحب لليمين = التالي)
+  const st = document.getElementById("wlStage"); let x0 = null;
+  st?.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  st?.addEventListener("touchend", e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (dx > 50) next(); else if (dx < -50) prev(); });
 };
 
 const UNAME_HINT = "حروف إنجليزية وأرقام و _ و - ، من ٣ إلى ٢٠ خانة، وفيه حرف كبير واحد على الأقل.";
