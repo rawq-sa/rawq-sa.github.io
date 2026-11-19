@@ -1,0 +1,5 @@
+name = "jalsah-push"
+main = "push-worker.js"
+compatibility_date = "2024-09-23"
+workers_dev = true
+keep_vars = true

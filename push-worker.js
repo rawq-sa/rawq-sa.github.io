@@ -35,13 +35,16 @@ export default {
       if (kind === "invite") {
         const inv = await fsGet(at, `invites/${from}_${to}`); if (!inv) throw 403;
         const code = inv.fields?.code?.stringValue || "";
-        title = "عزيمة 🎉"; body = `@${name} عزمك على غرفة ${code}`; link += "?r=" + encodeURIComponent(code);
+        title = name; body = `يبيك تلعب معه 🎮 غرفة ${code}`; link += "?r=" + encodeURIComponent(code);
       } else if (kind === "dm") {
-        const f = await fsGet(at, `friendships/${[from, to].sort().join("_")}`); if (!f) throw 403;
-        title = "رسالة جديدة 💬"; body = `@${name} أرسل لك رسالة`; link += "?dm=" + encodeURIComponent(from);
+        const pid = [from, to].sort().join("_");
+        const f = await fsGet(at, `friendships/${pid}`); if (!f) throw 403;
+        const ch = await fsGet(at, `chats/${pid}`).catch(() => null);
+        const last = ch?.fields?.lastFrom?.stringValue === from ? (ch.fields.last?.stringValue || "").trim() : "";
+        title = name; body = last ? (last.length > 120 ? last.slice(0, 117) + "…" : last) : "أرسل لك رسالة 💬"; link += "?dm=" + encodeURIComponent(from);
       } else if (kind === "friend") {
         const r = await fsGet(at, `friendRequests/${from}_${to}`); if (!r) throw 403;
-        title = "طلب صداقة 👋"; body = `@${name} يبي يضيفك`; link += "?go=friends";
+        title = name; body = "أرسل لك طلب صداقة 👋"; link += "?go=friends";
       } else throw 400;
 
       const tk = await fsGet(at, `pushTokens/${to}`);
@@ -51,7 +54,7 @@ export default {
         const r = await fetch(`https://fcm.googleapis.com/v1/projects/${PROJECT}/messages:send`, {
           method: "POST",
           headers: { Authorization: "Bearer " + at, "Content-Type": "application/json" },
-          body: JSON.stringify({ message: { token: t, data: { title, body, link, tag: kind + "_" + from }, webpush: { headers: { Urgency: "high", TTL: "3600" } }, apns: { headers: { "apns-priority": "10" }, payload: { aps: { alert: { title, body }, sound: "default", "thread-id": kind } } } } })
+          body: JSON.stringify({ message: { token: t, data: { title, body, link, tag: kind + "_" + from }, webpush: { headers: { Urgency: "high", TTL: "3600" } }, apns: { headers: { "apns-priority": "10" }, payload: { aps: { alert: { title, body }, sound: "default", "thread-id": kind + "_" + from } } } } })
         });
         if (r.status !== 404 && r.status !== 400) alive.push(t);
       }
@@ -160,18 +163,18 @@ const BUNDLE = "sa.rawq.app";
 const APPLE_ROOT_G3_SHA256 = "63343abfb89a6a03ebb57e9b3f5fa7be7c4f5c756f3017b3a8c488c3653e9179";
 const ALL_VIP = ["t_royal", "b_royal", "f_gold", "f_fire", "f_sadu", "e_royal", "ns_rainbow"];
 const IAP = {
-  "sa.rawq.app.starter": { g: ["f_gold", "b_royal", "starter"], d: 7 },
-  "sa.rawq.app.back_royal": { g: ["b_royal"] },
-  "sa.rawq.app.frame_gold": { g: ["f_gold"] },
-  "sa.rawq.app.frame_fire": { g: ["f_fire"] },
-  "sa.rawq.app.frame_sadu": { g: ["f_sadu"] },
-  "sa.rawq.app.frames3": { g: ["f_gold", "f_fire", "f_sadu"] },
-  "sa.rawq.app.table_royal": { g: ["t_royal"] },
-  "sa.rawq.app.entry_royal": { g: ["e_royal"] },
-  "sa.rawq.app.vip.month": { d: 30 },
-  "sa.rawq.app.vip.quarter": { d: 90 },
-  "sa.rawq.app.vip.year": { d: 365 },
-  "sa.rawq.app.king": { g: [...ALL_VIP, "king"], d: 365 }
+  "sa.rawq.app.starter": { g: ["f_gold", "b_royal", "starter"], d: 7, n: "عرض البداية 🎁", p: "4.99" },
+  "sa.rawq.app.back_royal": { g: ["b_royal"], n: "ظهر الورق الملكي", p: "9.99" },
+  "sa.rawq.app.frame_gold": { g: ["f_gold"], n: "الإطار الذهبي", p: "14.99" },
+  "sa.rawq.app.frame_fire": { g: ["f_fire"], n: "الإطار الناري 🔥", p: "14.99" },
+  "sa.rawq.app.frame_sadu": { g: ["f_sadu"], n: "إطار السدو", p: "14.99" },
+  "sa.rawq.app.frames3": { g: ["f_gold", "f_fire", "f_sadu"], n: "باقة الإطارات الثلاثة", p: "34.99" },
+  "sa.rawq.app.table_royal": { g: ["t_royal"], n: "الطاولة الملكية", p: "19.99" },
+  "sa.rawq.app.entry_royal": { g: ["e_royal"], n: "الدخلة الملكية", p: "24.99" },
+  "sa.rawq.app.vip.month": { d: 30, n: "اشتراك VIP شهر", p: "29.99" },
+  "sa.rawq.app.vip.quarter": { d: 90, n: "اشتراك VIP ٣ شهور", p: "69.99" },
+  "sa.rawq.app.vip.year": { d: 365, n: "اشتراك VIP سنة", p: "199.99" },
+  "sa.rawq.app.king": { g: [...ALL_VIP, "king"], d: 365, n: "باقة الملك 👑", p: "299.99" }
 };
 async function iapGrant(env, uid, { jws }) {
   if (typeof jws !== "string" || jws.length > 20000) throw 400;
@@ -205,11 +208,28 @@ async function iapGrant(env, uid, { jws }) {
     const r = await fetch(FS.replace(/documents\/$/, "documents:commit"), {
       method: "POST", headers: { Authorization: "Bearer " + at, "Content-Type": "application/json" }, body: JSON.stringify({ writes })
     });
-    if (r.ok) return { ok: true, product: tx.productId, fresh, vipUntil: Math.round(vipUntil), owned: newOwned };
+    if (r.ok) {
+      if (fresh) await notifyOwner(at, f.username?.stringValue || "لاعب", item, tx.environment).catch(e => console.error("notify", e));
+      return { ok: true, product: tx.productId, fresh, vipUntil: Math.round(vipUntil), owned: newOwned };
+    }
     if (r.status !== 400 && r.status !== 409 && r.status !== 412) throw new Error("commit " + r.status + " " + await r.text());
     if (fresh && await fsGet(at, `iapTx/${tid}`)) return { ok: true, product: tx.productId, fresh: false };
   }
   throw 409;
+}
+// إشعار لصاحب روق (b_1) مع كل شراء جديد
+async function notifyOwner(at, buyer, item, envName) {
+  const o = await fsGet(at, "usernames/b_1"); const ownerUid = o?.fields?.uid?.stringValue; if (!ownerUid) return;
+  const tk = await fsGet(at, `pushTokens/${ownerUid}`);
+  const tokens = (tk?.fields?.tokens?.arrayValue?.values || []).map(v => v.stringValue).filter(Boolean);
+  const test = String(envName || "").toLowerCase() === "sandbox";
+  const title = test ? "🧪 شراء تجريبي" : "💰 شراء جديد!";
+  const body = `\u200F@${buyer} اشترى ${item.n} \u200F(${item.p} ر.س)`;
+  for (const t of tokens) await fetch(`https://fcm.googleapis.com/v1/projects/${PROJECT}/messages:send`, {
+    method: "POST", headers: { Authorization: "Bearer " + at, "Content-Type": "application/json" },
+    body: JSON.stringify({ message: { token: t, data: { title, body, link: SITE + "/", tag: "sale" }, webpush: { headers: { Urgency: "high", TTL: "86400" } },
+      apns: { headers: { "apns-priority": "10" }, payload: { aps: { alert: { title, body }, sound: "default", "thread-id": "sales" } } } } })
+  }).catch(() => {});
 }
 // نفس الحساب: UUID ثابت من رقم اللاعب (التطبيق يحسبه بنفس الطريقة)
 async function acctToken(uid) {
