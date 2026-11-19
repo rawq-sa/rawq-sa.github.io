@@ -108,7 +108,7 @@ export const jHomeCount = (g, s) => (g.pos[s] || []).filter(r => r >= TRACK).len
 /* ================= الرسم ================= */
 // اللوح الثماني الأسود (مثل الطاولة الخشب المعروفة): ٤ أذرع على الأقطار، كل لاعب له ذراع
 // المسار: من رأس الذراع يرجع للنص، يلف للذراع اللي بعده ويطلع لرأسه… ٧٦ خانة متساوية
-const CX = 210, CY = 210, R0 = 60, R1 = 158, AW = 18;
+const CX = 210, CY = 210, R0 = 62, R1 = 150, AW = 27;
 const armAng = d => Math.PI / 4 + d * Math.PI / 2; // تحت-يمين، تحت-يسار، فوق-يسار، فوق-يمين
 const P2 = (r, off, a) => [CX + r * Math.cos(a) - off * Math.sin(a), CY + r * Math.sin(a) + off * Math.cos(a)];
 const TRACK_PTS = (() => {
@@ -181,13 +181,14 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
   CELLS.forEach(([x, y]) => s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.6" fill="url(#jHole)"/>`);
   CELLS.forEach(([x, y], c) => {
     const n = c % SIDE; // رقم الخانة من بداية الربع
-    const L = Math.hypot(x - CX, y - CY), dd = ((Math.floor(c / SIDE)) % 4), a = armAng(dd), ax = Math.cos(a), ay = Math.sin(a);
-    const along = (x - CX) * ax + (y - CY) * ay, px = CX + ax * along, py = CY + ay * along; let ox = x - px, oy = y - py, ol = Math.hypot(ox, oy);
-    if (along > R1 - 2) { ox = CX - x; oy = CY - y; ol = L; } // عند راس الذراع الرقم يروح لجهة النص عشان ما يطلع برا
-    else if (ol < 6 || along < R0 + 4) { ox = x - CX; oy = y - CY; ol = L; }
-    const tx = x + ox / ol * 11, ty = y + oy / ol * 11;
-    // نرتّبها: ما نكتب رقم لو بيركب على خانة ثانية أو رقم ثاني
-    if (HOLES.some(([hx, hy]) => Math.hypot(hx - tx, hy - ty) < 9) || placed.some(([px2, py2]) => Math.hypot(px2 - tx, py2 - ty) < 11)) return;
+    // على الصفوف: الرقم بين الصف والدار (داخل الذراع). باللفة والوصلة: الرقم لبرا
+    const L = Math.hypot(x - CX, y - CY);
+    let best = null;
+    for (let d = 0; d < 4; d++) { const a = armAng(d), ax = Math.cos(a), ay = Math.sin(a), along = (x - CX) * ax + (y - CY) * ay, perp = -(x - CX) * ay + (y - CY) * ax; if (along > R0 + 4 && along < R1 + 2 && Math.abs(perp) > AW - 4 && Math.abs(perp) < AW + 4) best = { ax, ay, along, perp }; }
+    let tx, ty;
+    if (best) { const q = best.perp * .5; tx = CX + best.ax * best.along - best.ay * q; ty = CY + best.ay * best.along + best.ax * q; }
+    else { tx = x + (x - CX) / L * 11.5; ty = y + (y - CY) / L * 11.5; }
+    if (HOLES.some(([hx, hy]) => Math.hypot(hx - tx, hy - ty) < 8) || placed.some(([px2, py2]) => Math.hypot(px2 - tx, py2 - ty) < 9)) return;
     placed.push([tx, ty]);
     s += `<text x="${f1(tx)}" y="${f1(ty)}" text-anchor="middle" dominant-baseline="central" font-family="'IBM Plex Sans Arabic',Tahoma,sans-serif" font-weight="600" font-size="7.5" fill="#f6dc9a">${AR(n + 1)}</text>`;
   });
