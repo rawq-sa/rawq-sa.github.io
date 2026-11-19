@@ -1067,7 +1067,7 @@ async function toggleReject(u, ci) {
   await setRoom({ result: { rows: scored, rej, acc, applied }, scores });
 }
 async function submitHhnj(done) {
-  const keep = ui.hAns?.round === room.round ? ui.hAns.a : [];
+  const keep = ui.hAns?.k === hKey() ? ui.hAns.a : [];
   const a = [0, 1, 2, 3].map(i => { const el = document.getElementById("h" + i); return String((el ? el.value : keep[i]) || "").trim().slice(0, 40); });
   try { await setDoc(doc(db, "rooms", roomCode, "answers", me.uid), { round: room.round, a, done: !!done }); }
   catch (e) { console.error(e); if (done) toast("ما انرسلت أجوبتك، جرّب مرة ثانية"); }
@@ -4272,23 +4272,25 @@ VIEWS.room = () => {
   onAll("[data-vote]", b => vote(b.dataset.vote));
 };
 
+// مفتاح الجولة: الغرفة + الجولة + وقتها (عشان ما تطلع أجوبة جولة قديمة أو غرفة ثانية)
+const hKey = () => `${roomCode}:${room?.round}:${room?.deadline}`;
 function hhnjTick() {
   if (screen !== "room" || room?.phase !== "hq") { clearInterval(ui.hTimer); ui.hTimer = null; return; }
   const ms = room.deadline - Date.now(), left = Math.max(0, Math.ceil(ms / 1000));
   const bar = document.getElementById("hBar"), lt = document.getElementById("hLeft");
   if (bar) bar.style.transform = `scaleX(${Math.max(0, ms) / (HHNJ_SECS * 1000)})`;
   if (lt) lt.textContent = left ? `باقي ${ar(left)} ثانية` : "خلص الوقت!";
-  if (!left && ui.hDoneRound !== room.round && roundPlayers().includes(me.uid)) { ui.hDoneRound = room.round; submitHhnj(true).then(() => render(false)); }
-  const stopped = ui.hStop?.round === room.round && Date.now() - ui.hStop.at > 4000;
+  if (!left && ui.hDoneRound !== hKey() && roundPlayers().includes(me.uid)) { ui.hDoneRound = hKey(); submitHhnj(true).then(() => render(false)); }
+  const stopped = ui.hStop?.k === hKey() && Date.now() - ui.hStop.at > 4000;
   if (isHost() && (ms < -3000 || stopped || (ui.hDoneCount || 0) >= roundPlayers().length)) revealHhnj();
 }
 function watchHhnjDone() {
   sub("hdone", onSnapshot(collection(db, "rooms", roomCode, "answers"), q => {
     let n = 0, first = null; q.forEach(d => { const v = d.data(); if (v.round === room?.round && v.done) { n++; first = first || d.id; } });
-    if (n && room?.phase === "hq" && ui.hStop?.round !== room.round) {
-      ui.hStop = { round: room.round, at: Date.now(), by: first };
+    if (n && room?.phase === "hq" && ui.hStop?.k !== hKey()) {
+      ui.hStop = { k: hKey(), at: Date.now(), by: first };
       if (first !== me.uid) toast(`✋ ${"@" + pname(first)} خلّص! وقفوا`);
-      if (roundPlayers().includes(me.uid) && ui.hDoneRound !== room.round) { ui.hDoneRound = room.round; submitHhnj(true).then(() => render(false)); }
+      if (roundPlayers().includes(me.uid) && ui.hDoneRound !== hKey()) { ui.hDoneRound = hKey(); submitHhnj(true).then(() => render(false)); }
     }
     if (n !== ui.hDoneCount) { ui.hDoneCount = n; if (screen === "room" && room?.phase === "hq") render(false); }
   }, () => {}));
@@ -4435,7 +4437,7 @@ const ROOM_VIEWS = {
 
   hq() {
     const ps = roundPlayers(), left = Math.max(0, Math.ceil((room.deadline - Date.now()) / 1000));
-    const mineDone = ui.hDoneRound === room.round;
+    const mineDone = ui.hDoneRound === hKey();
     const inRound = ps.includes(me.uid);
     V.innerHTML = `<section>${statusBar()}
       <div class="hletter pop"><span class="eyebrow">الحرف</span><span class="hl">${esc(room.letter)}</span>
@@ -4447,12 +4449,12 @@ const ROOM_VIEWS = {
       </form>` : `<p class="hint">انتظر الجولة الجاية.</p>`}
       <p class="hint center">${ui.hDoneCount ? "✋ واحد خلّص! النتيجة تنكشف الحين…" : "أول واحد يخلص يوقّف الكل ✋"}</p>
       <div class="foot">${isHost() ? `<button class="btn ghost" id="hNow">اكشف الأجوبة الحين</button>` : ""}${leaveBtn()}</div></section>`;
-    if (ui.hAns && ui.hAns.round === room.round) ui.hAns.a.forEach((v, i) => { const el = document.getElementById("h" + i); if (el && !el.value) el.value = v; });
+    if (ui.hAns && ui.hAns.k === hKey()) ui.hAns.a.forEach((v, i) => { const el = document.getElementById("h" + i); if (el && !el.value) el.value = v; });
     V.querySelectorAll(".hrow input").forEach(inp => inp.addEventListener("input", () => {
-      ui.hAns = { round: room.round, a: [0, 1, 2, 3].map(i => document.getElementById("h" + i).value) };
-      clearTimeout(ui.hDraftT); ui.hDraftT = setTimeout(() => { if (room?.phase === "hq" && ui.hDoneRound !== room.round) submitHhnj(false); }, 1500);
+      ui.hAns = { k: hKey(), a: [0, 1, 2, 3].map(i => document.getElementById("h" + i).value) };
+      clearTimeout(ui.hDraftT); ui.hDraftT = setTimeout(() => { if (room?.phase === "hq" && ui.hDoneRound !== hKey()) submitHhnj(false); }, 1500);
     }));
-    on("hF", "submit", async e => { e.preventDefault(); ui.hDoneRound = room.round; await submitHhnj(true); render(false); });
+    on("hF", "submit", async e => { e.preventDefault(); ui.hDoneRound = hKey(); await submitHhnj(true); render(false); });
     on("hNow", "click", e => { if (!confirmTap(e.currentTarget, "باقي ناس ما خلصوا، اكشف؟")) return; revealHhnj(); });
     if (!ui.hTimer) ui.hTimer = setInterval(hhnjTick, 500);
   },
