@@ -2002,7 +2002,7 @@ async function kalProcess(u, text, timeout) {
       await updateDoc(roomRef(), { phase: "kres", k, result: { word, team, u } });
     } else {
       k = kalNextTurn(k);
-      await updateDoc(roomRef(), { k, round: (room.round || 0) + 1 });
+      await updateDoc(roomRef(), { k, round: (room.round || 0) + 1, kx: (room.kx || 0) + 1 }); // kx: أدوار كمّل الكلمة (ما تنحسب جولات بالعرض)
     }
   } catch (e) { console.error(e); }
   finally { KAL.busy = false; }
@@ -4254,7 +4254,7 @@ function votedCount() {
   const ps = roundPlayers();
   return Object.entries(votes).filter(([u, v]) => v.round === room.round && ps.includes(u)).length;
 }
-const statusBar = () => `<div class="status"><span>الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""}</span><span>الجولة ${ar(room.round || 0)}</span></div>`;
+const statusBar = () => `<div class="status"><span>الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""}</span><span>${room.game === "kal" && room.k ? `الكلمة ${ar(room.k.idx || 1)} من ${ar(room.k.n || 10)}` : `الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}`}</span></div>`;
 const leaveBtn = () => `<button class="btn ghost" id="leave">${isHost() ? "إنهاء الغرفة" : "خروج من الغرفة"}</button>`;
 function bindLeave() { on("leave", "click", e => { if (confirmTap(e.currentTarget)) leaveRoom(); }); }
 
