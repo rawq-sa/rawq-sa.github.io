@@ -448,7 +448,7 @@ const APPLE_LOGO = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.37
 /* ================= ادعُ صاحبك واكسب ================= */
 const REF_DAYS = 7, REF_MAX = 20;
 const refLink = () => location.origin + location.pathname.replace(/index\.html$/, "") + "?ref=" + encodeURIComponent((me?.username || "").toLowerCase());
-const refMsg = () => `تعال العب معي في روق 🎉 ألعاب جلسات: الدخيل وأونو وكمّل الكلمة وارسم وخمّن.\nسجّل من رابطي والعب جولة، وناخذ أنا وأنت VIP أسبوع مجاني 👑\n${refLink()}`;
+const refMsg = () => `تعال العب معي في روق 🎉 ألعاب جلسات: الدخيل وأونو وكمّل الكلمة وارسم وخمّن.\nسجّل من رابطي والعب جولة، وناخذ أنا وأنت VIP أسبوع مجاني 👑\n${refLink()}\n\n📲 تطبيق الآيفون: https://rawq-sa.github.io/get`;
 // اللاعب الجديد: يسجّل مين دعاه (مرة وحدة بعد ما يسوي حسابه)
 async function refRecord() {
   const r = store.get("ref", null); if (!r?.u || !me?.uid) return;
@@ -1883,7 +1883,7 @@ function kFeed(k) {
 
 /* ================= شارك النتيجة (صورة) ================= */
 const appLink = () => location.origin + location.pathname.replace(/index\.html$/, "");
-const waLink = () => "https://wa.me/?text=" + encodeURIComponent(`تعال العب معنا ${GAMES[room?.game] || ""} في روق 🎉\nادخل من هنا واكتب اسمك بس، بدون حساب: ${appLink()}?r=${roomCode}\nأو اكتب كود الغرفة: ${roomCode}`);
+const waLink = () => "https://wa.me/?text=" + encodeURIComponent(`تعال العب معنا ${GAMES[room?.game] || ""} في روق 🎉\nادخل من هنا واكتب اسمك بس، بدون حساب: ${appLink()}?r=${roomCode}\nأو اكتب كود الغرفة: ${roomCode}\n\n📲 وحمّل روق على جوالك: https://rawq-sa.github.io/get`);
 function topOf(map, ids) {
   const max = Math.max(0, ...ids.map(u => map[u] || 0));
   return max > 0 ? ids.filter(u => (map[u] || 0) === max) : [];
