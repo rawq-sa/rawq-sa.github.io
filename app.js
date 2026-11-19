@@ -939,7 +939,10 @@ async function startImp() {
   b.update(roomRef(), { game: "imp", phase: "reveal", round, starter: pick(ps), roundPlayers: ps, names, result: null });
   try { await b.commit(); } catch (e) { console.error(e); toast("ما قدرنا نبدأ الجولة"); }
 }
+// زر الكشف ينضغط مرة وحدة بس (الضغطة الثانية كانت تحسب النقاط مرتين)
+function doOnce(k) { k = roomCode + ":" + room?.round + ":" + k; if (ui.once === k) return false; ui.once = k; return true; }
 async function revealImp() {
+  if (room.phase !== "vote" || !doOnce("imp")) return;
   try {
     const ans = (await getDoc(doc(db, "rooms", roomCode, "hidden", "answer"))).data();
     const tally = {};
@@ -954,9 +957,10 @@ async function revealImp() {
     if (caught) ps.filter(u => !ans.imps.includes(u)).forEach(u => scores[u] = (scores[u] || 0) + 1);
     else ans.imps.forEach(u => scores[u] = (scores[u] || 0) + 2);
     await setRoom({ phase: "result", result: { imps: ans.imps, word: ans.word, cat: ans.cat, tally, caught, guessed: false }, scores });
-  } catch (e) { console.error(e); toast("ما قدرنا نكشف النتيجة"); }
+  } catch (e) { console.error(e); ui.once = null; toast("ما قدرنا نكشف النتيجة"); }
 }
 async function impGuessed() {
+  if (room.result?.guessed || !doOnce("impg")) return;
   const scores = { ...(room.scores || {}) };
   room.result.imps.forEach(u => scores[u] = (scores[u] || 0) + 1);
   await setRoom({ scores, "result.guessed": true, "result.wordShown": true });
@@ -1039,7 +1043,7 @@ function hhnjScore(rows, letter, rej, acc = {}) {
   return out;
 }
 async function revealHhnj() {
-  if (ui.hReveal) return; ui.hReveal = true;
+  if (ui.hReveal || room?.phase !== "hq" || !doOnce("hh")) return; ui.hReveal = true;
   try {
     const snap = await getDocs(collection(db, "rooms", roomCode, "answers"));
     const ps = roundPlayers(), rows = {};
@@ -1049,7 +1053,7 @@ async function revealHhnj() {
     const scores = { ...(room.scores || {}) }, applied = {};
     Object.entries(scored).forEach(([u, r]) => { scores[u] = (scores[u] || 0) + r.total; applied[u] = r.total; });
     await setRoom({ phase: "hres", result: { rows: scored, rej: {}, applied }, scores });
-  } catch (e) { console.error(e); toast("ما قدرنا نجيب الأجوبة"); }
+  } catch (e) { console.error(e); ui.once = null; toast("ما قدرنا نجيب الأجوبة"); }
   ui.hReveal = false;
 }
 // المضيف يضغط على جواب: لو محسوب يلغيه، ولو مو محسوب (مو بالقاموس) يقبله
@@ -1664,10 +1668,10 @@ function whoVotes() {
   return out;
 }
 async function whoShow() {
-  if (ui.wBusy) return; ui.wBusy = true;
+  if (ui.wBusy || room.wshow || !doOnce("who" + (room.wi || 0))) return; ui.wBusy = true;
   try {
     const authors = await whoAuthors();
-    if (!authors) { toast("ما قدرنا نكشف"); return; }
+    if (!authors) { ui.once = null; toast("ما قدرنا نكشف"); return; }
     const i = room.wi || 0, a = authors[i], vs = whoVotes();
     const right = [], tally = {}; let fooled = 0;
     Object.entries(vs).forEach(([u, t]) => { if (u === a) return; tally[t] = (tally[t] || 0) + 1; if (t === a) right.push(u); else fooled++; });
@@ -1695,10 +1699,11 @@ async function startTf() {
   await setRoom({ game: "tf", phase: "tw", round: (room.round || 0) + 1, teller: ps[t], tTurn: t, tText: "", roundPlayers: ps, names, result: null });
 }
 async function tfReveal() {
+  if (room.phase !== "tv" || !doOnce("tf")) return;
   try {
     const d = await getDoc(doc(db, "rooms", roomCode, "priv", room.teller));
     const v = d.exists() ? d.data() : null;
-    if (!v || v.round !== room.round) return toast("ما لقينا الجملة");
+    if (!v || v.round !== room.round) { ui.once = null; return toast("ما لقينا الجملة"); }
     const truth = !!v.truth, ps = roundPlayers(), right = [], wrong = [];
     Object.entries(votes).forEach(([u, x]) => {
       if (x.round !== room.round || u === room.teller || !ps.includes(u) || (x.target !== "t" && x.target !== "f")) return;
@@ -1708,7 +1713,7 @@ async function tfReveal() {
     right.forEach(u => scores[u] = (scores[u] || 0) + 1);
     if (wrong.length) scores[room.teller] = (scores[room.teller] || 0) + wrong.length;
     await setRoom({ phase: "tres", result: { truth, right, wrong }, scores });
-  } catch (e) { console.error(e); toast("ما قدرنا نكشف"); }
+  } catch (e) { console.error(e); ui.once = null; toast("ما قدرنا نكشف"); }
 }
 
 // ---- ارسم وخمّن ----
