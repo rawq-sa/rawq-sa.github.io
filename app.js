@@ -1339,6 +1339,7 @@ async function jakProcess(list) {
         g.order.filter(x => jTeam(g.seats[x]) === g.winner).forEach(x => scores[x] = (scores[x] || 0) + 1);
         upd.scores = scores; upd.phase = "jakend";
       }
+      b.update(roomRef(), upd);
       const prev = room.jak, prevPhase = room.phase;
       room.jak = g; if (upd.phase) room.phase = upd.phase;
       try { await b.commit(); }
