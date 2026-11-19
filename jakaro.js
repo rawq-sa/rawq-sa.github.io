@@ -16,7 +16,7 @@ const VAL = { A: 1, Q: 12, K: 13 };
 export const jVal = c => VAL[jRank(c)] || +jRank(c);
 export function jHelp(c) {
   const r = jRank(c);
-  return { A: "طلّع أو ١", K: "طلّع أو ١٣", "4": "ورا ٤", "7": "قسّم ٧", J: "بدّل", "5": "أي كورة ٥" }[r] || `امشِ ${AR(jVal(c))}`;
+  return { A: "طلّع أو ١ أو ١١", K: "طلّع أو ١٣", "4": "ورا ٤", "7": "قسّم ٧", J: "بدّل", "5": "٥ لك أو لخويك" }[r] || `امشِ ${AR(jVal(c))}`;
 }
 export const jTeam = s => s % 2;
 // الفريق داخل اللعبة: لو لاعبين بس (duo) كل واحد فريق لحاله
@@ -62,12 +62,12 @@ function step(g, s, i, m, kills) { if (m.kill) { g.pos[m.kill[0]][m.kill[1]] = -
 export function jMoves(g, s, card) {
   const R = jRank(card), c = jCtrl(g, s), L = [], Q = [0, 1, 2, 3];
   const go = k => Q.forEach(i => fwd(g, c, i, k) && L.push({ t: "f", a: [c, i], k }));
-  if (R === "A" || R === "K") { const o = out(g, c); if (o) L.push({ t: "o", a: [c, o.i] }); go(R === "A" ? 1 : 13); }
+  if (R === "A" || R === "K") { const o = out(g, c); if (o) L.push({ t: "o", a: [c, o.i] }); if (R === "A") { go(1); go(11); } else go(13); }
   else if (R === "4") Q.forEach(i => back(g, c, i, 4) && L.push({ t: "b", a: [c, i], k: 4 }));
-  else if (R === "5") jSeats(g).forEach(x => Q.forEach(i => fwd(g, x, i, 5) && L.push({ t: "f", a: [x, i], k: 5 })));
+  else if (R === "5") jSeats(g).filter(x => jTeamOf(g, x) === jTeamOf(g, s)).forEach(x => Q.forEach(i => fwd(g, x, i, 5) && L.push({ t: "f", a: [x, i], k: 5 })));
   else if (R === "J") Q.forEach(i => {
-    const r = g.pos[c][i]; if (r < 0 || r >= TRACK) return;
-    jSeats(g).filter(x => jTeamOf(g, x) !== jTeamOf(g, c)).forEach(x => Q.forEach(j => { const q = g.pos[x][j]; if (q >= 0 && q < TRACK) L.push({ t: "s", a: [c, i], b: [x, j] }); }));
+    const r = g.pos[c][i]; if (r <= 0 || r >= TRACK) return; // خانة الطلعة أمان: ما ينبدل منها ولا إليها
+    jSeats(g).filter(x => jTeamOf(g, x) !== jTeamOf(g, c)).forEach(x => Q.forEach(j => { const q = g.pos[x][j]; if (q > 0 && q < TRACK) L.push({ t: "s", a: [c, i], b: [x, j] }); }));
   });
   else if (R === "7") Q.forEach(i => {
     if (fwd(g, c, i, 7)) L.push({ t: "f", a: [c, i], k: 7 });

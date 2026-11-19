@@ -15,7 +15,7 @@ import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } fr
 import { ICONS } from "./icons.js?v=32";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=38";
-import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=11";
+import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=12";
 
 /* ================= helpers ================= */
 const ar = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
@@ -4619,10 +4619,11 @@ const ROOM_VIEWS = {
     else if (J.a) {
       const LA = L.filter(m => ak(m) === J.a);
       if (RJ) LA.forEach(m => cand.add(bk(m)));
+      if (!R7 && !RJ) steps = LA.map(m => m.k).sort((a, b) => a - b);
       if (R7) { if (J.k == null) steps = [...new Set(LA.map(m => m.t === "7" ? m.k : 7))].sort((a, b) => a - b); else LA.filter(m => m.t === "7" && m.k === J.k).forEach(m => cand.add(bk(m))); }
     }
     // وين بتوصل كل كورة بالورقة المختارة
-    const dests = J.card && !J.a ? L.filter(m => m.t !== "s" && m.t !== "7").map(m => { const [s0, i0] = m.a, r0 = g.pos[s0][i0]; return [s0, m.t === "o" ? 0 : m.t === "b" ? (r0 - m.k + 76) % 76 : r0 + m.k]; }) : [];
+    const dests = J.card && (!J.a || (!R7 && !RJ)) ? L.filter(m => m.t !== "s" && m.t !== "7" && (!J.a || ak(m) === J.a)).map(m => { const [s0, i0] = m.a, r0 = g.pos[s0][i0]; return [s0, m.t === "o" ? 0 : m.t === "b" ? (r0 - m.k + 76) % 76 : r0 + m.k]; }) : [];
     const rot = playing ? mySeat : 0;
     const { svg, now } = jBoard(g, { rot, cand, dests, left: playing ? jCtrl(g, mySeat) : null, pick: J.a, prev: ui.jPrev?.round === room.round ? ui.jPrev.p : {}, top: g.top, turnSeat: g.winner == null ? g.seats[turnU] : null });
     ui.jPrev = { round: room.round, p: now };
@@ -4631,11 +4632,11 @@ const ROOM_VIEWS = {
       : waiting ? "لحظة…"
       : !anyMove ? "ما عندك ولا حركة 😅 اختار ورقة تحرقها"
       : !J.card ? "دورك! اختار ورقة 👇"
-      : R7 && J.a && J.k == null ? "كم خطوة لهالكورة؟"
+      : J.a && !RJ && (!R7 || J.k == null) ? "كم خطوة لهالكورة؟"
       : R7 && J.a ? `اختار كورة ثانية تمشي الباقي (${ar(7 - J.k)})`
       : RJ && J.a ? "اختار كورة الخصم اللي تبي تبدّل معها"
       : RJ ? "اختار كورتك اللي تبي تبدّلها"
-      : jRank(J.card) === "5" ? "اختار أي كورة على اللوح (حتى كورة غيرك)"
+      : jRank(J.card) === "5" ? "اختار كورتك أو كورة خويك"
       : "اختار الكورة اللي تبي تحركها";
     const teamOf = u => jTeamOf(g, g.seats[u]);
     V.innerHTML = `<section class="jak">
@@ -4647,18 +4648,19 @@ const ROOM_VIEWS = {
       ${ctrl != null && ctrl !== mySeat ? `<p class="jnote">خلّصت كوراتك 👑 الحين تلعب بكورات خويك</p>` : ""}
       <div class="ubar ${myTurn ? "mine" : ""}">${g.top ? jCardSVG(g.top, 'class="jtop"') : ""}<span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 8 ? "hot" : ""}" id="jSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
       ${g.winner != null ? "" : `<div class="utime ${myTurn ? "mine" : ""}" aria-hidden="true"><i style="--s:${(tm.left / tm.dur).toFixed(3)};--d:${tm.left.toFixed(2)}s"></i></div>`}
-      ${steps.length ? `<div class="jsteps">${steps.map(k => `<button class="chip" data-k="${k}">${ar(k)}${k === 7 ? " كلها" : ""}</button>`).join("")}<button class="chip ghost" data-k="x">إلغاء</button></div>` : ""}
+      ${steps.length ? `<div class="jsteps">${steps.map(k => `<button class="chip" data-k="${k}">${ar(k)}${R7 && k === 7 ? " كلها" : ""}</button>`).join("")}<button class="chip ghost" data-k="x">إلغاء</button></div>` : ""}
       <p class="ulast">${esc(g.last || "")}</p>
       ${isHost() ? "" : `<p class="hint center uhost" id="jHost" hidden>📵 يمكن المضيف طالع من اللعبة، الدور بيمشي أول ما يرجع</p>`}
       ${playing ? `<div class="jhand ${myTurn ? "" : "wait"}">${myHand.map(c => { const ok = movesOf(c).length > 0; return `<button class="jcard ${J.card === c ? "on" : ""} ${myTurn && !ok && anyMove ? "no" : ""}" data-card="${esc(c)}">${jCardSVG(c)}<span>${jHelp(c)}</span></button>`; }).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       ${myTurn && !anyMove && J.card && !waiting ? `<button class="btn" id="jBurn">احرق هالورقة 🔥</button>` : ""}
       <details class="jrules"><summary>قوانين الجكارو باختصار</summary><ul>
-        <li><b>A</b> أو <b>K</b>: تطلّع كورة من البيت، أو تمشي ١ / ١٣</li>
+        <li><b>A</b>: تطلّع كورة من البيت، أو تمشي ١ أو ١١</li>
+        <li><b>K</b>: تطلّع كورة من البيت، أو تمشي ١٣</li>
         <li><b>٤</b>: ترجع ٤ خطوات لورا (حيلة: من خانة الطلعة ترجع وتصير قريب من الدار)</li>
         <li><b>٧</b>: تقسمها على كورتين (مثلاً ٣ + ٤)</li>
-        <li><b>J</b>: تبدّل مكان كورتك مع كورة خصم</li>
-        <li><b>٥</b>: تحرك أي كورة على اللوح ٥ خطوات</li>
-        <li><b>Q</b> = ١٢، والباقي بأرقامها</li>
+        <li><b>J</b>: تبدّل مكان كورتك مع كورة خصم (مو من البيت ولا الدار ولا خانة الطلعة)</li>
+        <li><b>٥</b>: تحرك كورتك أو كورة خويك ٥ خطوات</li>
+        <li><b>Q</b> = ١٢، و<b>١٠</b> = ١٠، والباقي بأرقامها</li>
         <li>لو وقفت على كورة خصم ترجعها البيت 💥</li>
         <li>اللي يدخّل كوراته كلها يلعب بكورات خويه، وأول فريق يدخّل الثمان يفوز 🏆</li></ul></details>
       <div class="foot">${leaveBtn()}</div></section>`;
@@ -4675,6 +4677,7 @@ const ROOM_VIEWS = {
     onAll("[data-k]", b => {
       if (b.dataset.k === "x") { J.a = null; J.k = null; return render(false); }
       const k = +b.dataset.k;
+      if (!R7) return send(L.find(m => ak(m) === J.a && m.t === "f" && m.k === k));
       if (k === 7) return send(L.find(m => ak(m) === J.a && m.t === "f"));
       J.k = k; render(false);
     });
@@ -4695,6 +4698,7 @@ const ROOM_VIEWS = {
       if (!LA.length) { render(false); return toast("هالكورة ما تقدر تتحرك بهالورقة"); }
       if (R7) { const ks = new Set(LA.map(m => m.t === "7" ? m.k : 7)); if (ks.size === 1 && ks.has(7)) return send(LA[0]); J.a = key; J.k = null; return render(false); }
       if (RJ) { J.a = key; return render(false); }
+      if (LA.length > 1 && LA.every(m => m.t === "f")) { J.a = key; return render(false); } // الآس: ١ أو ١١
       send(LA[0]);
     }));
     onAll("[data-pf]", b => showProfile(b.dataset.pf));
