@@ -16,7 +16,7 @@ const VAL = { A: 1, Q: 12, K: 13 };
 export const jVal = c => VAL[jRank(c)] || +jRank(c);
 export function jHelp(c) {
   const r = jRank(c);
-  return { A: "طلّع أو ١ أو ١١", K: "طلّع أو ١٣", "4": "ورا ٤", "7": "قسّم ٧", J: "بدّل", "5": "٥ لك أو لخويك" }[r] || `امشِ ${AR(jVal(c))}`;
+  return { "10": "١٠ أو احرق", A: "طلّع أو ١ أو ١١", K: "طلّع أو ١٣", "4": "ورا ٤", "7": "قسّم ٧", J: "بدّل", "5": "٥ لك أو لخويك" }[r] || `امشِ ${AR(jVal(c))}`;
 }
 export const jTeam = s => s % 2;
 // الفريق داخل اللعبة: لو لاعبين بس (duo) كل واحد فريق لحاله
@@ -77,7 +77,7 @@ export function jMoves(g, s, card) {
       Q.forEach(j => { if (j !== i && fwd(g2, c, j, 7 - k)) L.push({ t: "7", a: [c, i], k, b: [c, j] }); });
     }
   });
-  else go(jVal(card));
+  else { go(jVal(card)); if (R === "10") L.push({ t: "x", a: [c, -1] }); } // العشرة: تمشي ١٠ أو تحرق على اللي بعدك
   return L;
 }
 export const jKey = m => [m.t, m.a, m.b || "", m.k || ""].join("|");

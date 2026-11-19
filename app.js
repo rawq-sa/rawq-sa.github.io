@@ -15,7 +15,7 @@ import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } fr
 import { ICONS } from "./icons.js?v=32";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=38";
-import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=12";
+import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=13";
 
 /* ================= helpers ================= */
 const ar = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
@@ -1301,6 +1301,18 @@ function jakApply(u, mv, g, st) {
   } else if (mv.type === "play") {
     let m; try { m = JSON.parse(mv.color); } catch (e) { return null; }
     const res = jApply(g, s, card, m); if (!res) return null;
+    if (res.m.t === "x") {
+      // العشرة: اللي بعدك تنحرق له ورقة ويروح دوره
+      const nu = ord[(k + 1) % ord.length], nh = st.hands[nu] || [];
+      if (nh.length) { const bc = nh.splice(Math.floor(Math.random() * nh.length), 1)[0]; st.discard.push(bc); if (!st.deck.length) { st.deck = shuffle(st.discard); st.discard = []; } if (st.deck.length) nh.push(st.deck.pop()); st.hands[nu] = nh; }
+      hand.splice(hand.indexOf(card), 1); st.discard.push(card);
+      if (!st.deck.length) { st.deck = shuffle(st.discard); st.discard = []; }
+      if (st.deck.length) hand.push(st.deck.pop());
+      st.hands[u] = hand; g.top = card; g.deck = st.deck.length;
+      g.turn = (k + 2) % ord.length;
+      g.last = `${who} لعب ${ar(10)} وحرق على @${pname(nu)} 🔥 وراح دوره`; g.v = (g.v || 0) + 1;
+      return nu === u ? [u] : [u, nu];
+    }
     const x = res.m, mine = x.a[0] === s, whose = mine ? "" : ` @${pname(jSeatU(g, x.a[0]))}`;
     msg = x.t === "o" ? `${who} طلّع كورة 🟢`
       : x.t === "b" ? `${who} رجع ${ar(4)} لورا`
@@ -1309,7 +1321,7 @@ function jakApply(u, mv, g, st) {
       : `${who} مشّى${mine ? "" : " كورة" + whose} ${ar(x.k)}`;
     if (res.kills.length) msg += ` وضرب ${res.kills.map(([ks]) => "@" + pname(jSeatU(g, ks))).join(" و ")} 💥`;
     if (x.a[0] === s && g.pos[s][x.a[1]] >= 76 && x.t !== "s") msg += " ودخّل الدار 🏠";
-  } else return null;
+  } else if (mv.type !== "kick") return null;
   hand.splice(hand.indexOf(card), 1); st.discard.push(card);
   if (!st.deck.length) { st.deck = shuffle(st.discard); st.discard = []; }
   if (st.deck.length) hand.push(st.deck.pop());
@@ -4623,7 +4635,7 @@ const ROOM_VIEWS = {
       if (R7) { if (J.k == null) steps = [...new Set(LA.map(m => m.t === "7" ? m.k : 7))].sort((a, b) => a - b); else LA.filter(m => m.t === "7" && m.k === J.k).forEach(m => cand.add(bk(m))); }
     }
     // وين بتوصل كل كورة بالورقة المختارة
-    const dests = J.card && (!J.a || (!R7 && !RJ)) ? L.filter(m => m.t !== "s" && m.t !== "7" && (!J.a || ak(m) === J.a)).map(m => { const [s0, i0] = m.a, r0 = g.pos[s0][i0]; return [s0, m.t === "o" ? 0 : m.t === "b" ? (r0 - m.k + 76) % 76 : r0 + m.k]; }) : [];
+    const dests = J.card && (!J.a || (!R7 && !RJ)) ? L.filter(m => m.t !== "s" && m.t !== "7" && m.t !== "x" && (!J.a || ak(m) === J.a)).map(m => { const [s0, i0] = m.a, r0 = g.pos[s0][i0]; return [s0, m.t === "o" ? 0 : m.t === "b" ? (r0 - m.k + 76) % 76 : r0 + m.k]; }) : [];
     const rot = playing ? mySeat : 0;
     const { svg, now } = jBoard(g, { rot, cand, dests, left: playing ? jCtrl(g, mySeat) : null, pick: J.a, prev: ui.jPrev?.round === room.round ? ui.jPrev.p : {}, top: g.top, turnSeat: g.winner == null ? g.seats[turnU] : null });
     ui.jPrev = { round: room.round, p: now };
@@ -4653,6 +4665,7 @@ const ROOM_VIEWS = {
       ${isHost() ? "" : `<p class="hint center uhost" id="jHost" hidden>📵 يمكن المضيف طالع من اللعبة، الدور بيمشي أول ما يرجع</p>`}
       ${playing ? `<div class="jhand ${myTurn ? "" : "wait"}">${myHand.map(c => { const ok = movesOf(c).length > 0; return `<button class="jcard ${J.card === c ? "on" : ""} ${myTurn && !ok && anyMove ? "no" : ""}" data-card="${esc(c)}">${jCardSVG(c)}<span>${jHelp(c)}</span></button>`; }).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       ${myTurn && !anyMove && J.card && !waiting ? `<button class="btn" id="jBurn">احرق هالورقة 🔥</button>` : ""}
+      ${live && J.card && jRank(J.card) === "10" && !J.a ? `<button class="btn" id="jTen">🔥 احرق على @${esc(pname(ord[(g.turn + 1) % ord.length]))} (يروح دوره)</button><p class="hint center">أو اختار كورة تمشي ${ar(10)}</p>` : ""}
       <details class="jrules"><summary>قوانين الجكارو باختصار</summary><ul>
         <li><b>A</b>: تطلّع كورة من البيت، أو تمشي ١ أو ١١</li>
         <li><b>K</b>: تطلّع كورة من البيت، أو تمشي ١٣</li>
@@ -4660,7 +4673,8 @@ const ROOM_VIEWS = {
         <li><b>٧</b>: تقسمها على كورتين (مثلاً ٣ + ٤)</li>
         <li><b>J</b>: تبدّل مكان كورتك مع كورة خصم (مو من البيت ولا الدار ولا خانة الطلعة)</li>
         <li><b>٥</b>: تحرك كورتك أو كورة خويك ٥ خطوات</li>
-        <li><b>Q</b> = ١٢، و<b>١٠</b> = ١٠، والباقي بأرقامها</li>
+        <li><b>١٠</b>: تمشي ١٠، أو تحرق على اللي بعدك (تنحرق له ورقة ويروح دوره) 🔥</li>
+        <li><b>Q</b> = ١٢، والباقي بأرقامها</li>
         <li>لو وقفت على كورة خصم ترجعها البيت 💥</li>
         <li>اللي يدخّل كوراته كلها يلعب بكورات خويه، وأول فريق يدخّل الثمان يفوز 🏆</li></ul></details>
       <div class="foot">${leaveBtn()}</div></section>`;
@@ -4674,6 +4688,7 @@ const ROOM_VIEWS = {
       J.card = J.card === c ? null : c; J.a = null; J.k = null; render(false);
     });
     on("jBurn", "click", () => { const c = J.card; ui.jk.card = null; jakMove("pass", c); });
+    on("jTen", "click", () => { const m = L.find(m => m.t === "x"); if (m) send(m); });
     onAll("[data-k]", b => {
       if (b.dataset.k === "x") { J.a = null; J.k = null; return render(false); }
       const k = +b.dataset.k;
