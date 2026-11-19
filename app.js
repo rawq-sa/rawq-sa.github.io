@@ -2949,12 +2949,12 @@ VIEWS.rename = () => {
 /* ================= الترحيب وشرح اللعبة ================= */
 const WL_GAMES = ["imp", "draw", "who", "most", "hhnj", "kal", "tf"];
 const WL_ART = {
-  games: () => `<div class="wa wa-games">
+  games: () => `<div class="wla wa-games">
       <div class="wa-glow"></div>
       <div class="wa-fan">${["yS", "bD", "r7", "wF", "g9"].map((c, i) => `<span class="wa-c" style="--i:${i - 2}">${cardSVG(c)}</span>`).join("")}</div>
       <div class="wa-chips">${WL_GAMES.slice(0, 4).map((k, i) => `<span class="wa-chip" style="--d:${i * 0.08}s"><i aria-hidden="true">${ICONS[k]}</i>${GAMES[k]}</span>`).join("")}<span class="wa-chip more" style="--d:.32s">+${ar(WL_GAMES.length - 4)} ألعاب</span></div>
     </div>`,
-  online: () => `<div class="wa wa-online">
+  online: () => `<div class="wla wa-online">
       <div class="wa-glow mint"></div>
       <div class="wa-room">
         <div class="wa-rh"><span>غرفة</span><b dir="ltr">K7Q2</b></div>
@@ -2963,7 +2963,7 @@ const WL_ART = {
       </div>
       <div class="wa-notif"><i aria-hidden="true">🔔</i><span><b>فهد</b> يبيك تلعب معه 🎮</span></div>
     </div>`,
-  level: () => `<div class="wa wa-level">
+  level: () => `<div class="wla wa-level">
       <div class="wa-glow gold"></div>
       <div class="wa-me"><span class="fr f_gold" style="--fs:5px">${avatar("روق", null, 78, "★")}</span><span class="wa-vip">VIP 👑</span></div>
       <div class="wa-lv"><span>مستوى ١٢</span><i><b></b></i><span class="wa-xp">+٢٥ خبرة ⭐</span></div>
