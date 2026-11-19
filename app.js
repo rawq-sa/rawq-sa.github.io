@@ -174,6 +174,8 @@ const CATALOG = [
 ];
 const minPlayers = g => CATALOG.find(c => c.id === g)?.min || 3;
 
+// شريط السدو: لعبة سعودية ١٠٠٪
+const SA_RIBBON = `<svg class="sa-rib" viewBox="0 0 320 90" role="img" aria-label="لعبة سعودية ١٠٠٪: بلهجتنا وسوالفنا وألعابنا الشعبية" direction="rtl"><defs><linearGradient id="sag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1b8"/><stop offset=".45" stop-color="#e6b54a"/><stop offset="1" stop-color="#a8761c"/></linearGradient><linearGradient id="sagg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0b6b40"/><stop offset="1" stop-color="#05452a"/></linearGradient><pattern id="sasd" width="16" height="14" patternUnits="userSpaceOnUse"><rect width="16" height="14" fill="#8e1d26"/><path d="M0 14 L8 3 L16 14Z" fill="#f2b134"/><path d="M4 14 L8 8 L12 14Z" fill="#1a0f0a"/></pattern></defs><rect x="4" y="10" width="312" height="70" rx="35" fill="url(#sag)"/><rect x="8" y="14" width="304" height="62" rx="31" fill="url(#sagg)"/><rect x="238" y="14" width="74" height="62" rx="31" fill="url(#sasd)"/><rect x="238" y="14" width="22" height="62" fill="url(#sasd)"/><circle cx="275" cy="45" r="22" fill="#04361f" stroke="url(#sag)" stroke-width="2"/><text x="275" y="53" text-anchor="middle" font-family="Lalezar,'IBM Plex Sans Arabic',sans-serif" font-size="22" fill="url(#sag)">روق</text><text x="125" y="44" text-anchor="middle" font-family="Lalezar,'IBM Plex Sans Arabic',sans-serif" font-size="27" fill="#fff6dc">لعبة سعودية <tspan fill="url(#sag)">١٠٠٪</tspan></text><text x="125" y="64" text-anchor="middle" font-family="'IBM Plex Sans Arabic',sans-serif" font-size="12.5" fill="#bfe8cf">بلهجتنا • سوالفنا • ألعابنا الشعبية</text></svg>`;
 const V = document.getElementById("view");
 const HDR = document.getElementById("hdr");
 const BANNER = document.getElementById("banner");
@@ -3812,6 +3814,7 @@ VIEWS.home = () => {
         <button class="btn small">دخول</button>
       </form>
     </div>
+    ${SA_RIBBON}
 
     ${showInstallCard() ? `<div class="inst"><img src="icon-180.png" alt="" width="52" height="52">
       <div class="inst-t"><b>ثبّت روق على شاشتك</b><span class="hint">تفتح بضغطة مثل التطبيق، وبدون متصفح</span></div>
