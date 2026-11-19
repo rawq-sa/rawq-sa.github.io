@@ -1540,6 +1540,7 @@ async function awardXp() {
   try {
     await updateDoc(doc(db, "users", me.uid), { xp: (me.xp || 0) + add, xpAt: serverTimestamp(), stats: s, ...mu });
     me.xp = (me.xp || 0) + add; me.stats = s; Object.assign(me, mu);
+    maybeAskRating(won);
     if (s.games <= 3) setTimeout(refCheck, 4000);
     const fresh = achGot(s, me.xp, me.username).filter(x => !before.includes(x.id));
     setTimeout(() => {
@@ -3476,6 +3477,16 @@ function sheet(html) {
   el.addEventListener("click", e => { if (e.target === el || e.target.closest("[data-close]")) el.remove(); });
   return el;
 }
+/* ================= تقييم الآب ستور ================= */
+// بعد فوز: نطلب نافذة التقييم الرسمية من آبل (آبل نفسها تتحكم كم مرة تطلع، وقوانينها تمنع نافذة خاصة)
+function maybeAskRating(won) {
+  if (!won || !IN_APP || !capPlug("InAppReview") || (me.stats?.games || 0) < 3) return;
+  if (Date.now() - store.get("rateAt", 0) < 14 * 864e5) return;
+  store.set("rateAt", Date.now());
+  setTimeout(() => {
+    try { const p = window.Capacitor.nativePromise ? window.Capacitor.nativePromise("InAppReview", "requestReview", {}) : window.Capacitor.Plugins.InAppReview.requestReview(); p?.catch?.(() => {}); } catch (e) {}
+  }, 2500);
+}
 /* ================= سلسلة الأيام ================= */
 const dayKey = ms => new Date(ms + 3 * 3600e3).toISOString().slice(0, 10); // بتوقيت السعودية
 const streakNow = () => { const last = me?.streakAt?.toMillis?.() || 0; if (!last) return 0; const d = (Date.parse(dayKey(Date.now())) - Date.parse(dayKey(last))) / 864e5; return d <= 1 ? me.streak || 0 : 0; };
@@ -4073,7 +4084,7 @@ VIEWS.profile = () => {
       <div class="li"><span class="nm" dir="ltr">@${esc(me.username)}</span><button class="btn small ghost" id="copy">انسخ</button>${isOwner() ? "" : `<button class="btn small ghost" id="rename">غيّر</button>`}</div>
       <p class="hint">أرسله لأصحابك عشان يضيفونك.</p></div>
 
-    <div class="foot"><button class="btn ghost" id="tour">شرح اللعبة</button><button class="btn ghost" id="switchAcc">🔄 بدّل الحساب</button><button class="btn ghost" id="out">تسجيل خروج</button>
+    <div class="foot">${IN_APP ? `<a class="btn" id="rateApp" href="itms-apps://apps.apple.com/app/id6835195359?action=write-review">قيّم روق ⭐ وساعدنا ننتشر</a>` : `<a class="btn" href="https://apps.apple.com/app/id6835195359" target="_blank" rel="noopener">حمّل روق من الآب ستور ⭐</a>`}<button class="btn ghost" id="tour">شرح اللعبة</button><button class="btn ghost" id="switchAcc">🔄 بدّل الحساب</button><button class="btn ghost" id="out">تسجيل خروج</button>
       <div class="row legal"><a class="link" href="terms.html" target="_blank" rel="noopener">شروط الاستخدام</a><a class="link" href="privacy.html" target="_blank" rel="noopener">سياسة الخصوصية</a>${isOwner() ? "" : `<button class="link danger-link" id="delAcc">احذف حسابي</button>`}</div></div></section>`;
   on("tour", "click", () => { ui.slide = 0; go("welcome"); });
   on("delAcc", "click", openDeleteAccount);
