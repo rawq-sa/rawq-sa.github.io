@@ -177,14 +177,18 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
     for (let i = 0; i < 4; i++) s += `<circle cx="${f1(bx + (i % 2 ? 8.5 : -8.5))}" cy="${f1(by + (i < 2 ? -8.5 : 8.5))}" r="5.6" fill="url(#jHole)"/>`;
   }
   // خانات المسار + أرقام صغيرة للعد (من خانة طلعة كل لاعب)
+  const placed = [], HOLES = [...CELLS, ...[0, 1, 2, 3].flatMap(d => [0, 1, 2, 3].map(h => P2(R1 - 6 - (h + 1) * 19, 0, armAng(d))))];
+  CELLS.forEach(([x, y]) => s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.6" fill="url(#jHole)"/>`);
   CELLS.forEach(([x, y], c) => {
-    s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.6" fill="url(#jHole)"/>`;
     const n = c % SIDE; // رقم الخانة من بداية الربع
     const L = Math.hypot(x - CX, y - CY), dd = ((Math.floor(c / SIDE)) % 4), a = armAng(dd), ax = Math.cos(a), ay = Math.sin(a);
     const along = (x - CX) * ax + (y - CY) * ay, px = CX + ax * along, py = CY + ay * along; let ox = x - px, oy = y - py, ol = Math.hypot(ox, oy);
     if (along > R1 - 2) { ox = CX - x; oy = CY - y; ol = L; } // عند راس الذراع الرقم يروح لجهة النص عشان ما يطلع برا
     else if (ol < 6 || along < R0 + 4) { ox = x - CX; oy = y - CY; ol = L; }
     const tx = x + ox / ol * 11, ty = y + oy / ol * 11;
+    // نرتّبها: ما نكتب رقم لو بيركب على خانة ثانية أو رقم ثاني
+    if (HOLES.some(([hx, hy]) => Math.hypot(hx - tx, hy - ty) < 9) || placed.some(([px2, py2]) => Math.hypot(px2 - tx, py2 - ty) < 11)) return;
+    placed.push([tx, ty]);
     s += `<text x="${f1(tx)}" y="${f1(ty)}" text-anchor="middle" dominant-baseline="central" font-family="'IBM Plex Sans Arabic',Tahoma,sans-serif" font-weight="600" font-size="7.5" fill="#f6dc9a">${AR(n + 1)}</text>`;
   });
   // خانة الطلعة: حلقة ذهبية (بدون ألوان)
