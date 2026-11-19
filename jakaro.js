@@ -158,17 +158,15 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
   const GOLD = "#e6c06a";
   let s = `<svg class="jsvg" viewBox="0 0 420 420" direction="ltr" style="direction:ltr" role="img" aria-label="لوح الجكارو">
   <defs>
-    <linearGradient id="jBlk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a2a2e"/><stop offset=".5" stop-color="#161618"/><stop offset="1" stop-color="#0a0a0b"/></linearGradient>
-    <pattern id="jGrain" width="9" height="140" patternUnits="userSpaceOnUse"><path d="M4 0 Q6 35 3.5 70 T4.5 140" fill="none" stroke="#fff" stroke-opacity=".045"/></pattern>
-    <radialGradient id="jHole" cx="50%" cy="38%" r="62%"><stop offset="0" stop-color="#b98d5c"/><stop offset=".75" stop-color="#e3c193"/><stop offset="1" stop-color="#f3dcb4"/></radialGradient>
+    <linearGradient id="jBlk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9a5f30"/><stop offset=".5" stop-color="#7a4520"/><stop offset="1" stop-color="#4f2a10"/></linearGradient>
+    <pattern id="jGrain" width="14" height="160" patternUnits="userSpaceOnUse"><path d="M4 0 Q7 40 3.5 80 T4.5 160" fill="none" stroke="#2a1205" stroke-opacity=".22" stroke-width="1.2"/><path d="M10 0 Q12 50 9 95 T10.5 160" fill="none" stroke="#c48a55" stroke-opacity=".12"/></pattern>
+    <radialGradient id="jHole" cx="50%" cy="35%" r="62%"><stop offset="0" stop-color="#1e0d03"/><stop offset=".78" stop-color="#3a1d09"/><stop offset="1" stop-color="#b47a46"/></radialGradient>
     <linearGradient id="jGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1b8"/><stop offset=".45" stop-color="#e6b54a"/><stop offset="1" stop-color="#a8761c"/></linearGradient>
     ${JCOL.map((c, k) => `<radialGradient id="jM${k}" cx="34%" cy="28%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".22" stop-color="${c.fill}" stop-opacity=".9"/><stop offset=".6" stop-color="${c.fill}"/><stop offset="1" stop-color="${c.dark}"/></radialGradient>`).join("")}
   </defs>
   <path d="${D(OCT(205, CX, CY + 5))}" fill="#000" opacity=".45"/>
   <path d="${D(OCT(205))}" fill="url(#jBlk)"/><path d="${D(OCT(205))}" fill="url(#jGrain)"/>
   <path d="${D(OCT(198))}" fill="none" stroke="${GOLD}" stroke-opacity=".55" stroke-width="1.2"/>`;
-  // أشكال الورق المحفورة بين الأذرع
-  ["h", "c", "d", "s"].forEach((k, i) => { const a = Math.PI / 2 + i * Math.PI / 2 + Math.PI, x = CX + Math.cos(a) * 128, y = CY + Math.sin(a) * 128; s += `<path d="${SUIT[k]}" transform="translate(${f1(x)} ${f1(y)}) scale(2.1)" fill="none" stroke="${GOLD}" stroke-opacity=".6" stroke-width=".55"/>`; });
   // دور مين: توهج ذهبي خفيف على ذراعه
   if (turnSeat != null) { const d0 = ((turnSeat - rot) % 4 + 4) % 4, a = armAng(d0), p0 = P2(R0 - 4, 0, a), p1 = P2(R1 + AW, 0, a); s += `<line x1="${f1(p0[0])}" y1="${f1(p0[1])}" x2="${f1(p1[0])}" y2="${f1(p1[1])}" stroke="#ffe7a3" stroke-opacity=".13" stroke-width="64" stroke-linecap="round"/>`; }
   // الدار (بدون ألوان) + البيوت
@@ -192,7 +190,7 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
   for (let d = 0; d < 4; d++) { const [x, y] = CELLS[d * SIDE]; s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="9.8" fill="none" stroke="${GOLD}" stroke-width="1.8"/>`; }
   // النص: ثماني أسود وروق ذهبي
   s += `<path d="${D(OCT(44))}" fill="#000" stroke="url(#jGold)" stroke-width="2.4"/><path d="${D(OCT(39))}" fill="none" stroke="${GOLD}" stroke-opacity=".35"/>
-    <text x="${CX}" y="${CY + 13}" text-anchor="middle" font-family="RawqRuqaa,'Aref Ruqaa',Lalezar,serif" font-size="36" fill="url(#jGold)">روق</text>`;
+    <text x="${CX}" y="${CY + 13}" text-anchor="middle" font-family="RawqRuqaa,Amiri,Lalezar,serif" font-weight="700" font-size="38" fill="url(#jGold)">روق</text>`;
   const marbles = [];
   for (const k of seats) for (let i = 0; i < 4; i++) {
     const key = k + ":" + i, r = g.pos[k][i], [x, y] = jSpot(k, i, r, rot), p = prev[key];
