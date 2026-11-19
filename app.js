@@ -1067,7 +1067,8 @@ async function toggleReject(u, ci) {
   await setRoom({ result: { rows: scored, rej, acc, applied }, scores });
 }
 async function submitHhnj(done) {
-  const a = [0, 1, 2, 3].map(i => (document.getElementById("h" + i)?.value || "").trim().slice(0, 40));
+  const keep = ui.hAns?.round === room.round ? ui.hAns.a : [];
+  const a = [0, 1, 2, 3].map(i => { const el = document.getElementById("h" + i); return String((el ? el.value : keep[i]) || "").trim().slice(0, 40); });
   try { await setDoc(doc(db, "rooms", roomCode, "answers", me.uid), { round: room.round, a, done: !!done }); }
   catch (e) { console.error(e); if (done) toast("ما انرسلت أجوبتك، جرّب مرة ثانية"); }
 }
@@ -4278,11 +4279,17 @@ function hhnjTick() {
   if (bar) bar.style.transform = `scaleX(${Math.max(0, ms) / (HHNJ_SECS * 1000)})`;
   if (lt) lt.textContent = left ? `باقي ${ar(left)} ثانية` : "خلص الوقت!";
   if (!left && ui.hDoneRound !== room.round && roundPlayers().includes(me.uid)) { ui.hDoneRound = room.round; submitHhnj(true).then(() => render(false)); }
-  if (isHost() && (ms < -3000 || (ui.hDoneCount || 0) >= roundPlayers().length)) revealHhnj();
+  const stopped = ui.hStop?.round === room.round && Date.now() - ui.hStop.at > 4000;
+  if (isHost() && (ms < -3000 || stopped || (ui.hDoneCount || 0) >= roundPlayers().length)) revealHhnj();
 }
 function watchHhnjDone() {
   sub("hdone", onSnapshot(collection(db, "rooms", roomCode, "answers"), q => {
-    let n = 0; q.forEach(d => { const v = d.data(); if (v.round === room?.round && v.done) n++; });
+    let n = 0, first = null; q.forEach(d => { const v = d.data(); if (v.round === room?.round && v.done) { n++; first = first || d.id; } });
+    if (n && room?.phase === "hq" && ui.hStop?.round !== room.round) {
+      ui.hStop = { round: room.round, at: Date.now(), by: first };
+      if (first !== me.uid) toast(`✋ ${"@" + pname(first)} خلّص! وقفوا`);
+      if (roundPlayers().includes(me.uid) && ui.hDoneRound !== room.round) { ui.hDoneRound = room.round; submitHhnj(true).then(() => render(false)); }
+    }
     if (n !== ui.hDoneCount) { ui.hDoneCount = n; if (screen === "room" && room?.phase === "hq") render(false); }
   }, () => {}));
 }
@@ -4438,11 +4445,12 @@ const ROOM_VIEWS = {
         ${HCATS.map((c, i) => `<label class="hrow"><span>${c}</span><input class="txt" id="h${i}" maxlength="40" ${mineDone || !left ? "disabled" : ""} placeholder="${esc(room.letter)}…"></label>`).join("")}
         <button class="btn" id="hDone" ${mineDone || !left ? "disabled" : ""}>${mineDone ? "انرسلت ✓ ننتظر الباقين" : "خلصت ✋"}</button>
       </form>` : `<p class="hint">انتظر الجولة الجاية.</p>`}
-      <p class="hint center">خلص ${ar(ui.hDoneCount || 0)} من ${ar(ps.length)}</p>
+      <p class="hint center">${ui.hDoneCount ? "✋ واحد خلّص! النتيجة تنكشف الحين…" : "أول واحد يخلص يوقّف الكل ✋"}</p>
       <div class="foot">${isHost() ? `<button class="btn ghost" id="hNow">اكشف الأجوبة الحين</button>` : ""}${leaveBtn()}</div></section>`;
     if (ui.hAns && ui.hAns.round === room.round) ui.hAns.a.forEach((v, i) => { const el = document.getElementById("h" + i); if (el && !el.value) el.value = v; });
     V.querySelectorAll(".hrow input").forEach(inp => inp.addEventListener("input", () => {
       ui.hAns = { round: room.round, a: [0, 1, 2, 3].map(i => document.getElementById("h" + i).value) };
+      clearTimeout(ui.hDraftT); ui.hDraftT = setTimeout(() => { if (room?.phase === "hq" && ui.hDoneRound !== room.round) submitHhnj(false); }, 1500);
     }));
     on("hF", "submit", async e => { e.preventDefault(); ui.hDoneRound = room.round; await submitHhnj(true); render(false); });
     on("hNow", "click", e => { if (!confirmTap(e.currentTarget, "باقي ناس ما خلصوا، اكشف؟")) return; revealHhnj(); });
@@ -4464,7 +4472,7 @@ const ROOM_VIEWS = {
           return `<button class="ha ${x ? "rej" : nd ? "nd" : p === 10 ? "p10" : p === 5 ? "p5" : "p0"}" ${isHost() && a ? `data-rej="${esc(u)}|${i}"` : "disabled"}>
             <span class="ha-c">${c}</span><span class="ha-a">${a ? esc(a) : "—"}</span><span class="ha-p">${nd ? "❓" : ok && p ? "✓" + ar(p) : ar(p)}</span></button>`;
         }).join("")}</div></div>`).join("")}</div>
-      <p class="hint">١٠ = صح ومحد كتبه غيرك · ٥ = صح بس فيه أحد كاتبه · ❓ = الكلمة مو موجودة بالقاموس (صفر) · ٠ = فاضي أو ما يبدأ بالحرف</p>
+      <ul class="hint hlegend"><li><b>١٠ نقاط</b>: صح ومحد كتبه غيرك</li><li><b>٥ نقاط</b>: صح بس فيه أحد كاتب نفسه</li><li><b>❓</b>: الكلمة مو موجودة بالقاموس (ما تنحسب)</li><li><b>صفر</b>: فاضي أو ما يبدأ بالحرف</li></ul>
       <div class="field"><span class="label">النقاط</span>${scoreBoard(order())}</div>
       <div class="foot">${shareBtn()}${isHost() ? `<button class="btn" id="again">حرف جديد</button><button class="btn ghost" id="lobby">رجوع للغرفة</button>` : `<p class="hint center">المضيف يبدأ الجولة الجاية.</p>`}${leaveBtn()}</div></section>`;
     onAll("[data-rej]", b => { const [u, i] = b.dataset.rej.split("|"); toggleReject(u, Number(i)); });
