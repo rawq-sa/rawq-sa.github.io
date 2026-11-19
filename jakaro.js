@@ -1,3 +1,4 @@
+import { cardSVG } from "./uno.js?v=38";
 // جكارو روق: منطق اللعبة (المضيف يتحقق فيه، والجوالات تلمّح فيه) + رسم اللوح والأوراق
 // موقع الكورة نسبةً لصاحبها: -1 بالبيت، 0..75 على المسار (0 = خانة الطلعة)، 76..79 داخل الدار
 export const SIDE = 19, TRACK = 76, END = 79;
@@ -112,23 +113,11 @@ export function jSpot(s, i, r, rot) {
   return pt(ang(jAbs(s, r), rot), R);
 }
 const f1 = n => n.toFixed(1);
-const SUITP = {
-  h: "M0 6C-8-1-6-8 0-3.6C6-8 8-1 0 6Z",
-  d: "M0-7L5.2 0L0 7L-5.2 0Z",
-  s: "M0-7C7-1 4.5 5 0 2C-4.5 5-7-1 0-7ZM0 1L2.4 7H-2.4Z",
-  c: "M0-6.8a3.2 3.2 0 1 1 0 .01ZM-3.6-.6a3.2 3.2 0 1 1 0 .01ZM3.6-.6a3.2 3.2 0 1 1 0 .01ZM0 0L2.4 7H-2.4Z"
-};
-const SUITC = { h: "#d8283f", d: "#d8283f", s: "#1b1830", c: "#1b1830" };
+// الأوراق بنفس شكل أونو روق: كل شكل بلون (♥ أحمر، ♦ أصفر، ♣ أخضر، ♠ بنفسجي)
+const SUITK = { h: "r", d: "y", c: "g", s: "b" };
 export function jCardSVG(c, attrs = "") {
-  if (!c) return `<svg viewBox="0 0 60 84" ${attrs}><rect x="1" y="1" width="58" height="82" rx="7" fill="#3a1d5e" stroke="#f7d77a" stroke-width="1.5"/><rect x="6" y="6" width="48" height="72" rx="4" fill="none" stroke="#f7d77a" stroke-opacity=".5"/><text x="30" y="50" text-anchor="middle" font-family="Lalezar,Tahoma,sans-serif" font-size="20" fill="#f7d77a">روق</text></svg>`;
-  const r = jRank(c), su = jSuit(c), col = SUITC[su], p = SUITP[su], face = /[JQK]/.test(r);
-  const mid = face
-    ? `<rect x="13" y="22" width="34" height="40" rx="4" fill="${col}" fill-opacity=".08" stroke="#f7d77a" stroke-width="1.4"/><text x="30" y="52" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-weight="700" font-size="26" fill="${col}">${r}</text>`
-    : `<path d="${p}" transform="translate(30 43) scale(2.3)" fill="${col}"/>`;
-  return `<svg viewBox="0 0 60 84" direction="ltr" style="direction:ltr" ${attrs}><rect x="1" y="1" width="58" height="82" rx="7" fill="#fffdf6" stroke="#e2d7bd"/>
-    <text x="6" y="17" font-family="Georgia,serif" font-weight="700" font-size="${r === "10" ? 12 : 15}" fill="${col}">${r}</text><path d="${p}" transform="translate(10.5 25) scale(.75)" fill="${col}"/>
-    ${mid}
-    <g transform="rotate(180 30 42)"><text x="6" y="17" font-family="Georgia,serif" font-weight="700" font-size="${r === "10" ? 12 : 15}" fill="${col}">${r}</text><path d="${p}" transform="translate(10.5 25) scale(.75)" fill="${col}"/></g></svg>`;
+  const svg = c ? cardSVG(SUITK[jSuit(c)] + jRank(c)) : cardSVG(null);
+  return attrs ? svg.replace("<svg ", `<svg ${attrs} `) : svg;
 }
 // اللوح: rot = مقعدي (عشان أكون تحت)، cand = الكورات اللي تنختار، pick = المختارة، prev = مواقع قبل للحركة
 export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, top = null, turnSeat = null } = {}) {
@@ -160,7 +149,7 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
     for (let i = 0; i < 4; i++) { const [x, y] = jSpot(k, i, -1, rot); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5" fill="url(#jHole)"/>`; }
   }
   // الورقة اللي انلعبت آخر شي بالنص
-  s += top ? `<g transform="translate(${CX - 24} ${CY - 34}) rotate(-6 24 34)">${jCardSVG(top, 'width="48" height="67"')}</g>` : `<text x="${CX}" y="${CY + 8}" text-anchor="middle" font-family="Lalezar,Tahoma,sans-serif" font-size="26" fill="#f7d77a" fill-opacity=".7">جكارو</text>`;
+  s += top ? `<g transform="translate(${CX - 24} ${CY - 34}) rotate(-6 24 34)">${jCardSVG(top, 'width="46" height="69"')}</g>` : `<text x="${CX}" y="${CY + 8}" text-anchor="middle" font-family="Lalezar,Tahoma,sans-serif" font-size="26" fill="#f7d77a" fill-opacity=".7">جكارو</text>`;
   const marbles = [];
   for (const k of seats) for (let i = 0; i < 4; i++) {
     const key = k + ":" + i, r = g.pos[k][i], [x, y] = jSpot(k, i, r, rot), p = prev[key];

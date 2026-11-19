@@ -52,7 +52,7 @@ function glyph(v, fill, size) {
     const a = `M${-size * .45} ${-size * .05} q0 ${-size * .35} ${size * .35} ${-size * .35} h${size * .12} v${-size * .16} l${size * .3} ${size * .28} l${-size * .3} ${size * .28} v${-size * .16} h${-size * .12} q${-size * .2} 0 ${-size * .2} ${size * .2}z`;
     return `<g fill="${fill}" stroke="#1a1426" stroke-width="1.6" stroke-linejoin="round" paint-order="stroke"><path d="${a}"/><path transform="rotate(180)" d="${a}"/></g>`;
   }
-  const t = NV(v), fs = v === "D" ? size * 1.02 : size * 1.42, y = v === "D" ? size * .36 : size * .5;
+  const t = NV(v), big = t.length > 1, fs = big ? size * 1.02 : size * 1.42, y = big ? size * .36 : size * .5;
   // كلاسيكي مايل: ظل أسود بارز + حد أسود
   const sh = [2, 1].map(i => `<text x="${i * .9}" y="${y + i * .9}" text-anchor="middle" ${NUM} font-size="${fs}" fill="#111" stroke="#111" stroke-width="2.4" stroke-linejoin="round">${t}</text>`).join("");
   return `<g transform="skewX(-10)">${sh}
