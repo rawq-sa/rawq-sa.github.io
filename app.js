@@ -1446,7 +1446,7 @@ setInterval(() => {
   const next = (g.order || []).find(u => u !== room.host && room.players?.[u] && !room.players[u].g && !g.auto?.[u]);
   if (next !== me.uid || Date.now() - (ui.claimAt || 0) < 30000) return;
   ui.claimAt = Date.now();
-  updateDoc(roomRef(), { host: me.uid, hb: serverTimestamp() }).then(() => toast("المضيف انقطع، صرت أنت تدير الجيم 👑")).catch(e => console.error(e));
+  updateDoc(roomRef(), { host: me.uid, hb: serverTimestamp() }).then(() => toast("المضيف انقطع، صرت أنت تدير الجلسة 👑")).catch(e => console.error(e));
 }, 10000);
 function botTick() {
   if (!isHost() || !room) return;
