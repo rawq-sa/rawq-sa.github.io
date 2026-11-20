@@ -180,8 +180,12 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, a
   for (let d = 0; d < 4; d++) {
     const a = armAng(d), t0 = P2(10 * U, 0, a), h1 = P2(6 * U, 0, a);
     // الدار: خط ذهبي من خانة الطلعة لآخر الدار
-    s += `<line x1="${f1(t0[0])}" y1="${f1(t0[1])}" x2="${f1(h1[0])}" y2="${f1(h1[1])}" stroke="${GOLD}" stroke-opacity=".5" stroke-width="1.4"/>`;
-    for (let h = 0; h < 4; h++) { const [x, y] = P2((9 - h) * U, 0, a); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.6" fill="url(#jHole)" stroke="${GOLD}" stroke-opacity=".75" stroke-width="1"/>`; }
+    // الدار بلون صاحبها عشان يبان وين تدخل الكورة (مو كأنها تكمل المسار)
+    const hc = JCOL[(d + rot) % 4].fill, e0 = P2(9.9 * U, 0, a), e1 = P2(5.7 * U, 0, a);
+    s += `<line x1="${f1(e0[0])}" y1="${f1(e0[1])}" x2="${f1(e1[0])}" y2="${f1(e1[1])}" stroke="${hc}" stroke-opacity=".55" stroke-width="17" stroke-linecap="round"/>`;
+    s += `<line x1="${f1(t0[0])}" y1="${f1(t0[1])}" x2="${f1(h1[0])}" y2="${f1(h1[1])}" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/>`;
+    for (let h = 0; h < 4; h++) { const [x, y] = P2((9 - h) * U, 0, a); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.8" fill="url(#jHole)" stroke="${hc}" stroke-width="1.8"/>`; }
+    { const [x, y] = P2(5.05 * U, 0, a); s += `<text x="${f1(x)}" y="${f1(y)}" text-anchor="middle" dominant-baseline="central" font-size="10">🏠</text>`; }
     const [bx, by] = baseC(d), ba = (armAng(d) + Math.PI / 4) * 180 / Math.PI;
     s += `<rect x="${f1(bx - 21)}" y="${f1(by - 21)}" width="42" height="42" rx="6" fill="none" stroke="${GOLD}" stroke-width="1.4"/>`;
     for (let i = 0; i < 4; i++) s += `<circle cx="${f1(bx + (i % 2 ? 9.5 : -9.5))}" cy="${f1(by + (i < 2 ? -9.5 : 9.5))}" r="5.3" fill="url(#jHole)"/>`;
