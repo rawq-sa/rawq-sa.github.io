@@ -167,6 +167,7 @@ const isOwner = () => [OWNER, OWNER_OLD, OFFICIAL].includes(String(me?.username 
 let VERIFIED = new Set();
 const isVerified = name => { const k = String(name || "").toLowerCase(); return k === OWNER || k === OWNER_OLD || k === OFFICIAL || VERIFIED.has(k); };
 const VBADGE = `<span class="vbadge" title="حساب موثّق" aria-label="حساب موثّق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6l2.5 1.9 3.1-.3 1.2 2.9 2.9 1.2-.3 3.1L23.3 12l-1.9 2.5.3 3.1-2.9 1.2-1.2 2.9-3.1-.3L12 23.3l-2.5-1.9-3.1.3-1.2-2.9-2.9-1.2.3-3.1L.7 12l1.9-2.5-.3-3.1 2.9-1.2 1.2-2.9 3.1.3z" fill="#0b0b0f" stroke="#fff" stroke-opacity=".25" stroke-width=".8"/><path d="M7.4 12.3l3.1 3.1 6.1-6.3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+const atn = n => (/^(نجم|بوت) /.test(String(n)) ? "" : "@") + n;
 const at = name => { const k = String(name).toLowerCase();
   if (/^(نجم|بوت) /.test(name)) return esc(name);
   return `@${esc(name)}${isVerified(k) ? " " + VBADGE : ""}${k === OWNER || k === OWNER_OLD ? ' <span class="crown" title="صاحب اللعبة" aria-label="صاحب اللعبة">👑</span>' : ""}`; };
@@ -1152,7 +1153,7 @@ function unoApply(u, mv, uno, st) {
   const ord = uno.order, n = ord.length, me_i = ord.indexOf(u);
   if (me_i < 0 || me_i !== uno.turn || uno.winner) return null;
   const at_ = k => ((uno.turn + k * uno.dir) % n + n) % n;
-  const nm = x => "@" + pname(x);
+  const nm = x => atn(pname(x));
   const changed = new Set();
   const hand = st.hands[u] || [];
   if (mv.type === "play") {
@@ -1478,11 +1479,11 @@ function balAnnounce(g, st) {
   g.prj.forEach(x => g.ab[x.team] += { sira: 20, "50": 50, "100": 100, "400": 400 }[x.t]);
 }
 function balApply(u, mv, g, st) {
-  const ord = g.order, k = ord.indexOf(u), who = "@" + pname(u);
+  const ord = g.order, k = ord.indexOf(u), who = atn(pname(u));
   if (k < 0 || g.winner != null) return null;
   if (g.phase === "res") {
     if (mv.type !== "kick" && !(mv.type === "play" && u === room.host)) return null;
-    g.dealer = (g.dealer + 1) % 4; g.hand++; balDeal(g, st); g.last = `🃏 توزيعة جديدة · الشراء من ${"@" + pname(ord[g.turn])}`; g.v++; return [...ord];
+    g.dealer = (g.dealer + 1) % 4; g.hand++; balDeal(g, st); g.last = `🃏 توزيعة جديدة · الشراء من ${atn(pname(ord[g.turn]))}`; g.v++; return [...ord];
   }
   if (k !== g.turn) return null;
   if (g.phase === "bid1" || g.phase === "bid2") {
@@ -1491,7 +1492,7 @@ function balApply(u, mv, g, st) {
     if (act === "sun" || act === "ashkal") {
       if (act === "ashkal" && g.bid?.mode === "sun") return null;
       g.bid = { k: act === "ashkal" ? (k + 2) % 4 : k, mode: "sun" };
-      g.last = act === "ashkal" ? `${who} قال أشكال 🔁 · صن لخويه @${pname(ord[(k + 2) % 4])}` : `${who} اشترى صن ☀️`;
+      g.last = act === "ashkal" ? `${who} قال أشكال 🔁 · صن لخويه ${atn(pname(ord[(k + 2) % 4]))}` : `${who} اشترى صن ☀️`;
       const ch = balFinalizeBid(g, st); g.v++; return ch;
     }
     if (act === "hokm") {
@@ -1503,7 +1504,7 @@ function balApply(u, mv, g, st) {
     else return null;
     g.asked++; g.turn = (g.turn + 1) % 4;
     if (g.asked >= 4) {
-      if (g.bid) { const ch = balFinalizeBid(g, st); g.last += ` · المشتري @${pname(ord[g.bid.k])} حكم ${SUIT_IC[g.trump]}`; g.v++; return ch; }
+      if (g.bid) { const ch = balFinalizeBid(g, st); g.last += ` · المشتري ${atn(pname(ord[g.bid.k]))} حكم ${SUIT_IC[g.trump]}`; g.v++; return ch; }
       if (g.phase === "bid1") { g.phase = "bid2"; g.asked = 0; g.turn = (g.dealer + 1) % 4; g.last += " · الكل قال بس، الدور الثاني"; }
       else { g.dealer = (g.dealer + 1) % 4; balDeal(g, st); g.last = "الكل قال بس 🔄 تنعاد التوزيعة"; g.v++; return [...ord]; }
     }
@@ -1526,8 +1527,8 @@ function balApply(u, mv, g, st) {
   const w = trickWinner(g, g.trick), t = teamOf(w);
   g.ab[t] += g.trick.reduce((s, x) => s + bAbnat(g, x.c), 0); g.won[t]++; g.tricks++;
   g.lastTrick = g.trick; g.trick = []; g.turn = w;
-  g.last += ` · اللمّة لـ @${pname(ord[w])}`;
-  if (g.tricks === 1) { balAnnounce(g, st); if (g.prj.length) g.last += " · 📣 " + g.prj.map(x => `@${pname(ord[x.k])} ${PRJ_AR[x.t]}`).join("، "); }
+  g.last += ` · اللمّة لـ ${atn(pname(ord[w]))}`;
+  if (g.tricks === 1) { balAnnounce(g, st); if (g.prj.length) g.last += " · 📣 " + g.prj.map(x => `${atn(pname(ord[x.k]))} ${PRJ_AR[x.t]}`).join("، "); }
   if (g.tricks === 8) {
     g.ab[t] += 10;
     const { pts, note } = scoreHand(g);
@@ -1576,7 +1577,7 @@ function balCleanup() {
   const gone = g.order.filter(u => !room.players[u]);
   if (!gone.length) return;
   ui.balCleaning = true;
-  const g2 = JSON.parse(JSON.stringify(g)); g2.end = "left"; g2.v++; g2.last = `طلع ${gone.map(u => "@" + pname(u)).join(" و ")} من اللعبة، انتهى البلوت`;
+  const g2 = JSON.parse(JSON.stringify(g)); g2.end = "left"; g2.v++; g2.last = `طلع ${gone.map(u => atn(pname(u))).join(" و ")} من اللعبة، انتهى البلوت`;
   setRoom({ bal: g2, phase: "balend" }).catch(e => console.error(e)).finally(() => ui.balCleaning = false);
 }
 function watchBalMoves() {
@@ -1642,7 +1643,7 @@ async function jakLoadHost() {
 function jakApply(u, mv, g, st) {
   const ord = g.order, k = ord.indexOf(u);
   if (k < 0 || k !== g.turn || g.winner != null) return null;
-  const hand = st.hands[u] || [], s = g.seats[u], who = "@" + pname(u);
+  const hand = st.hands[u] || [], s = g.seats[u], who = atn(pname(u));
   let card = mv.card, msg;
   const burnMe = g.burn?.u === u;
   if (mv.type === "kick") { card = hand[Math.floor(Math.random() * hand.length)]; msg = `${who} خلص وقته ⏰ وانحرقت ورقة`; }
@@ -1665,20 +1666,20 @@ function jakApply(u, mv, g, st) {
       if (nu !== u && nh.length) {
         // اللي بعده يختار بنفسه وش يحرق (عنده ١٥ ثانية)
         g.burn = { u: nu, by: u }; g.turn = k1; g.cnt = jakCounts(g, st); g.deck = st.deck.length; g.dealt = "";
-        g.last = `${who} لعب ${ar(10)} وحرق على @${pname(nu)} 🔥 يختار ورقة يحرقها`; g.v = (g.v || 0) + 1;
+        g.last = `${who} لعب ${ar(10)} وحرق على ${atn(pname(nu))} 🔥 يختار ورقة يحرقها`; g.v = (g.v || 0) + 1;
         return [u];
       }
       const ch = jakAdvance(g, st, k1);
       g.last = `${who} لعب ${ar(10)} 🔥` + (g.dealt ? " · " + g.dealt : ""); g.v = (g.v || 0) + 1;
       return ch.length ? ch : [u];
     }
-    const x = res.m, mine = x.a[0] === s, whose = mine ? "" : ` @${pname(jSeatU(g, x.a[0]))}`;
+    const x = res.m, mine = x.a[0] === s, whose = mine ? "" : ` ${atn(pname(jSeatU(g, x.a[0])))}`;
     msg = x.t === "o" ? `${who} طلّع كورة 🟢`
       : x.t === "b" ? `${who} رجع ${ar(4)} لورا`
-      : x.t === "s" ? `${who} بدّل مكانه مع @${pname(jSeatU(g, x.b[0]))} 🔄`
+      : x.t === "s" ? `${who} بدّل مكانه مع ${atn(pname(jSeatU(g, x.b[0])))} 🔄`
       : x.t === "7" ? `${who} قسم السبعة ${ar(x.k)} و ${ar(7 - x.k)}`
       : `${who} مشّى${mine ? "" : " كورة" + whose} ${ar(x.k)}`;
-    if (res.kills.length) msg += ` وضرب ${res.kills.map(([ks]) => "@" + pname(jSeatU(g, ks))).join(" و ")} 💥`;
+    if (res.kills.length) msg += ` وضرب ${res.kills.map(([ks]) => atn(pname(jSeatU(g, ks)))).join(" و ")} 💥`;
     if (x.a[0] === s && g.pos[s][x.a[1]] >= 76 && x.t !== "s") msg += " ودخّل الدار 🏠";
   } else if (mv.type !== "kick") return null;
   hand.splice(hand.indexOf(card), 1); st.discard.push(card);
@@ -1709,7 +1710,7 @@ function jakAdvance(g, st, from) {
   g.turn = nx; g.deck = st.deck.length; g.cnt = jakCounts(g, st);
   return ch;
 }
-function jakTeamName(g, t) { return g.order.filter(u => jTeamOf(g, g.seats[u]) === t).map(u => "@" + (room?.names?.[u] || pname(u))).join(" و "); }
+function jakTeamName(g, t) { return g.order.filter(u => jTeamOf(g, g.seats[u]) === t).map(u => atn(room?.names?.[u] || pname(u))).join(" و "); }
 async function jakProcess(list) {
   if (!isHost() || room?.phase !== "jak") return;
   JAK.queue.push(...list);
@@ -1748,7 +1749,7 @@ function jakCleanup() {
   const gone = g.order.filter(u => !room.players[u]);
   if (!gone.length) return;
   ui.jakCleaning = true;
-  const g2 = JSON.parse(JSON.stringify(g)); g2.end = "left"; g2.v++; g2.last = `طلع ${gone.map(u => "@" + pname(u)).join(" و ")} من اللعبة، انتهت الجولة`;
+  const g2 = JSON.parse(JSON.stringify(g)); g2.end = "left"; g2.v++; g2.last = `طلع ${gone.map(u => atn(pname(u))).join(" و ")} من اللعبة، انتهت الجولة`;
   setRoom({ jak: g2, phase: "jakend" }).catch(e => console.error(e)).finally(() => ui.jakCleaning = false);
 }
 function watchJakMoves() {
@@ -1802,7 +1803,7 @@ function trackSession() {
 }
 // لحظات الجلسة: أطرف شي صار، عشان تطلع في صورة الستوري
 function sessHighlight(s) {
-  const r = room.result || {}, nm = u => "@" + pname(u), ph = room.phase;
+  const r = room.result || {}, nm = u => atn(pname(u)), ph = room.phase;
   s.hl = s.hl || [];
   let h = null;
   if (ph === "result" && r.imps?.length) h = r.caught ? { w: 2, t: `🕵️ انكشف الدخيل ${r.imps.map(nm).join(" و ")}` } : { w: 3, t: `😈 ${r.imps.map(nm).join(" و ")} كان الدخيل ونجا منكم` };
@@ -1818,7 +1819,7 @@ function sessHighlight(s) {
       }
     } catch (e) {}
   }
-  else if (ph === "balend" && room.bal?.winner != null) h = { w: 2, t: `🃏 فريق ${(room.bal.order || []).filter((u, k) => teamOf(k) === room.bal.winner).map(u => "@" + pname(u)).join(" و ")} فاز بالبلوت` };
+  else if (ph === "balend" && room.bal?.winner != null) h = { w: 2, t: `🃏 فريق ${(room.bal.order || []).filter((u, k) => teamOf(k) === room.bal.winner).map(u => atn(pname(u))).join(" و ")} فاز بالبلوت` };
   else if (ph === "jakend" && room.jak?.winner != null) h = { w: 2, t: `🎲 ${jakTeamName(room.jak, room.jak.winner)} فازوا بالجكارو` };
   else if (ph === "unoend" && room.uno?.winner) h = { w: 2, t: `🃏 ${nm(room.uno.winner)} قهركم بالأونو` };
   else if (ph === "mresult" && room.prompt) { const top = topOf(r.tally || {}, roundPlayers()); if (top.length === 1) h = { w: 2, t: `👀 ${nm(top[0])} أكثر واحد ${room.prompt}` }; }
@@ -2640,7 +2641,7 @@ async function makeWinCard(uids, game) {
     if (crown) { const cw = S * .92, ch = cw * crown.height / crown.width; g.save(); g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 30; g.shadowOffsetY = 12; g.drawImage(crown, x + (S - cw) / 2, y - ch * .78, cw, ch); g.restore(); }
   }
   // الأسماء (كل اسم بسطر، واتجاهه حسب لغته)
-  const lines = list.map(u => "@" + pname(u)), lh = n === 1 ? 128 : n === 2 ? 92 : 76;
+  const lines = list.map(u => atn(pname(u))), lh = n === 1 ? 128 : n === 2 ? 92 : 76;
   let ny = AY + S + 70;
   lines.forEach(t => {
     let fs = lh; g.font = `${fs}px ${DISP}`; while (g.measureText(t).width > FW - 120 && fs > 44) { fs -= 6; g.font = `${fs}px ${DISP}`; }
@@ -4861,7 +4862,7 @@ function watchHhnjDone() {
     let n = 0, first = null; q.forEach(d => { const v = d.data(); if (v.round === room?.round && v.done) { n++; first = first || d.id; } });
     if (n && room?.phase === "hq" && ui.hStop?.k !== hKey()) {
       ui.hStop = { k: hKey(), at: Date.now(), by: first };
-      if (first !== me.uid) toast(`✋ ${"@" + pname(first)} خلّص! وقفوا`);
+      if (first !== me.uid) toast(`✋ ${atn(pname(first))} خلّص! وقفوا`);
       if (roundPlayers().includes(me.uid) && ui.hDoneRound !== hKey()) { ui.hDoneRound = hKey(); submitHhnj(true).then(() => render(false)); }
     }
     if (n !== ui.hDoneCount) { ui.hDoneCount = n; if (screen === "room" && room?.phase === "hq") render(false); }
@@ -5206,7 +5207,7 @@ const ROOM_VIEWS = {
       ${playing ? `<div class="jdock">`+``:``}
       ${steps.length ? `<p class="jsteps-t">${R7 ? "كيف تقسم السبعة؟" : "كم تمشي؟"}</p><div class="jsteps">${steps.map(k => `<button class="chip" data-k="${k}">${ar(k)}${R7 && k === 7 ? " كلها" : ""}</button>`).join("")}<button class="chip ghost" data-k="x">إلغاء</button></div>` : ""}
       ${myTurn && !anyMove && J.card && !waiting ? `<button class="btn" id="jBurn">احرق هالورقة 🔥</button>` : ""}
-      ${live && J.card && jRank(J.card) === "10" && !J.a ? `<button class="btn" id="jTen">🔥 احرق على @${esc(pname(ord[(g.turn + 1) % ord.length]))} (يختار ورقة يحرقها ويروح دوره)</button><p class="hint center">أو اختار كورة تمشي ${ar(10)}</p>` : ""}
+      ${live && J.card && jRank(J.card) === "10" && !J.a ? `<button class="btn" id="jTen">🔥 احرق على ${esc(atn(pname(ord[(g.turn + 1) % ord.length])))} (يختار ورقة يحرقها ويروح دوره)</button><p class="hint center">أو اختار كورة تمشي ${ar(10)}</p>` : ""}
       ${playing ? `<div class="uhand jfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => { const ok = movesOf(c).length > 0; return `<button style="${jfan(ci)};--i:${ci}" class="ucard jc ${dealNow ? "dealt" : ""} ${J.card === c ? "sel" : ""} ${myTurn && ok ? "ok" : myTurn && anyMove ? "no" : ""}" data-card="${esc(c)}" aria-label="${esc(jHelp(c))}">${jCardSVG(c)}<span class="jhint">${esc(jHelp(c))}</span></button>`; }).join("")}</div></div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules" hidden><summary>قوانين الجكارو باختصار</summary><ul>
         <li><b>A</b>: تطلّع كورة من البيت، أو تمشي ١ أو ١١</li>
@@ -5280,7 +5281,7 @@ const ROOM_VIEWS = {
     const modeTxt = g.mode ? (g.mode === "sun" ? "☀️ صن" : "🃏 حكم " + SUIT_IC[g.trump]) + " · @" + esc(pname(ord[g.buyer])) : g.phase === "bid2" ? "الشراء: الدور الثاني" : "الشراء";
     const tm = balTimeLeft(g);
     const bidding = g.phase === "bid1" || g.phase === "bid2";
-    const tip = g.winner != null ? "" : g.phase === "res" ? "انتهت التوزيعة 🎉" : !myTurn ? `ننتظر @${esc(pname(turnU))}` : waiting ? "لحظة…" : bidding ? "دورك تشتري؟" : "دورك! العب ورقة 👇";
+    const tip = g.winner != null ? "" : g.phase === "res" ? "انتهت التوزيعة 🎉" : !myTurn ? `ننتظر ${esc(atn(pname(turnU)))}` : waiting ? "لحظة…" : bidding ? "دورك تشتري؟" : "دورك! العب ورقة 👇";
     const bidBtns = myTurn && bidding && !waiting ? `<div class="bbids">
       <button class="btn small" data-bid="sun">☀️ صن</button>
       ${g.bid ? "" : g.phase === "bid1" ? `<button class="btn small" data-bid="hokm" data-s="${bSuit(g.shown)}">🃏 حكم ${SUIT_IC[bSuit(g.shown)]}</button>` : ["s", "h", "d", "c"].filter(s => s !== bSuit(g.shown)).map(s => `<button class="btn small" data-bid="hokm" data-s="${s}">حكم ${SUIT_IC[s]}</button>`).join("")}
