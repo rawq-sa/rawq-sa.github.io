@@ -1412,9 +1412,9 @@ function balAnnounce(g, st) {
   const best = [0, 1].map(t => Math.max(0, ...st.prjc.filter(p => teamOf(p.k) === t).flatMap(p => p.list.map(x => x.v * 10 + x.hi))));
   const win = best[0] === best[1] ? (best[0] ? [0, 1] : []) : [best[0] > best[1] ? 0 : 1];
   g.prj = [];
-  st.prjc.forEach(p => { if (win.includes(teamOf(p.k))) p.list.forEach(x => g.prj.push({ team: teamOf(p.k), k: p.k, t: x.t })); if (p.baloot) g.prj.push({ team: teamOf(p.k), k: p.k, t: "baloot" }); });
-  // أبناط المشاريع تدخل بالمقارنة (سرا ٢٠، خمسين ٥٠، مية ١٠٠، بلوت ٢٠)
-  g.prj.forEach(x => g.ab[x.team] += { sira: 20, "50": 50, "100": 100, "400": 400, baloot: 20 }[x.t]);
+  st.prjc.forEach(p => { if (win.includes(teamOf(p.k))) p.list.forEach(x => g.prj.push({ team: teamOf(p.k), k: p.k, t: x.t })); });
+  // أبناط المشاريع تدخل بالمقارنة (سرا ٢٠، خمسين ٥٠، مية ١٠٠) — البلوت ينعلن لحاله وقت ما تنلعب ثاني ورقة
+  g.prj.forEach(x => g.ab[x.team] += { sira: 20, "50": 50, "100": 100, "400": 400 }[x.t]);
 }
 function balApply(u, mv, g, st) {
   const ord = g.order, k = ord.indexOf(u), who = "@" + pname(u);
@@ -1456,6 +1456,11 @@ function balApply(u, mv, g, st) {
   hand.splice(hand.indexOf(card), 1); st.hands[u] = hand; g.cnt[u] = hand.length;
   g.trick = [...g.trick, { k, c: card }];
   g.last = `${who} لعب ${card.slice(0, -1)}${SUIT_IC[bSuit(card)]}${mv.type === "kick" ? " ⏰" : ""}`;
+  // البلوت: الشايب والبنت حق الحكم عند نفس اللاعب، ينعلن لما يلعب الثانية منهم
+  const pb = st.prjc?.[k];
+  if (pb?.baloot && g.mode === "hokm" && bSuit(card) === g.trump && (bRank(card) === "K" || bRank(card) === "Q") && !hand.includes("K" + g.trump) && !hand.includes("Q" + g.trump)) {
+    pb.baloot = false; g.prj = [...(g.prj || []), { team: teamOf(k), k, t: "baloot" }]; g.ab[teamOf(k)] += 20; g.last += " · 📣 بلوت!";
+  }
   if (g.trick.length < 4) { g.turn = (k + 1) % 4; g.v++; return [u]; }
   const w = trickWinner(g, g.trick), t = teamOf(w);
   g.ab[t] += g.trick.reduce((s, x) => s + bAbnat(g, x.c), 0); g.won[t]++; g.tricks++;
@@ -5222,7 +5227,7 @@ const ROOM_VIEWS = {
       <div class="btable">${tableSVG(myLook().t)}
         ${ord.map((u, k) => seat(k)).join("")}
         <div class="btrick">${bidding ? `<span class="bshown">${face(g.shown)}<i>ورقة الشراء</i></span>` : trick}</div>
-        ${g.prj?.length && g.tricks <= 2 ? `<span class="bprj">📣 ${g.prj.map(x => `${esc(pname(ord[x.k]))}: ${PRJ_AR[x.t]}`).join(" · ")}</span>` : ""}
+        ${g.prj?.length && (g.tricks <= 2 || g.last?.includes("بلوت!")) ? `<span class="bprj">📣 ${g.prj.map(x => `${esc(pname(ord[x.k]))}: ${PRJ_AR[x.t]}`).join(" · ")}</span>` : ""}
         ${res}
       </div>
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
