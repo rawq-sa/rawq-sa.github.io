@@ -1365,7 +1365,7 @@ function myRankLine() {
   const r = ["bal", "jak"].map(g => { const rows = rankRows(g), i = rows.findIndex(x => x.u === me.uid); return i < 0 ? null : [g, i + 1]; }).filter(Boolean).sort((a, b) => a[1] - b[1])[0];
   return r ? `أنت #${ar(r[1])} في ${r[0] === "bal" ? "البلوت" : "الجكارو"} بين أصحابك` : "العب بلوت أو جكارو مع أصحابك وتصدّر";
 }
-VIEWS.rank = () => {
+function viewRank() {
   const g = ui.rankG || "bal", rows = rankRows(g), lastK = wkKey(Date.now() - 7 * 864e5), champ = rankRows(g, lastK)[0];
   const top = rows.slice(0, 3), rest = rows.slice(3), d = wkDaysLeft();
   const pod = (x, i) => !x ? `<div class="rk-p e"></div>` : `<button class="rk-p m${i}" data-pf="${esc(x.u)}">${i === 0 ? `<span class="rk-cr">👑</span>` : ""}<span class="rk-av">${avF(x.p, i === 0 ? 62 : 52)}</span><b dir="auto">${x.u === me.uid ? "أنت" : esc(x.p.username)}</b><span class="rk-st">${["🥇", "🥈", "🥉"][i]} ${ar(x.w)} فوز</span></button>`;
@@ -3398,6 +3398,7 @@ const BOOT_TIPS = ["نجهّز الجلسة…", "نعزم الشلة 🎉", "ن
 let bootN = 0;
 setInterval(() => { const t = document.querySelector(".bt-tip"); if (t) t.textContent = BOOT_TIPS[(BOOT_TIPS.indexOf(t.textContent) + 1) % BOOT_TIPS.length]; }, 2600);
 document.addEventListener("animationiteration", e => { if (!e.target.classList?.contains("bt-c") || !e.target.classList.contains("b")) return; bootN++; e.target.parentElement.querySelectorAll("img").forEach((im, k) => im.src = `img/gi/${BOOT_G[(bootN * 3 + k) % BOOT_G.length]}.webp`); });
+VIEWS.rank = viewRank;
 VIEWS.loading = () => { if (V.querySelector(".boot")) return; V.innerHTML = `<div class="boot" role="status" aria-label="جاري التحميل"><div class="bt-fan">${["a", "c", "b"].map((c, k) => `<i class="bt-c ${c}"><img src="img/gi/${BOOT_G[k]}.webp" alt=""></i>`).join("")}</div><b class="bt-logo">روق</b><span class="bt-sadu"></span><span class="bt-tip">${BOOT_TIPS[0]}</span></div>`; };
 
 VIEWS.setup = () => {
