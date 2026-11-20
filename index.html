@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=154">
+<link rel="modulepreload" href="./app.js?v=155">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=33">
 <link rel="modulepreload" href="./uno.js?v=41">
@@ -288,7 +288,7 @@ textarea.txt{resize:vertical;min-height:84px;line-height:1.6}
 .pf-acts .btn{flex:none}
 label.btn{display:inline-flex;align-items:center;justify-content:center}
 /* profile sheet */
-.sheet-bg{position:fixed;inset:0;z-index:25;display:flex;align-items:flex-end;justify-content:center;background:rgba(12,8,24,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:fadeIn .2s ease-out}
+.sheet-bg{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(12,8,24,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:fadeIn .2s ease-out}
 .sheet{width:100%;max-width:520px;display:flex;flex-direction:column;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:28px 28px 0 0;padding:26px max(20px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));text-align:center;animation:sheetUp .3s cubic-bezier(.2,1.2,.4,1)}
 .sheet .row{width:100%}
 .pf-bio{margin:0;font-size:16px;line-height:1.7;max-width:36ch;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -578,7 +578,7 @@ body:has(#chatFab) main{padding-bottom:78px}
 .sa-rib{display:block;width:min(360px,100%);height:auto;margin:2px auto 0;filter:drop-shadow(0 8px 18px rgba(4,54,31,.4))}
 .hlegend{margin:0;padding-inline-start:18px;display:grid;gap:3px}
 .uno-call{align-self:center;font-family:var(--display);font-size:24px;color:var(--bg);background:var(--rose);border-radius:999px;padding:4px 18px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
-.uhand{position:relative;height:160px;margin-top:4px;touch-action:none;overflow:visible}
+.uhand{position:relative;z-index:1;isolation:isolate;height:160px;margin-top:4px;touch-action:none;overflow:visible}
 .uhand .ucard{position:absolute;left:calc(50% - 37px);bottom:8px;width:74px;aspect-ratio:2/3;background:none;border:none;padding:0;cursor:pointer;transform-origin:50% 100%;transform:translate(var(--x),var(--y)) rotate(var(--r));transition:transform .18s ease,filter .18s;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5));touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .uhand .ucard.ok{transform:translate(var(--x),calc(var(--y) - 18px)) rotate(var(--r))}
 .uhand .ucard.ok:active{transform:translate(var(--x),calc(var(--y) - 26px)) rotate(var(--r)) scale(1.05)}
@@ -1305,6 +1305,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=154"></script>
+<script type="module" src="./app.js?v=155"></script>
 </body>
 </html>
