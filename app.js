@@ -15,7 +15,7 @@ import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } fr
 import { ICONS } from "./icons.js?v=33";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=41";
-import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL, jSeats, TRACK } from "./jakaro.js?v=21";
+import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL, jSeats, TRACK, jSpot } from "./jakaro.js?v=22";
 import { bDeck, bRank, bSuit, legal, trickWinner, projects, scoreHand, teamOf, bAbnat, SUIT_IC, PRJ_AR } from "./baloot.js?v=1";
 import { classicFace, balFace, balBack } from "./cards.js?v=2";
 
@@ -1295,7 +1295,7 @@ function unoTimerStart() {
 addEventListener("resize", () => fitGame());
 function fitGame() {
   const sec = V.querySelector("section.jak, section.bal"); if (!sec) return;
-  const board = sec.querySelector(".jboard, .btable"), hand = sec.querySelector(".uhand"); if (!board || !hand) return;
+  const board = sec.querySelector(".jstage, .btable"), hand = sec.querySelector(".uhand"); if (!board || !hand) return;
   board.style.maxWidth = "";
   const vh = window.visualViewport?.height || window.innerHeight;
   const top = board.getBoundingClientRect().top + window.scrollY, bh = board.getBoundingClientRect().height;
@@ -5134,17 +5134,18 @@ const ROOM_VIEWS = {
       : R7 && J.a ? `اختار كورة ثانية تمشي الباقي (${ar(7 - J.k)})`
       : RJ && J.a ? "اختار كورة الخصم اللي تبي تبدّل معها"
       : RJ ? "اختار كورتك اللي تبي تبدّلها"
-      : jRank(J.card) === "5" ? "اختار كورتك أو كورة خويك"
+      : jRank(J.card) === "5" ? "اختار أي كورة تمشيها ٥"
       : `${jRank(J.card)}: ${jHelp(J.card)} · اختار الكورة`;
     const teamOf = u => jTeamOf(g, g.seats[u]);
     const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, jstep = hn > 1 ? Math.min(70, (HW - 74) / (hn - 1)) : 0, jda = Math.min(6, 30 / Math.max(hn, 1));
     const jfan = k => { const d = k - (hn - 1) / 2, r = d * jda; return `--x:${(d * jstep).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .12).toFixed(1)}px;z-index:${k + 1}`; };
     V.innerHTML = `<section class="jak">
       ${statusBar()}
-      <div class="jplayers">${ord.map(u => { const s = g.seats[u]; return `<button class="jp ${u === turnU && g.winner == null ? "turn" : ""}" style="--c:${JCOL[s].fill}" data-pf="${esc(u)}">
-        ${prof(u) ? avF(prof(u), 30) : avatar(pname(u), "", 30)}<span class="jp-n" dir="ltr">${esc(pname(u))}${u === me.uid ? " (أنت)" : ""}</span>
-        <span class="jp-s"><i></i>${ord.length === 4 ? (teamOf(u) === (playing ? teamOf(me.uid) : 0) ? "فريقك" : "الخصم") + " · " : ""}🏠 ${ar(jHomeCount(g, s))}/${ar(4)}</span>${g.cnt && u !== me.uid ? `<span class="jpbk" aria-label="${ar(g.cnt[u] ?? 0)} أوراق">${Array.from({ length: g.cnt[u] ?? 0 }, () => jCardSVG(null)).join("")}</span>` : ""}</button>`; }).join("")}</div>
-      <div class="jboard">${svg}</div>
+      <div class="jstage"><div class="jboard">${svg}</div>${ord.map(u => { const s = g.seats[u], [bx, by] = jSpot(s, 0, -1, rot), px = 50 + (bx - 220) / 440 * 100 * 1.32, py = 50 + (by - 220) / 440 * 100 * 1.32, mate = ord.length === 4 && u !== me.uid && teamOf(u) === (playing ? teamOf(me.uid) : 0);
+        return `<button class="jpod ${u === turnU && g.winner == null ? "turn" : ""} ${py > 70 ? "bot" : ""}" style="--c:${JCOL[s].fill};left:${Math.min(88, Math.max(12, px)).toFixed(1)}%;top:${Math.min(92, Math.max(6, py)).toFixed(1)}%" data-pf="${esc(u)}">
+          ${g.cnt && u !== me.uid ? `<span class="jpbk">${Array.from({ length: g.cnt[u] ?? 0 }, () => jCardSVG(null)).join("")}</span>` : ""}
+          <span class="jring">${prof(u) ? avF(prof(u), 46) : avatar(pname(u), "", 46)}</span>
+          <b class="jtag" dir="ltr">${u === me.uid ? "أنت" : esc(pname(u))}${mate ? " 🤝" : ""} · 🏠${ar(jHomeCount(g, s))}</b></button>`; }).join("")}</div>
       ${ctrl != null && ctrl !== mySeat ? `<p class="jnote">خلّصت كوراتك 👑 الحين تلعب بكورات خويك</p>` : ""}
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="jpile"><span class="jdeck ${shufNow ? "shuf" : ""}" title="الكومة">${jCardSVG(null)}${jCardSVG(null)}<b>${ar(g.deck ?? 0)}</b></span>${g.top ? jCardSVG(g.top, 'class="jtop"') : ""}</span><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 8 ? "hot" : ""}" id="jSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
       ${g.winner != null ? "" : `<div class="utime ${myTurn ? "mine" : ""}" aria-hidden="true"><i style="--s:${(tm.left / tm.dur).toFixed(3)};--d:${tm.left.toFixed(2)}s"></i></div>`}
@@ -5154,7 +5155,7 @@ const ROOM_VIEWS = {
       ${steps.length ? `<p class="jsteps-t">${R7 ? "كيف تقسم السبعة؟" : "كم تمشي؟"}</p><div class="jsteps">${steps.map(k => `<button class="chip" data-k="${k}">${ar(k)}${R7 && k === 7 ? " كلها" : ""}</button>`).join("")}<button class="chip ghost" data-k="x">إلغاء</button></div>` : ""}
       ${myTurn && !anyMove && J.card && !waiting ? `<button class="btn" id="jBurn">احرق هالورقة 🔥</button>` : ""}
       ${live && J.card && jRank(J.card) === "10" && !J.a ? `<button class="btn" id="jTen">🔥 احرق على @${esc(pname(ord[(g.turn + 1) % ord.length]))} (يختار ورقة يحرقها ويروح دوره)</button><p class="hint center">أو اختار كورة تمشي ${ar(10)}</p>` : ""}
-      ${playing ? `<div class="uhand jfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => { const ok = movesOf(c).length > 0; return `<button style="${jfan(ci)};--i:${ci}" class="ucard jc ${dealNow ? "dealt" : ""} ${J.card === c ? "sel" : ""} ${myTurn && ok ? "ok" : myTurn && anyMove ? "no" : ""}" data-card="${esc(c)}" aria-label="${esc(jHelp(c))}">${jCardSVG(c)}</button>`; }).join("")}</div></div>` : `<p class="hint center">تتفرج 👀</p>`}
+      ${playing ? `<div class="uhand jfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => { const ok = movesOf(c).length > 0; return `<button style="${jfan(ci)};--i:${ci}" class="ucard jc ${dealNow ? "dealt" : ""} ${J.card === c ? "sel" : ""} ${myTurn && ok ? "ok" : myTurn && anyMove ? "no" : ""}" data-card="${esc(c)}" aria-label="${esc(jHelp(c))}">${jCardSVG(c)}<span class="jhint">${esc(jHelp(c))}</span></button>`; }).join("")}</div></div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules"><summary>قوانين الجكارو باختصار</summary><ul>
         <li><b>A</b>: تطلّع كورة من البيت، أو تمشي ١ أو ١١</li>
         <li><b>K</b>: تطلّع كورة من البيت، أو تمشي ١٣</li>
