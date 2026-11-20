@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=145">
+<link rel="modulepreload" href="./app.js?v=146">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=33">
 <link rel="modulepreload" href="./uno.js?v=41">
@@ -800,7 +800,7 @@ body:has(#chatFab) main{padding-bottom:78px}
 .jpod{position:absolute;z-index:4;width:0;height:0;background:none;border:0;padding:0;color:var(--ink);font:inherit}
 .jpod.top{top:9.5%}.jpod.bot{top:90.5%}.jpod.lf{left:9.5%}.jpod.rt{left:90.5%}
 .jring{position:absolute;left:0;top:0;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;box-shadow:0 0 0 3px var(--c),0 0 0 4px #0008,0 4px 12px #0009}
-.jpod.turn .jring{animation:jpulse 1.1s ease-in-out infinite alternate}
+.jpod.turn .jring{box-shadow:0 0 0 3px var(--c),0 0 0 6px #f2b134,0 0 22px #f2b134;animation:jpulse 1.1s ease-in-out infinite alternate}
 @keyframes jpulse{from{box-shadow:0 0 0 3px var(--c),0 0 0 5px #f2b134,0 0 14px #f2b134}to{box-shadow:0 0 0 3px var(--c),0 0 0 7px #f2b134,0 0 30px #f2b134}}
 .jtag{position:absolute;left:0;transform:translateX(-50%);font-size:11px;font-weight:700;white-space:nowrap;background:#000c;border:1px solid var(--c);border-radius:999px;padding:1px 8px;max-width:120px;overflow:hidden;text-overflow:ellipsis}
 .jpod.top .jtag{bottom:34px}.jpod.bot .jtag{top:34px}
@@ -820,8 +820,10 @@ body:has(#chatFab) main{padding-bottom:78px}
 .bseat{position:absolute;z-index:3;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;color:var(--ink);font:inherit;font-size:12px;padding:0;max-width:96px}
 .bseat b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;text-shadow:0 1px 3px #000}
 .bseat.t{top:2%;left:50%;transform:translateX(-50%)}.bseat.r{right:1%;top:40%}.bseat.l{left:1%;top:40%}.bseat.b{bottom:1%;left:50%;transform:translateX(-50%)}
-.bseat .av,.bseat .frx{box-shadow:0 0 0 2px rgba(255,255,255,.25)}.bseat.mate b{color:#9fe3c0}
-.bseat.turn .av{box-shadow:0 0 0 3px var(--saffron),0 0 16px var(--saffron)}
+.bseat .jring{position:static;transform:none}
+.bseat .btag{font-size:11px;font-weight:700;white-space:nowrap;background:#000c;border:1px solid var(--c);border-radius:999px;padding:1px 8px;max-width:110px;overflow:hidden;text-overflow:ellipsis;text-shadow:none;margin-top:4px}
+.bseat.turn .jring{box-shadow:0 0 0 3px var(--c),0 0 0 6px #f2b134,0 0 22px #f2b134;animation:jpulse 1.1s ease-in-out infinite alternate}
+
 .bbk{display:flex;margin-top:3px;direction:ltr}.bbk svg{width:20px;height:30px;margin-left:-12px;filter:drop-shadow(0 2px 3px #0008);border-radius:3px}.bbk svg:first-child{margin-left:0}
 .btrick{position:absolute;inset:22% 22%;z-index:2}.btc{position:absolute;width:24%;max-width:62px;transition:.3s}.btc svg,.bshown svg{width:100%;height:auto;display:block;filter:drop-shadow(0 4px 6px #0007)}
 .btc.b{bottom:4%;left:50%;transform:translateX(-50%)}.btc.t{top:4%;left:50%;transform:translateX(-50%) rotate(180deg)}.btc.r{right:4%;top:50%;transform:translateY(-50%) rotate(-90deg)}.btc.l{left:4%;top:50%;transform:translateY(-50%) rotate(90deg)}
@@ -1256,6 +1258,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=145"></script>
+<script type="module" src="./app.js?v=146"></script>
 </body>
 </html>
