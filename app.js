@@ -1293,9 +1293,15 @@ function jakApply(u, mv, g, st) {
   if (k < 0 || k !== g.turn || g.winner != null) return null;
   const hand = st.hands[u] || [], s = g.seats[u], who = "@" + pname(u);
   let card = mv.card, msg;
-  if (mv.type === "kick") { card = hand[0]; msg = `${who} خلص وقته ⏰ وانحرقت ورقة`; }
+  const burnMe = g.burn?.u === u;
+  if (mv.type === "kick") { card = hand[Math.floor(Math.random() * hand.length)]; msg = `${who} خلص وقته ⏰ وانحرقت ورقة`; }
   if (!card || !hand.includes(card)) return null;
-  if (mv.type === "pass") {
+  if (burnMe) {
+    // انحرق عليه بالعشرة: هو يختار الورقة اللي تنحرق (أو تنحرق عشوائي إذا خلص وقته)
+    if (mv.type !== "pass" && mv.type !== "kick") return null;
+    if (mv.type === "pass") msg = `${who} حرق ورقة 🔥 وراح دوره`;
+    g.burn = null;
+  } else if (mv.type === "pass") {
     if (hand.some(c => jMoves(g, s, c).length)) return null;
     msg = `${who} ما عنده حركة، حرق ورقة 🔥`;
   } else if (mv.type === "play") {
@@ -1304,11 +1310,16 @@ function jakApply(u, mv, g, st) {
     if (res.m.t === "x") {
       // العشرة: اللي بعدك تنحرق له ورقة ويروح دوره
       const k1 = (k + 1) % ord.length, nu = ord[k1], nh = st.hands[nu] || [];
-      if (nu !== u && nh.length) { st.discard.push(nh.splice(Math.floor(Math.random() * nh.length), 1)[0]); st.hands[nu] = nh; }
       hand.splice(hand.indexOf(card), 1); st.discard.push(card); st.hands[u] = hand; g.top = card;
+      if (nu !== u && nh.length) {
+        // اللي بعده يختار بنفسه وش يحرق (عنده ١٥ ثانية)
+        g.burn = { u: nu, by: u }; g.turn = k1; g.cnt = jakCounts(g, st); g.deck = st.deck.length; g.dealt = "";
+        g.last = `${who} لعب ${ar(10)} وحرق على @${pname(nu)} 🔥 يختار ورقة يحرقها`; g.v = (g.v || 0) + 1;
+        return [u];
+      }
       const ch = jakAdvance(g, st, k1);
-      g.last = `${who} لعب ${ar(10)} وحرق على @${pname(nu)} 🔥 وراح دوره` + (g.dealt ? " · " + g.dealt : ""); g.v = (g.v || 0) + 1;
-      return ch.length ? ch : nu === u ? [u] : [u, nu];
+      g.last = `${who} لعب ${ar(10)} 🔥` + (g.dealt ? " · " + g.dealt : ""); g.v = (g.v || 0) + 1;
+      return ch.length ? ch : [u];
     }
     const x = res.m, mine = x.a[0] === s, whose = mine ? "" : ` @${pname(jSeatU(g, x.a[0]))}`;
     msg = x.t === "o" ? `${who} طلّع كورة 🟢`
@@ -4632,8 +4643,8 @@ const ROOM_VIEWS = {
     const turnU = ord[g.turn], myTurn = turnU === me.uid && g.winner == null;
     const waiting = ui.jWait === g.v; if (ui.jWait && ui.jWait !== g.v) ui.jWait = null;
     if (!ui.jk || ui.jk.v !== g.v || ui.jk.round !== room.round) ui.jk = { v: g.v, round: room.round, card: null, a: null, k: null };
-    const J = ui.jk, live = myTurn && !waiting;
-    const movesOf = c => live ? jMoves(g, mySeat, c) : [];
+    const J = ui.jk, live = myTurn && !waiting, burnMode = myTurn && g.burn?.u === me.uid;
+    const movesOf = c => live && !burnMode ? jMoves(g, mySeat, c) : [];
     const anyMove = myHand.some(c => movesOf(c).length);
     if (J.card && !myHand.includes(J.card)) { J.card = null; J.a = null; J.k = null; }
     const L = J.card ? movesOf(J.card) : [], R7 = J.card && jRank(J.card) === "7", RJ = J.card && jRank(J.card) === "J";
@@ -4656,8 +4667,9 @@ const ROOM_VIEWS = {
     const dealNow = ui.jDeal?.r === room.round && ui.jDeal.n !== g.deal || (ui.jDeal?.r !== room.round && g.deal === 1 && g.v <= 1);
     ui.jShuf = { r: room.round, n: g.shuf }; ui.jDeal = { r: room.round, n: g.deal };
     const tm = jakTimeLeft(g), ctrl = playing ? jCtrl(g, mySeat) : null;
-    const tip = !myTurn ? (g.winner != null ? "" : `مو دورك، ننتظر ${at(pname(turnU))}`)
+    const tip = !myTurn ? (g.winner != null ? "" : g.burn?.u === turnU ? `🔥 ننتظر ${at(pname(turnU))} يختار ورقة يحرقها` : `مو دورك، ننتظر ${at(pname(turnU))}`)
       : waiting ? "لحظة…"
+      : burnMode ? `🔥 ${at(pname(g.burn.by))} حرق عليك بالعشرة! اختار ورقة تحرقها`
       : !anyMove ? "ما عندك ولا حركة 😅 اختار ورقة تحرقها"
       : !J.card ? "دورك! اختار ورقة 👇"
       : J.a && !RJ && (!R7 || J.k == null) ? "كم خطوة لهالكورة؟"
@@ -4681,7 +4693,7 @@ const ROOM_VIEWS = {
       ${isHost() ? "" : `<p class="hint center uhost" id="jHost" hidden>📵 يمكن المضيف طالع من اللعبة، الدور بيمشي أول ما يرجع</p>`}
       ${playing ? `<div class="jhand ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => { const ok = movesOf(c).length > 0; return `<button style="--i:${ci}" class="jcard ${dealNow ? "dealt" : ""} ${J.card === c ? "on" : ""} ${myTurn && !ok && anyMove ? "no" : ""}" data-card="${esc(c)}">${jCardSVG(c)}<span>${jHelp(c)}</span></button>`; }).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       ${myTurn && !anyMove && J.card && !waiting ? `<button class="btn" id="jBurn">احرق هالورقة 🔥</button>` : ""}
-      ${live && J.card && jRank(J.card) === "10" && !J.a ? `<button class="btn" id="jTen">🔥 احرق على @${esc(pname(ord[(g.turn + 1) % ord.length]))} (يروح دوره)</button><p class="hint center">أو اختار كورة تمشي ${ar(10)}</p>` : ""}
+      ${live && J.card && jRank(J.card) === "10" && !J.a ? `<button class="btn" id="jTen">🔥 احرق على @${esc(pname(ord[(g.turn + 1) % ord.length]))} (يختار ورقة يحرقها ويروح دوره)</button><p class="hint center">أو اختار كورة تمشي ${ar(10)}</p>` : ""}
       <details class="jrules"><summary>قوانين الجكارو باختصار</summary><ul>
         <li><b>A</b>: تطلّع كورة من البيت، أو تمشي ١ أو ١١</li>
         <li><b>K</b>: تطلّع كورة من البيت، أو تمشي ١٣</li>
@@ -4689,7 +4701,7 @@ const ROOM_VIEWS = {
         <li><b>٧</b>: تقسمها على كورتين (مثلاً ٣ + ٤)</li>
         <li><b>J</b>: تبدّل مكان كورتك مع كورة خصم (مو من البيت ولا الدار ولا خانة الطلعة)</li>
         <li><b>٥</b>: تحرك كورتك أو كورة خويك ٥ خطوات</li>
-        <li><b>١٠</b>: تمشي ١٠، أو تحرق على اللي بعدك (تنحرق له ورقة ويروح دوره) 🔥</li>
+        <li><b>١٠</b>: تمشي ١٠، أو تحرق على اللي بعدك: يختار ورقة يحرقها ويروح دوره 🔥</li>
         <li><b>Q</b> = ١٢، والباقي بأرقامها</li>
         <li>لو وقفت على كورة خصم ترجعها البيت 💥</li>
         <li>اللي يدخّل كوراته كلها يلعب بكورات خويه، وأول فريق يدخّل الثمان يفوز 🏆</li></ul></details>
