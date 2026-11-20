@@ -84,9 +84,9 @@ export function cardSVG(c, back = "classic") {
   const corner = v === "W" || v === "S" || v === "R" ? "" : NV(v);
   const mini = v === "S" || v === "R" ? `<g transform="translate(11 13)">${glyph(v, "#fff", 9)}</g><g transform="translate(49 77) rotate(180)">${glyph(v, "#fff", 9)}</g>` : "";
   const center = wild
-    ? `<g transform="translate(30 45) rotate(-30)">${quad(20, 31, id)}<ellipse rx="20" ry="31" fill="none" stroke="#fff" stroke-width="2.4"/></g>
-       ${v === "F" ? `<g transform="translate(30 54) skewX(-10)"><text x="1.8" y="1.8" text-anchor="middle" ${NUM} font-size="22" fill="#111" stroke="#111" stroke-width="3" stroke-linejoin="round">+4</text><text x="0" y="0" text-anchor="middle" ${NUM} font-size="22" fill="#fff" stroke="#111" stroke-width="3" stroke-linejoin="round" paint-order="stroke">+4</text></g>` : ""}`
-    : `<g transform="translate(30 45) rotate(-30)"><ellipse rx="21" ry="33" fill="#fff"/></g><g transform="translate(30 45)">${glyph(v, col.fill, 22)}</g>`;
+    ? `${v === "F" ? `<image href="img/cards/u_d4.webp?v=1" x="9" y="18" width="42" height="42"/>` : `<g transform="translate(30 45) rotate(-30)">${quad(20, 31, id)}<ellipse rx="20" ry="31" fill="none" stroke="#fff" stroke-width="2.4"/></g>`}
+       ${v === "F" ? `<g transform="translate(30 75) skewX(-10) scale(.75)"><text x="1.8" y="1.8" text-anchor="middle" ${NUM} font-size="22" fill="#111" stroke="#111" stroke-width="3" stroke-linejoin="round">+4</text><text x="0" y="0" text-anchor="middle" ${NUM} font-size="22" fill="#fff" stroke="#111" stroke-width="3" stroke-linejoin="round" paint-order="stroke">+4</text></g>` : ""}`
+    : `<g transform="translate(30 45) rotate(-30)"><ellipse rx="21" ry="33" fill="#fff"/></g>${v === "S" || v === "R" ? `<image href="img/cards/u_${v === "S" ? "skip" : "rev"}.webp?v=1" x="12" y="27" width="36" height="36"/>` : `<g transform="translate(30 45)">${glyph(v, col.fill, 22)}</g>`}`;
   // الركن: رقم أبيض مايل بحد أسود + خط ذهبي
   const L = corner.length > 1, cfs = L ? 10 : 13.5, cx = L ? 12 : 10.5;
   const cg = corner ? `<g transform="translate(${cx} 18) skewX(-10)"><text x="0" y="0" text-anchor="middle" ${NUM} font-size="${cfs}" fill="#fff" stroke="#111" stroke-width="1" stroke-linejoin="round" paint-order="stroke">${corner}</text>

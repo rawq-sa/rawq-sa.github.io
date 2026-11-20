@@ -1,3 +1,4 @@
+import { jakFace } from "./cards.js?v=1";
 // جكارو روق: منطق اللعبة (المضيف يتحقق فيه، والجوالات تلمّح فيه) + رسم اللوح والأوراق
 // موقع الكورة نسبةً لصاحبها: -1 بالبيت، 0..75 على المسار (0 = خانة الطلعة)، 76..79 داخل الدار
 export const SIDE = 19, TRACK = 76, END = 79;
@@ -140,13 +141,7 @@ let cardN = 0;
 export function jCardSVG(c, attrs = "") {
   const id = "jc" + (++cardN);
   if (!c) return `<svg ${attrs} viewBox="0 0 60 90" direction="ltr" style="direction:ltr" aria-hidden="true"><defs><clipPath id="${id}"><rect width="60" height="90" rx="6"/></clipPath></defs><rect width="60" height="90" rx="6" fill="#0b0b0d"/><image href="img/cards/back_jak.webp?v=1" width="60" height="90" clip-path="url(#${id})" preserveAspectRatio="xMidYMid slice"/></svg>`;
-  const R = jRank(c), S = jSuit(c), red = S === "h" || S === "d", col = red ? "#d0202f" : "#16161a";
-  const face = R === "J" || R === "Q" || R === "K", ten = R === "10";
-  const corner = (x, y, rot) => `<g transform="translate(${x} ${y}) rotate(${rot})"><text x="0" y="0" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="${ten ? 11 : 13}" fill="${col}" letter-spacing="${ten ? -1 : 0}">${R}</text><path d="${SUIT[S]}" transform="translate(0 8) scale(.62)" fill="${col}"/></g>`;
-  const mid = face
-    ? `<rect x="13" y="20" width="34" height="50" rx="3" fill="${red ? "#fff1f1" : "#f1f1f5"}" stroke="${col}" stroke-opacity=".35"/><text x="30" y="46" text-anchor="middle" dominant-baseline="central" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="30" fill="${col}">${R}</text><path d="${SUIT[S]}" transform="translate(30 62) scale(.7)" fill="${col}"/><path d="M22 27l3 3 5-5 5 5 3-3v5H22Z" fill="#e0a92a"/>`
-    : `<path d="${SUIT[S]}" transform="translate(30 47) scale(${R === "A" ? 2.6 : 2.1})" fill="${col}"/>`;
-  return `<svg ${attrs} viewBox="0 0 60 90" direction="ltr" style="direction:ltr" aria-label="${R}"><rect x=".5" y=".5" width="59" height="89" rx="6" fill="#fffdf8" stroke="#d8d2c4"/>${mid}${corner(9, 14, 0)}${corner(51, 76, 180)}</svg>`;
+  return jakFace(jRank(c), jSuit(c), attrs);
 }
 // اللوح: rot = مقعدي، cand = الكورات اللي تنختار، pick = المختارة، prev = مواقع قبل للحركة
 // dests = وين بتوصل الكورة [[مقعد، موقع]]، left = مقعد اللي نوريه كم باقي له للدار
