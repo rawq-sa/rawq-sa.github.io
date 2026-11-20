@@ -1589,6 +1589,7 @@ async function balProcess(list) {
       if (!BAL.st || mv.round !== room.round || (BAL.processed[u] || 0) >= mv.seq) continue;
       BAL.processed[u] = mv.seq;
       const g = JSON.parse(JSON.stringify(room.bal)), wasTurn = g.phase !== "res" && g.order[g.turn] === u;
+      if (mv.type === "back") { if (g.auto?.[u]) { delete g.auto[u]; if (g.miss) g.miss[u] = 0; g.last = (g.last || "") + ` · 👋 رجع ${atn(pname(u))}`; g.v++; room.bal = g; await updateDoc(roomRef(), { bal: g }).catch(e => console.error(e)); } continue; }
       const changed = balApply(u, mv, g, BAL.st);
       if (!changed) continue;
       autoMark(g, u, mv, wasTurn);
@@ -1763,6 +1764,7 @@ async function jakProcess(list) {
       if (!JAK.st || mv.round !== room.round || (JAK.processed[u] || 0) >= mv.seq) continue;
       JAK.processed[u] = mv.seq;
       const g = JSON.parse(JSON.stringify(room.jak)), wasTurn = (g.burn?.u || g.order[g.turn]) === u;
+      if (mv.type === "back") { if (g.auto?.[u]) { delete g.auto[u]; if (g.miss) g.miss[u] = 0; g.last = (g.last || "") + ` · 👋 رجع ${atn(pname(u))}`; g.v++; room.jak = g; await updateDoc(roomRef(), { jak: g }).catch(e => console.error(e)); } continue; }
       const changed = jakApply(u, mv, g, JAK.st);
       if (!changed) continue;
       autoMark(g, u, mv, wasTurn);
@@ -4870,6 +4872,7 @@ function votedCount() {
 const statusBar = () => `<div class="status"><span>الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""}</span><span>${room.game === "kal" && room.k ? `الكلمة ${ar(room.k.idx || 1)} من ${ar(room.k.n || 10)}` : `الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}`}</span></div>`;
 const gameBar = (extra = "") => `<div class="gbar"><span class="gb-info">الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""} · الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}</span><span class="gb-btns">${extra}<button class="gi gchat ${chatUnread() ? "dot" : ""}" id="gChat" aria-label="شات الغرفة">💬</button><button class="gi" id="gRx" aria-label="رياكشن">😂</button><button class="gi" id="gRules" aria-label="القوانين">؟</button><button class="gx" id="gExit">${isHost() ? "إنهاء" : "خروج"} ✕</button></span></div>`;
 document.addEventListener("click", e => {
+  if (e.target.closest?.("#autoBack")) { e.target.disabled = true; setDoc(doc(db, "rooms", roomCode, "moves", me.uid), { round: room.round, seq: Date.now(), type: "back", card: "", color: "" }).catch(() => {}); return; }
   if (e.target.closest?.("#gChat")) { openChatPanel(); document.getElementById("gChat")?.classList.remove("dot"); return; }
   if (e.target.closest?.("#gRx")) { const bar = document.getElementById("rxBar"); if (bar) { const o = bar.classList.toggle("open"); bar.querySelector(".rx-tog")?.setAttribute("aria-expanded", o); } return; }
   if (e.target.closest?.("#gRules")) { const ul = V.querySelector(".jrules ul"); if (ul) sheet(`<b class="pf-name">القوانين باختصار</b><div class="rules-sh">${ul.outerHTML}</div><button class="btn" data-close>تمام</button>`); }
@@ -5258,6 +5261,7 @@ const ROOM_VIEWS = {
           ${g.cnt && u !== me.uid ? `<span class="jpbk">${Array.from({ length: g.cnt[u] ?? 0 }, () => jCardSVG(null)).join("")}</span>` : ""}
           <b class="jtag">${g.auto?.[u] ? "🤖 " : ""}${u === me.uid ? "أنت" : esc(pname(u))}${mate ? " 🤝" : ""} · 🏠${ar(jHomeCount(g, s))}</b></button>`; }).join("")}</div>
       ${ctrl != null && ctrl !== mySeat ? `<p class="jnote">خلّصت كوراتك 👑 الحين تلعب بكورات خويك</p>` : ""}
+${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحين <button class="btn small" id="autoBack">ارجع العب بنفسك</button></div>` : ""}
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="jpile"><span class="jdeck ${shufNow ? "shuf" : ""}" title="الكومة">${jCardSVG(null)}${jCardSVG(null)}<b>${ar(g.deck ?? 0)}</b></span>${g.top ? jCardSVG(g.top, 'class="jtop"') : ""}</span><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 8 ? "hot" : ""}" id="jSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
       ${g.winner != null ? "" : `<div class="utime ${myTurn ? "mine" : ""}" aria-hidden="true"><i style="--s:${(tm.left / tm.dur).toFixed(3)};--d:${tm.left.toFixed(2)}s"></i></div>`}
       <p class="ulast">${esc(g.last || "")}</p>
@@ -5357,6 +5361,7 @@ const ROOM_VIEWS = {
         ${res}
         <p class="ulast">${esc(g.last || "")}</p>${bidBtns}
       </div>
+${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحين <button class="btn small" id="autoBack">ارجع العب بنفسك</button></div>` : ""}
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
       
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
