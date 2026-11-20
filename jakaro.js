@@ -116,8 +116,11 @@ const CELLS = (() => {
   for (let d = 0; d < 4; d++) {
     const a = armAng(d), b = armAng(d + 1);
     // خانة الطلعة = أول خانة بالصف بعد رأس الذراع، والرأس (٣ خانات) آخر شي قبل الدار
-    for (let k = 9; k >= 2; k--) out.push(P2(k * U, U, a));
-    for (let k = 2; k <= 9; k++) out.push(P2(k * U, -U, b));
+    for (let k = 9; k >= 4; k--) out.push(P2(k * U, U, a));
+    // الوصلة بين الذراعين: خط مستقيم تحت النص (مثل الطاولة الأصلية) بدل ما تلتقي عند روق
+    const A = P2(3 * U, U, a), B = P2(3 * U, -U, b);
+    for (let q = 0; q < 4; q++) out.push([A[0] + (B[0] - A[0]) * q / 3, A[1] + (B[1] - A[1]) * q / 3]);
+    for (let k = 4; k <= 9; k++) out.push(P2(k * U, -U, b));
     out.push(P2(10 * U, -U, b), P2(10 * U, 0, b), P2(10 * U, U, b));
   }
   return out;
