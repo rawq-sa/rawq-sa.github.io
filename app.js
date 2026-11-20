@@ -1437,6 +1437,17 @@ function autoMark(g, u, mv, wasTurn) {
   if (mv.type === "kick") { if (!wasTurn) return; g.miss[u] = (g.miss[u] || 0) + 1; if (g.miss[u] >= 2 && !g.auto[u]) { g.auto[u] = 1; g.last = (g.last || "") + ` · 🤖 بوت يلعب عن ${atn(pname(u))} لين يرجع`; } }
   else if (!mv.auto) { if (g.auto[u]) { delete g.auto[u]; g.last = (g.last || "") + ` · 👋 رجع ${atn(pname(u))}`; } g.miss[u] = 0; }
 }
+// نبض المضيف وقت البلوت والجكارو، ولو انقطع أكثر من دقيقة يمسك الإدارة أول لاعب حاضر
+setInterval(() => {
+  if (!room || !roomCode || !me?.uid || !["bal", "jak"].includes(room.phase)) return;
+  const g = room[room.phase]; if (!g || g.winner != null) return;
+  if (isHost()) { if (Date.now() - (ui.hbAt || 0) > 30000) { ui.hbAt = Date.now(); updateDoc(roomRef(), { hb: serverTimestamp() }).catch(() => {}); } return; }
+  const hb = room.hb?.toMillis?.(); if (!hb || Date.now() - hb < 80000) return;
+  const next = (g.order || []).find(u => u !== room.host && room.players?.[u] && !room.players[u].g && !g.auto?.[u]);
+  if (next !== me.uid || Date.now() - (ui.claimAt || 0) < 30000) return;
+  ui.claimAt = Date.now();
+  updateDoc(roomRef(), { host: me.uid, hb: serverTimestamp() }).then(() => toast("المضيف انقطع، صرت أنت تدير الجيم 👑")).catch(e => console.error(e));
+}, 10000);
 function botTick() {
   if (!isHost() || !room) return;
   if (room.phase === "bal") {
