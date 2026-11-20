@@ -34,11 +34,23 @@ export function jCtrl(g, s) {
   const p = (s + 2) % 4;
   return !g.duo && g.pos[s].every(r => r >= TRACK) && g.pos[p] ? p : s;
 }
+// مدخل الدار: الخانة اللي بنص راس الذراع (مقابل الدار بالضبط)، منها الكورة تنزل للدار على طول
+export const ENTRY = TRACK - 2;
+// كورة واقفة على خانة طلعتها: محد يتعداها ولا يوقف عليها
+const blocker = (g, cell) => jSeats(g).some(x => g.pos[x].includes(0) && jAbs(x, 0) === cell);
 function fwd(g, s, i, k) {
   const r = g.pos[s][i]; if (r < 0) return null;
-  const nr = r + k; if (nr > END) return null;
-  for (let x = Math.max(r + 1, TRACK); x <= nr; x++) if (g.pos[s].includes(x)) return null; // ما تتخطى كوراتك داخل الدار
-  if (nr >= TRACK) return { nr, kill: null };
+  if (r >= TRACK) { // داخل الدار
+    const nr = r + k; if (nr > END) return null;
+    for (let x = r + 1; x <= nr; x++) if (g.pos[s].includes(x)) return null;
+    return { nr, kill: null };
+  }
+  // على المسار: إذا وصلت مدخل الدار تنزل له على طول
+  const home = r <= ENTRY && r + k > ENTRY, nr = home ? TRACK + (r + k - ENTRY - 1) : (r + k) % TRACK;
+  if (home && nr > END) return null; // الورقة أكبر من اللي باقي: تنحرق، ما تتعدى الدار
+  const last = home ? ENTRY : r + k;
+  for (let t = r + 1; t <= last; t++) if (blocker(g, jAbs(s, t % TRACK))) return null;
+  if (home) { for (let x = TRACK; x <= nr; x++) if (g.pos[s].includes(x)) return null; return { nr, kill: null }; }
   const o = at(g, jAbs(s, nr));
   if (o && jTeamOf(g, o[0]) === jTeamOf(g, s)) return null;
   return { nr, kill: o };
@@ -46,6 +58,7 @@ function fwd(g, s, i, k) {
 function back(g, s, i, k) {
   const r = g.pos[s][i]; if (r < 0 || r >= TRACK) return null;
   const nr = (r - k + TRACK) % TRACK;
+  if (blocker(g, jAbs(s, nr))) return null;
   const o = at(g, jAbs(s, nr));
   if (o && jTeamOf(g, o[0]) === jTeamOf(g, s)) return null;
   return { nr, kill: o };
@@ -65,7 +78,7 @@ export function jMoves(g, s, card) {
   const go = k => Q.forEach(i => fwd(g, c, i, k) && L.push({ t: "f", a: [c, i], k }));
   if (R === "A" || R === "K") { const o = out(g, c); if (o) L.push({ t: "o", a: [c, o.i] }); if (R === "A") { go(1); go(11); } else go(13); }
   else if (R === "4") Q.forEach(i => back(g, c, i, 4) && L.push({ t: "b", a: [c, i], k: 4 }));
-  else if (R === "5") jSeats(g).filter(x => jTeamOf(g, x) === jTeamOf(g, s)).forEach(x => Q.forEach(i => fwd(g, x, i, 5) && L.push({ t: "f", a: [x, i], k: 5 })));
+  else if (R === "5") jSeats(g).forEach(x => Q.forEach(i => fwd(g, x, i, 5) && L.push({ t: "f", a: [x, i], k: 5 })));
   else if (R === "J") Q.forEach(i => {
     const r = g.pos[c][i]; if (r <= 0 || r >= TRACK) return; // خانة الطلعة أمان: ما ينبدل منها ولا إليها
     jSeats(g).filter(x => jTeamOf(g, x) !== jTeamOf(g, c)).forEach(x => Q.forEach(j => { const q = g.pos[x][j]; if (q > 0 && q < TRACK) L.push({ t: "s", a: [c, i], b: [x, j] }); }));
@@ -151,7 +164,8 @@ const OCT = (r, cx = CX, cy = CY) => Array.from({ length: 8 }, (_, k) => { const
 function jPath(s, i, r0, r1, rot) {
   if (r0 == null || r0 === r1 || r0 < 0 || r0 >= TRACK && r1 < TRACK) return null;
   const P = [];
-  if (r1 > r0 && r1 - r0 <= 13) for (let t = r0 + 1; t <= r1; t++) P.push(jSpot(s, i, t, rot));
+  if (r1 >= TRACK && r0 < TRACK) { for (let t = r0 + 1; t <= ENTRY; t++) P.push(jSpot(s, i, t, rot)); for (let t = TRACK; t <= r1; t++) P.push(jSpot(s, i, t, rot)); }
+  else if (r1 > r0 && r1 - r0 <= 13) for (let t = r0 + 1; t <= r1; t++) P.push(jSpot(s, i, t, rot));
   else if (r1 < TRACK && r0 < TRACK && (r0 - r1 + TRACK) % TRACK === 4) for (let q = 1; q <= 4; q++) P.push(jSpot(s, i, (r0 - q + TRACK) % TRACK, rot));
   else return null;
   return P;
@@ -185,7 +199,6 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, a
     s += `<line x1="${f1(e0[0])}" y1="${f1(e0[1])}" x2="${f1(e1[0])}" y2="${f1(e1[1])}" stroke="${hc}" stroke-opacity=".55" stroke-width="17" stroke-linecap="round"/>`;
     s += `<line x1="${f1(t0[0])}" y1="${f1(t0[1])}" x2="${f1(h1[0])}" y2="${f1(h1[1])}" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/>`;
     for (let h = 0; h < 4; h++) { const [x, y] = P2((9 - h) * U, 0, a); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="5.8" fill="url(#jHole)" stroke="${hc}" stroke-width="1.8"/>`; }
-    { const [x, y] = P2(5.05 * U, 0, a); s += `<text x="${f1(x)}" y="${f1(y)}" text-anchor="middle" dominant-baseline="central" font-size="10">🏠</text>`; }
     const [bx, by] = baseC(d), ba = (armAng(d) + Math.PI / 4) * 180 / Math.PI;
     s += `<rect x="${f1(bx - 21)}" y="${f1(by - 21)}" width="42" height="42" rx="6" fill="none" stroke="${GOLD}" stroke-width="1.4"/>`;
     for (let i = 0; i < 4; i++) s += `<circle cx="${f1(bx + (i % 2 ? 9.5 : -9.5))}" cy="${f1(by + (i < 2 ? -9.5 : 9.5))}" r="5.3" fill="url(#jHole)"/>`;
@@ -216,7 +229,7 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, a
     }
     const cl = `jm${cand.has(key) ? " can" : ""}${pick === key ? " pick" : ""}`;
     // كم باقي للدار (لكوراتي اللي على المسار)
-    const rem = k === left && r >= 0 && r < TRACK ? TRACK - r : 0;
+    const rem = k === left && r >= 0 && r <= ENTRY ? ENTRY + 1 - r : 0;
     const badge = rem ? `<g transform="translate(0 -13.5)"><rect x="-8.5" y="-6" width="17" height="11" rx="5.5" fill="#000" fill-opacity=".82" stroke="${GOLD}" stroke-width=".8"/><text y="2.6" text-anchor="middle" font-family="Tajawal,system-ui,sans-serif" font-weight="800" font-size="8.5" fill="#ffe7a3">${AR(rem)}</text></g>` : "";
     marbles.push({ z: cand.has(key) || pick === key ? 2 : rem ? 1 : 0, h: `<g class="${cl}" data-m="${key}" transform="translate(${f1(x)} ${f1(y)})"><g class="${moved ? "mv" : ""}" style="${moved ? `--dx:${f1(dx)}px;--dy:${f1(dy)}px` : ""}">${an}
       ${cand.has(key) || pick === key ? `<circle r="10.5" class="ring" fill="none" stroke="#fff" stroke-width="2"/>` : ""}

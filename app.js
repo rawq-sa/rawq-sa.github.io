@@ -15,7 +15,7 @@ import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } fr
 import { ICONS } from "./icons.js?v=33";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=41";
-import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL, jSeats, TRACK } from "./jakaro.js?v=20";
+import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL, jSeats, TRACK } from "./jakaro.js?v=21";
 import { bDeck, bRank, bSuit, legal, trickWinner, projects, scoreHand, teamOf, bAbnat, SUIT_IC, PRJ_AR } from "./baloot.js?v=1";
 import { classicFace, balFace, balBack } from "./cards.js?v=2";
 
@@ -5151,7 +5151,7 @@ const ROOM_VIEWS = {
       <p class="ulast">${esc(g.last || "")}</p>
       ${isHost() ? "" : `<p class="hint center uhost" id="jHost" hidden>📵 يمكن المضيف طالع من اللعبة، الدور بيمشي أول ما يرجع</p>`}
       ${playing ? `<div class="jdock">`+``:``}
-      ${steps.length ? `<div class="jsteps">${steps.map(k => `<button class="chip" data-k="${k}">${ar(k)}${R7 && k === 7 ? " كلها" : ""}</button>`).join("")}<button class="chip ghost" data-k="x">إلغاء</button></div>` : ""}
+      ${steps.length ? `<p class="jsteps-t">${R7 ? "كيف تقسم السبعة؟" : "كم تمشي؟"}</p><div class="jsteps">${steps.map(k => `<button class="chip" data-k="${k}">${ar(k)}${R7 && k === 7 ? " كلها" : ""}</button>`).join("")}<button class="chip ghost" data-k="x">إلغاء</button></div>` : ""}
       ${myTurn && !anyMove && J.card && !waiting ? `<button class="btn" id="jBurn">احرق هالورقة 🔥</button>` : ""}
       ${live && J.card && jRank(J.card) === "10" && !J.a ? `<button class="btn" id="jTen">🔥 احرق على @${esc(pname(ord[(g.turn + 1) % ord.length]))} (يختار ورقة يحرقها ويروح دوره)</button><p class="hint center">أو اختار كورة تمشي ${ar(10)}</p>` : ""}
       ${playing ? `<div class="uhand jfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => { const ok = movesOf(c).length > 0; return `<button style="${jfan(ci)};--i:${ci}" class="ucard jc ${dealNow ? "dealt" : ""} ${J.card === c ? "sel" : ""} ${myTurn && ok ? "ok" : myTurn && anyMove ? "no" : ""}" data-card="${esc(c)}" aria-label="${esc(jHelp(c))}">${jCardSVG(c)}</button>`; }).join("")}</div></div>` : `<p class="hint center">تتفرج 👀</p>`}
