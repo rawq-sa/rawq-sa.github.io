@@ -113,7 +113,7 @@ const FXF = {
   fr_desert: { n: "صحراء نجد", g: "#f0b45a", s: "b" }, fr_galaxy: { n: "مجرة النجوم", g: "#b45cff", s: "b" }, fr_crown: { n: "تاج للملوك", g: "#f2c14e", s: "b" }
 };
 const PLATES = { pl_roses: "الورود", pl_moon: "القمر", pl_desert: "الصحراء", pl_galaxy: "المجرة" };
-const NEWC = new Set([...Object.keys(FXF), ...Object.keys(PLATES)]);
+const NEWC = new Set([...Object.keys(FXF), ...Object.keys(PLATES), "bk_najdi"]);
 const KING_PICKS = 2;
 SHOP[0].grants.push(...NEWC);
 const FX_IDS = s => Object.keys(FXF).filter(k => FXF[k].s === s);
@@ -121,11 +121,12 @@ SHOP.splice(1, 0,
   { id: "col_g", name: "مجموعة البنات 💗", desc: "٦ إطارات مرسومة ومتحركة", price: 99, grants: FX_IDS("g"), days: 0, col6: "fr_princess" },
   { id: "col_b", name: "مجموعة العيال ⚡", desc: "٦ إطارات مرسومة ومتحركة", price: 99, grants: FX_IDS("b"), days: 0, col6: "fr_crown" },
   ...Object.entries(FXF).map(([k, f]) => ({ id: k, name: "إطار " + f.n, desc: "إطار متحرك حول صورتك يشوفه الكل", price: 21, grants: [k], days: 0 })),
+  { id: "bk_najdi", name: "ورق البلوت النجدي ☕", desc: "ورق بلوت أخضر وذهبي: الشايب بالبشت والبنت بالدلة والولد بالخنجر", price: 21, grants: ["bk_najdi"], days: 0 },
   ...Object.entries(PLATES).map(([k, n]) => ({ id: k, name: "لوحة " + n, desc: "تطلع خلف اسمك في قائمة اللاعبين", price: 21, grants: [k], days: 0 })));
 const FRAMES = { f_gold: "ذهبي", f_fire: "ناري", f_sadu: "سدو", ...Object.fromEntries(Object.entries(FXF).map(([k, f]) => [k, f.n])) };
 // ستايل الاسم: تفتح بالمستوى، وقوس قزح للـ VIP
 const NSTYLES = { gold: { name: "ذهبي", lvl: 3 }, sea: { name: "بحري", lvl: 6 }, fire: { name: "ناري", lvl: 10 }, neon: { name: "نيون", lvl: 15 }, rainbow: { name: "قوس قزح", shop: "ns_rainbow" } };
-const DECO_NAMES = { ns_rainbow: "ستايل قوس قزح", ...Object.fromEntries(Object.entries(PLATES).map(([k, n]) => [k, "لوحة " + n])), ...Object.fromEntries(Object.entries(DECO).flatMap(([k, d]) => [["th_" + k, "ثيم " + d.name], ["np_" + k, "لوحة " + d.name]])) };
+const DECO_NAMES = { bk_najdi: "ورق البلوت النجدي", ns_rainbow: "ستايل قوس قزح", ...Object.fromEntries(Object.entries(PLATES).map(([k, n]) => [k, "لوحة " + n])), ...Object.fromEntries(Object.entries(DECO).flatMap(([k, d]) => [["th_" + k, "ثيم " + d.name], ["np_" + k, "لوحة " + d.name]])) };
 let shopCfg = null; // روابط المنتجات في متجر روق
 const vipOn = p => (p?.vipUntil || 0) > Date.now();
 const owns = (p, id) => STAFF(p?.username) || (p?.owned || []).includes(id) || (!NEWC.has(id) && vipOn(p));
@@ -3891,6 +3892,7 @@ function shopPreview(it) {
   if (g[0] === "e_royal") return `<span class="sp-ent"><span>👑</span>${avF(prof(me.uid), 40)}<b>دخل الجلسة</b></span>`;
   if (g[0] === "b_royal") return `<span class="sp-back">${cardSVG(null, "royal")}</span>`;
   if (it.col6) return `<span class="sp-col6">${frWrap(it.col6, avatar(me.username, me.photo, 52), 52)}<b>×٦</b></span>`;
+  if (g[0] === "bk_najdi") return `<span class="sp-najdi">${balFace("K", "s")}${balBack()}</span>`;
   if (PLATES[g[0]]) return `<span class="sp-pl"><img src="img/pl/${g[0]}.webp" alt=""><b dir="ltr">@${esc(me.username)}</b></span>`;
   if (FRAMES[g[0]]) return FXF[g[0]] ? frWrap(g[0], avatar(me.username, me.photo, 56), 56) : `<span class="fr ${g[0]}" style="--fs:4px">${avatar(me.username, me.photo, 64)}</span>`;
   return "";
@@ -5114,7 +5116,7 @@ const ROOM_VIEWS = {
     const turnU = ord[g.turn], myTurn = playing && g.turn === myK && g.winner == null && g.phase !== "res";
     const waiting = ui.bWait === g.v; if (ui.bWait && ui.bWait !== g.v) ui.bWait = null;
     if (!ui.bk || ui.bk.v !== g.v) ui.bk = { v: g.v, sel: null };
-    const look = store.get("balLook", "classic"), face = (c, a = "") => (look === "najdi" ? balFace : classicFace)(bRank(c), bSuit(c), a);
+    const najdiOk = owns(prof(me.uid), "bk_najdi"), look = najdiOk ? store.get("balLook", "classic") : "classic", face = (c, a = "") => (look === "najdi" ? balFace : classicFace)(bRank(c), bSuit(c), a);
     const backS = a => look === "najdi" ? balBack(a) : jCardSVG(null, a);
     const ok = myTurn && g.phase === "play" && !waiting ? legal(g, myK, myHand) : [];
     const myT = playing ? teamOf(myK) : 0, us = g.score[myT], them = g.score[1 - myT];
@@ -5145,7 +5147,7 @@ const ROOM_VIEWS = {
       <p class="ulast">${esc(g.last || "")}</p>
       ${bidBtns}
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
-      <div class="chips center"><button class="chip" id="bLook" aria-pressed="${look === "najdi"}">🎴 شكل الورق: ${look === "najdi" ? "نجدي" : "كلاسيك"}</button></div>
+      <div class="chips center"><button class="chip" id="bLook" aria-pressed="${look === "najdi"}">🎴 شكل الورق: ${look === "najdi" ? "نجدي" : "كلاسيك"}${najdiOk ? "" : " · النجدي 🛍️"}</button></div>
       <details class="jrules"><summary>قوانين البلوت باختصار</summary><ul>
         <li><b>الشراء</b>: صن ☀️ (بدون حكم) أو حكم بشكل ورقة الشراء، أو بس. الدور الثاني تقدر تحكم بأي شكل ثاني</li>
         <li><b>أشكال</b>: تشتري صن لخويك</li><li>لازم تلحق الشكل، وبالحكم لو ما عندك تقطع بالحكم (إلا لو خويك ماسك اللمّة)</li>
@@ -5161,7 +5163,7 @@ const ROOM_VIEWS = {
       ui.bk.sel = c; render(false);
     });
     on("bNext", "click", () => balMove("play"));
-    on("bLook", "click", () => { store.set("balLook", look === "najdi" ? "classic" : "najdi"); render(false); });
+    on("bLook", "click", () => { if (!najdiOk) { toast("الورق النجدي من متجر روق 🛍️"); return IN_APP && !IAP_ON ? null : go("shop"); } store.set("balLook", look === "najdi" ? "classic" : "najdi"); render(false); });
     onAll("[data-pf]", b => showProfile(b.dataset.pf));
   },
 
