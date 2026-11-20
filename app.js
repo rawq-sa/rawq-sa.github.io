@@ -1445,7 +1445,7 @@ function trackSession() {
   Object.keys(room.players || {}).forEach(u => { s.names[u] = pname(u); });
   Object.entries(room.scores || {}).forEach(([u, p]) => { s.scores[u] = p; });
   const g = END_PHASES[room.phase];
-  if (g) { const k = room.round + ":" + room.phase; if (!s.rounds.has(k)) { s.rounds.add(k); s.games[g] = (s.games[g] || 0) + 1; sessHighlight(s); } }
+  if (g) { const k = room.round + ":" + room.phase; if (!s.rounds.has(k)) { s.rounds.add(k); s.games[g] = (s.games[g] || 0) + 1; sessHighlight(s); const rk = roomCode + ":" + k; setTimeout(() => { if (roomCode && room && room.round + ":" + room.phase === k && ui.winShown !== rk) { ui.winShown = rk; openWinCard(true); } }, 1800); } }
 }
 // لحظات الجلسة: أطرف شي صار، عشان تطلع في صورة الستوري
 function sessHighlight(s) {
@@ -2234,6 +2234,98 @@ async function openShare() {
       });
     } else go.remove();
   } catch (e) { console.error(e); el.querySelector("#shHint").textContent = "ما قدرنا نسوي الصورة"; }
+}
+/* ================= بطاقة الفايز (للسناب والستوري) ================= */
+function winUids() {
+  const ps = order(), r = room?.result || {};
+  if (room.phase === "jakend") { const g = room.jak; return g?.winner == null ? [] : (g.order || []).filter(u => jTeamOf(g, g.seats[u]) === g.winner); }
+  if (room.phase === "unoend") return room.uno?.winner ? [room.uno.winner] : [];
+  if (room.phase === "hres") { const rows = r.rows || {}, ids = Object.keys(rows); const max = Math.max(0, ...ids.map(u => rows[u].total || 0)); return max > 0 ? ids.filter(u => rows[u].total === max) : []; }
+  if (room.phase === "kend") { const win = r.win; return win && room.k ? kMembers(room.k.teams, win) : []; }
+  return topOf(room.scores || {}, (room.roundPlayers || []).length ? room.roundPlayers.filter(u => ps.includes(u)) : ps);
+}
+const loadImg = src => new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+async function makeWinCard(uids, game) {
+  const DISP = "Lalezar, Tahoma, sans-serif";
+  try { await Promise.all([document.fonts.load("80px Lalezar"), document.fonts.load("80px RawqRuqaa"), document.fonts.load("600 40px 'IBM Plex Sans Arabic'")]); } catch (e) {}
+  const W = 1080, H = 1920, c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d"); g.direction = "rtl"; g.textAlign = "center";
+  // الخلفية: ليل بنفسجي وخطوط نور
+  const bg = g.createRadialGradient(W / 2, H * .42, 50, W / 2, H * .45, H * .8); bg.addColorStop(0, "#3a1f6e"); bg.addColorStop(.55, "#1a0f33"); bg.addColorStop(1, "#08050f");
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const streak = (pts, col, w) => { g.save(); g.globalCompositeOperation = "lighter"; g.shadowColor = col; g.shadowBlur = 60; g.strokeStyle = col; g.lineWidth = w; g.lineCap = "round"; g.beginPath(); g.moveTo(pts[0], pts[1]); g.bezierCurveTo(pts[2], pts[3], pts[4], pts[5], pts[6], pts[7]); g.stroke(); g.restore(); };
+  streak([-80, 1500, 300, 1700, 700, 1500, 1160, 1780], "rgba(190,120,255,.55)", 10);
+  streak([-80, 1560, 380, 1800, 760, 1560, 1160, 1860], "rgba(255,170,90,.35)", 5);
+  streak([1160, 260, 800, 80, 420, 260, -80, 90], "rgba(140,170,255,.35)", 6);
+  const spark = (x, y, r, a) => { g.save(); g.globalAlpha = a; g.fillStyle = "#fff"; g.shadowColor = "#e8d4ff"; g.shadowBlur = 24; g.beginPath(); g.moveTo(x, y - r); g.quadraticCurveTo(x, y, x + r * .32, y); g.quadraticCurveTo(x, y, x, y + r); g.quadraticCurveTo(x, y, x - r * .32, y); g.quadraticCurveTo(x, y, x, y - r); g.fill(); g.restore(); };
+  [[170, 520, 26, .9], [920, 700, 22, .8], [190, 1290, 20, .7], [880, 1420, 34, .95], [540, 180, 16, .6], [980, 1100, 14, .6]].forEach(a => spark(...a));
+  // الإطار الهولوغرام
+  const FX = 110, FY = 250, FW = W - 220, FH = 1380, FR = 110;
+  const holo = g.createConicGradient ? g.createConicGradient(-.6, W / 2, FY + FH / 2) : g.createLinearGradient(FX, FY, FX + FW, FY + FH);
+  [["#ffd6a5", 0], ["#fdffb6", .14], ["#caffbf", .28], ["#9bf6ff", .42], ["#a0c4ff", .56], ["#bdb2ff", .7], ["#ffc6ff", .85], ["#ffd6a5", 1]].forEach(([col, o]) => holo.addColorStop(o, col));
+  g.save(); rr(g, FX, FY, FW, FH, FR); g.fillStyle = "rgba(14,8,30,.72)"; g.fill(); g.restore();
+  g.save(); g.shadowColor = "rgba(190,150,255,.9)"; g.shadowBlur = 50; g.strokeStyle = holo; g.lineWidth = 20; rr(g, FX, FY, FW, FH, FR); g.stroke(); g.restore();
+  g.save(); g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = 3; rr(g, FX + 14, FY + 14, FW - 28, FH - 28, FR - 14); g.stroke(); g.restore();
+  // روق
+  g.fillStyle = "#f2b134"; g.font = `92px RawqRuqaa, ${DISP}`; g.fillText("روق", W / 2, FY + 150);
+  // الصور
+  const list = uids.slice(0, 3), n = list.length, S = n === 1 ? 430 : n === 2 ? 330 : 250, gap = 40;
+  const crown = await loadImg("img/crown.png?v=1");
+  const AY = n === 1 ? 700 : 760, totalW = n * S + (n - 1) * gap;
+  for (let i = 0; i < n; i++) {
+    const u = list[i], p = prof(u), name = pname(u), x = W / 2 + totalW / 2 - S - i * (S + gap), y = AY;
+    g.save(); g.shadowColor = "rgba(0,0,0,.55)"; g.shadowBlur = 50; g.shadowOffsetY = 24; rr(g, x, y, S, S, S * .26); g.fillStyle = "#000"; g.fill(); g.restore();
+    g.save(); rr(g, x, y, S, S, S * .26); g.clip();
+    const photo = safePhoto(p?.photo) ? await loadImg(p.photo) : null;
+    if (photo) g.drawImage(photo, x, y, S, S);
+    else { const gr = g.createLinearGradient(x, y, x + S, y + S); gr.addColorStop(0, "#ffe38a"); gr.addColorStop(1, avColor(name)); g.fillStyle = gr; g.fillRect(x, y, S, S);
+      g.fillStyle = "#1c1530"; g.font = `${Math.round(S * .55)}px ${DISP}`; g.textBaseline = "middle"; g.fillText(String(name || "?").charAt(0).toUpperCase(), x + S / 2, y + S * .55); g.textBaseline = "alphabetic"; }
+    g.restore();
+    g.save(); g.strokeStyle = holo; g.lineWidth = Math.max(8, S * .03); g.shadowColor = "rgba(200,170,255,.8)"; g.shadowBlur = 24; rr(g, x, y, S, S, S * .26); g.stroke(); g.restore();
+    if (crown) { const cw = S * .92, ch = cw * crown.height / crown.width; g.save(); g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 30; g.shadowOffsetY = 12; g.drawImage(crown, x + (S - cw) / 2, y - ch * .78, cw, ch); g.restore(); }
+  }
+  // الأسماء (كل اسم بسطر، واتجاهه حسب لغته)
+  const lines = list.map(u => "@" + pname(u)), lh = n === 1 ? 128 : n === 2 ? 92 : 76;
+  let ny = AY + S + 70;
+  lines.forEach(t => {
+    let fs = lh; g.font = `${fs}px ${DISP}`; while (g.measureText(t).width > FW - 120 && fs > 44) { fs -= 6; g.font = `${fs}px ${DISP}`; }
+    ny += fs * .95;
+    const ng = g.createLinearGradient(0, ny - fs, 0, ny); ng.addColorStop(0, "#fff1b8"); ng.addColorStop(.6, "#f2b134"); ng.addColorStop(1, "#c98a1c");
+    g.save(); g.shadowColor = "rgba(242,177,52,.45)"; g.shadowBlur = 30; g.fillStyle = ng; g.direction = /[\u0600-\u06FF]/.test(t) ? "rtl" : "ltr"; g.fillText(t, W / 2, ny); g.restore();
+    ny += 18;
+  });
+  // اللعبة
+  g.fillStyle = "#cbbfe6"; g.font = `600 50px 'IBM Plex Sans Arabic', Tahoma, sans-serif`; g.fillText(game, W / 2, FY + FH - 110);
+  // تحت: الرابط
+  g.fillStyle = "rgba(255,255,255,.55)"; g.font = `600 36px 'IBM Plex Sans Arabic', Tahoma, sans-serif`; g.direction = "ltr";
+  g.fillText(appLink().replace(/^https?:\/\//, "").replace(/\/$/, ""), W / 2, H - 150);
+  return await new Promise(ok => c.toBlob(ok, "image/jpeg", .92));
+}
+async function openWinCard(auto) {
+  if (!room) return;
+  const uids = winUids(); if (!uids.length) { if (!auto) openShare(); return; }
+  document.getElementById("winCard")?.remove();
+  const el = document.createElement("div");
+  el.id = "winCard"; el.className = "wincard-bg"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "بطاقة الفايز");
+  el.innerHTML = `<button class="wc-x" aria-label="إغلاق">✕</button><div class="wc-img"><div class="spinner" aria-label="نجهز البطاقة"></div></div>
+    <div class="wc-btns"><button class="wc-b snap" id="wcSnap"><i>👻</i>سناب</button><button class="wc-b story" id="wcStory"><i>📸</i>ستوري</button><button class="wc-b save" id="wcSave"><i>⬇️</i>حفظ</button></div>`;
+  document.body.appendChild(el);
+  let url = null; const close = () => { el.remove(); if (url) URL.revokeObjectURL(url); };
+  el.querySelector(".wc-x").addEventListener("click", close);
+  el.addEventListener("click", e => { if (e.target === el) close(); });
+  try {
+    const blob = await makeWinCard(uids, GAMES[room.game] || "روق");
+    if (!el.isConnected) return;
+    url = URL.createObjectURL(blob);
+    el.querySelector(".wc-img").innerHTML = `<img src="${url}" alt="بطاقة الفايز">`;
+    const file = new File([blob], "rawq.jpg", { type: "image/jpeg" });
+    const can = !!navigator.canShare?.({ files: [file] });
+    const share = async () => { if (!can) return save(); try { await navigator.share({ files: [file] }); } catch (e) { if (e?.name !== "AbortError") toast("ما قدرنا نفتح المشاركة، احفظ الصورة"); } };
+    const save = async () => { if (can) return share(); const a = document.createElement("a"); a.href = url; a.download = "rawq.jpg"; document.body.appendChild(a); a.click(); a.remove(); toast("انحفظت ✅"); };
+    el.querySelector("#wcSnap").addEventListener("click", () => { toast("اختار سناب شات 👻"); share(); });
+    el.querySelector("#wcStory").addEventListener("click", () => { toast("اختار انستقرام 📸"); share(); });
+    el.querySelector("#wcSave").addEventListener("click", save);
+  } catch (e) { console.error(e); close(); }
 }
 const shareBtn = () => `<button class="btn ghost share" data-share>📸 شارك النتيجة</button>`;
 
@@ -4339,7 +4431,7 @@ VIEWS.room = () => {
   const view = ROOM_VIEWS[room.phase] || ROOM_VIEWS.lobby;
   if (view() === "kept") return; // شاشة الرسم ما تنعاد عشان ما ينقطع الرسم
   showChatFab();
-  onAll("[data-share]", () => openShare());
+  onAll("[data-share]", () => openWinCard(false));
   bindLeave();
   onAll("[data-vote]", b => vote(b.dataset.vote));
 };

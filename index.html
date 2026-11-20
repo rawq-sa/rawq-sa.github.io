@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=121">
+<link rel="modulepreload" href="./app.js?v=122">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=32">
 <link rel="modulepreload" href="./uno.js?v=38">
@@ -589,6 +589,17 @@ body:has(#chatFab) main{padding-bottom:78px}
 .btn.wa svg{width:20px;height:20px;flex:none}
 .btn.share{border-color:color-mix(in srgb,var(--saffron) 60%,var(--line));color:var(--saffron);font-weight:700}
 .share-sheet{max-height:92vh;overflow:auto}
+.wincard-bg{position:fixed;inset:0;z-index:90;background:rgba(6,3,14,.92);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(env(safe-area-inset-top) + 50px) 18px calc(env(safe-area-inset-bottom) + 22px);animation:wcIn .35s ease}
+@keyframes wcIn{from{opacity:0}}
+.wc-x{position:absolute;top:calc(env(safe-area-inset-top) + 12px);left:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:18px}
+.wc-img{flex:1;min-height:0;width:100%;display:grid;place-items:center}
+.wc-img img{max-height:100%;max-width:100%;border-radius:22px;box-shadow:0 30px 70px rgba(150,110,255,.35);animation:wcPop .6s cubic-bezier(.2,1.3,.4,1);-webkit-touch-callout:default}
+@keyframes wcPop{from{transform:scale(.6) rotate(-6deg);opacity:0}}
+.wc-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:420px}
+.wc-b{border:0;border-radius:20px;padding:12px 4px;font-weight:700;font-size:14px;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px;color:#fff}
+.wc-b i{font-style:normal;font-size:24px}
+.wc-b.snap{background:#fffc00;color:#000}.wc-b.story{background:linear-gradient(45deg,#f9a825,#e91e63,#7b1fa2)}.wc-b.save{background:rgba(255,255,255,.12)}
+
 .share-prev{width:100%;display:grid;place-items:center;min-height:200px}
 .share-img{display:block;max-height:52vh;max-width:100%;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.4);-webkit-touch-callout:default;user-select:auto}
 .wform{display:flex;flex-direction:column;gap:10px}
@@ -1131,6 +1142,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=121"></script>
+<script type="module" src="./app.js?v=122"></script>
 </body>
 </html>
