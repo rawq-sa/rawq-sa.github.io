@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=123">
+<link rel="modulepreload" href="./app.js?v=124">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=32">
 <link rel="modulepreload" href="./uno.js?v=38">
@@ -599,6 +599,40 @@ body:has(#chatFab) main{padding-bottom:78px}
 .btn.wa svg{width:20px;height:20px;flex:none}
 .btn.share{border-color:color-mix(in srgb,var(--saffron) 60%,var(--line));color:var(--saffron);font-weight:700}
 .share-sheet{max-height:92vh;overflow:auto}
+.lob{gap:18px;align-items:center;text-align:center;background:radial-gradient(70% 40% at 50% 8%,rgba(242,177,52,.10),transparent 70%)}
+.lob>*{width:100%}
+.lob-code{display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:6px}
+.lob-lbl{font-size:13px;color:var(--muted)}
+.lob-pill{border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);border-radius:999px;padding:8px 34px;font-family:var(--display);font-size:44px;letter-spacing:6px;color:var(--saffron);line-height:1.15;box-shadow:0 0 40px rgba(242,177,52,.12)}
+.lob-share{border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--ink);border-radius:999px;padding:8px 18px;font:inherit;font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.lob-share svg{width:16px;height:16px}
+.lob-ps{display:flex;flex-direction:column;align-items:stretch;gap:10px;max-width:300px;margin:6px auto 0}
+.lob-p{display:flex;align-items:center;gap:8px}
+.lob-p.np{position:relative;isolation:isolate;padding:8px 26px;margin-inline:-6px;min-height:62px}
+.lob-p.np .np-art{position:absolute;inset:0;z-index:-1;border-radius:14px}
+.lob-p.np::before{content:"";position:absolute;inset:12% 5%;z-index:-1;border-radius:10px;background:linear-gradient(270deg,rgba(0,0,0,.45),rgba(0,0,0,0) 60%);pointer-events:none}
+.lob-p.np .lob-nm{color:#fff;text-shadow:0 1px 3px #000}
+.lob-p.np .lob-me{color:#fff;background:rgba(0,0,0,.5);border-color:rgba(255,255,255,.3)}
+.lob-p.np{margin-block:4px}
+.lob-p.np .np-art.np-img::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.25) 48%,transparent 60%);transform:translateX(-120%);animation:npsh 4.5s ease-in-out infinite}
+.lob-who{flex:1;display:flex;align-items:center;gap:12px;background:none;border:0;color:var(--ink);font:inherit;padding:0;text-align:right;min-width:0}
+.lob-av{position:relative;flex:none}
+.lob-crown{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-style:normal;font-size:15px;z-index:4}
+.lob-nm{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lob-me{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 8px}
+.lob-kick{background:none;border:0;color:var(--muted);font-size:14px;width:30px;height:30px;border-radius:50%}
+.lob-add{background:none;border:0;color:var(--muted);font:inherit;gap:12px;padding:0}
+.lob-plus{width:46px;height:46px;border-radius:50%;border:1.5px dashed rgba(255,255,255,.35);display:grid;place-items:center;font-size:20px;color:var(--ink)}
+.lob-fr{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.lob-game{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:300px;margin:6px auto 0;border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);border-radius:999px;padding:6px}
+.lob-game b{flex:1;font-size:18px}
+.lob-arr{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.07);color:var(--ink);font-size:24px;line-height:1}
+.lob-desc{color:var(--muted);font-size:13px;margin-top:-8px}
+.lob-set{max-width:420px;margin:0 auto;text-align:right;border:1px solid var(--line);border-radius:18px;padding:10px 14px}
+.lob-set summary{cursor:pointer;font-weight:700;color:var(--muted);font-size:14px;text-align:center}
+.lob-set[open] summary{margin-bottom:10px}
+.lob-start{font-size:20px;padding:16px;box-shadow:0 10px 30px rgba(242,177,52,.25)}
+
 .wincard-bg{position:fixed;inset:0;z-index:90;background:rgba(6,3,14,.92);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(env(safe-area-inset-top) + 50px) 18px calc(env(safe-area-inset-bottom) + 22px);animation:wcIn .35s ease}
 @keyframes wcIn{from{opacity:0}}
 .wc-x{position:absolute;top:calc(env(safe-area-inset-top) + 12px);left:16px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:18px}
@@ -756,6 +790,34 @@ body:has(#chatFab) main{padding-bottom:78px}
 .fr.f_fire{filter:drop-shadow(0 0 8px rgba(255,110,40,.6))}
 .fr.f_sadu::before{background:repeating-conic-gradient(#b8323a 0 15deg,#f2b134 15deg 30deg,#1a1426 30deg 45deg,#fff3e0 45deg 60deg);animation-duration:9s}
 @media (prefers-reduced-motion:reduce){.fr::before{animation:none}}
+/* الإطارات المرسومة */
+.frx{position:relative;display:inline-grid;place-items:center;width:var(--s);height:var(--s);flex:none;isolation:isolate;margin:calc(var(--s) * .26)}
+.frx>.av{position:relative;z-index:0}
+.frx>img{position:absolute;width:178%;height:178%;left:-39%;top:-39%;max-width:none;pointer-events:none;z-index:1;filter:drop-shadow(0 0 3px var(--g));animation:frxg 3.2s ease-in-out infinite}
+@keyframes frxg{50%{filter:drop-shadow(0 0 9px var(--g));transform:scale(1.03)}}
+.frx>.sp{position:absolute;inset:-32%;z-index:2;pointer-events:none;background:radial-gradient(circle,#fff 0 1.4px,transparent 2.2px) 12% 18%/22% 22% no-repeat,radial-gradient(circle,#fff 0 1.2px,transparent 2px) 86% 30%/20% 20% no-repeat,radial-gradient(circle,#fff 0 1.5px,transparent 2.4px) 78% 88%/22% 22% no-repeat;animation:frxt 2.4s ease-in-out infinite}
+.frx>.sp::before{content:"";position:absolute;inset:0;background:radial-gradient(circle,var(--g) 0 1.4px,transparent 2.4px) 50% 2%/20% 20% no-repeat,radial-gradient(circle,#fff 0 1.2px,transparent 2.2px) 96% 62%/20% 20% no-repeat,radial-gradient(circle,var(--g) 0 1.4px,transparent 2.4px) 30% 98%/20% 20% no-repeat;animation:frxt 2.4s 1.2s ease-in-out infinite}
+@keyframes frxt{0%,100%{opacity:0;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
+.np-art.np-img img{width:100%;height:100%;object-fit:fill;display:block}
+.li.np .np-art.np-img::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.25) 48%,transparent 60%);transform:translateX(-120%);animation:npsh 4.5s ease-in-out infinite}
+.np-art.np-img{overflow:hidden;border-radius:inherit}
+@keyframes npsh{60%,100%{transform:translateX(120%)}}
+.li.np:has(.np-img){padding-inline:22px;border-color:transparent;background:none}
+.li.np:has(.np-img)::before{inset:10% 5%;border-radius:10px;background:linear-gradient(270deg,rgba(0,0,0,.4),rgba(0,0,0,0) 60%)}
+.sp-col6{position:relative;display:inline-grid;place-items:center}
+.sp-col6>b{position:absolute;bottom:-14px;inset-inline-end:-18px;background:var(--saffron);color:var(--bg);font-size:13px;border-radius:999px;padding:0 8px;z-index:3}
+.sp-pl{position:relative;display:grid;place-items:center;width:200px;max-width:100%;height:44px}
+.sp-pl img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.sp-pl b{position:relative;color:#fff;text-shadow:0 1px 3px #000;font-size:14px}
+.sp-pl.mini{width:92px;height:22px}
+.kingpick{display:grid;gap:10px;padding:14px;border-radius:18px;background:linear-gradient(120deg,#3a2508,#4a2f0a);border:1px solid #f2b13466}
+.kingpick>b{font-family:var(--display);font-weight:400;font-size:22px;color:#ffd66b}
+.kp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.kp-it{position:relative;display:grid;justify-items:center;gap:14px;padding:22px 4px 8px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);color:var(--ink);font:inherit;font-size:12px;cursor:pointer}
+.kp-it.on{border-color:var(--saffron);box-shadow:0 0 0 2px var(--saffron) inset}
+.kp-it:disabled{opacity:.45}
+.kp-it i{position:absolute;top:4px;inset-inline-start:6px;font-style:normal;font-size:11px;color:var(--saffron)}
+@media (prefers-reduced-motion:reduce){.frx>img,.frx>.sp,.frx>.sp::before,.np-art.np-img::after{animation:none}}
 
 /* سلسلة الأيام */
 .streak-s{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
@@ -1152,6 +1214,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=123"></script>
+<script type="module" src="./app.js?v=124"></script>
 </body>
 </html>
