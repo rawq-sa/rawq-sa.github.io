@@ -168,6 +168,7 @@ let VERIFIED = new Set();
 const isVerified = name => { const k = String(name || "").toLowerCase(); return k === OWNER || k === OWNER_OLD || k === OFFICIAL || VERIFIED.has(k); };
 const VBADGE = `<span class="vbadge" title="حساب موثّق" aria-label="حساب موثّق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.6l2.5 1.9 3.1-.3 1.2 2.9 2.9 1.2-.3 3.1L23.3 12l-1.9 2.5.3 3.1-2.9 1.2-1.2 2.9-3.1-.3L12 23.3l-2.5-1.9-3.1.3-1.2-2.9-2.9-1.2.3-3.1L.7 12l1.9-2.5-.3-3.1 2.9-1.2 1.2-2.9 3.1.3z" fill="#0b0b0f" stroke="#fff" stroke-opacity=".25" stroke-width=".8"/><path d="M7.4 12.3l3.1 3.1 6.1-6.3" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
 const at = name => { const k = String(name).toLowerCase();
+  if (/^(نجم|بوت) /.test(name)) return esc(name);
   return `@${esc(name)}${isVerified(k) ? " " + VBADGE : ""}${k === OWNER || k === OWNER_OLD ? ' <span class="crown" title="صاحب اللعبة" aria-label="صاحب اللعبة">👑</span>' : ""}`; };
 // صورة البروفايل: صورة اللاعب، أو أول حرف من يوزره بلون ثابت
 const AV_COLORS = ["#ef6f6c", "#f2b134", "#74d6b8", "#8f7bea", "#5fb0f0", "#f08a24", "#e66aa8", "#4fc48a"];
@@ -1351,7 +1352,7 @@ const ICO_WA = `<svg viewBox="0 0 24 24" width="24" height="24" fill="#fff" aria
 const ICO_SC = `<svg viewBox="0 0 24 24" width="24" height="24" fill="#fff" stroke="#111" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2.9 0 5 2.2 5 5v2.4c.5.2 1.1 0 1.6-.2.6-.2 1.1.6.5 1-.6.4-1.6.7-2 1 .3 1.4 1.7 3 3.4 3.4.5.1.4.7 0 .9-.6.3-1.4.4-2 .6-.2.4-.1 1-.6 1-.8 0-1.6-.2-2.6.3-1 .6-1.8 1.6-3.3 1.6s-2.3-1-3.3-1.6c-1-.5-1.8-.3-2.6-.3-.5 0-.4-.6-.6-1-.6-.2-1.4-.3-2-.6-.4-.2-.5-.8 0-.9 1.7-.4 3.1-2 3.4-3.4-.4-.3-1.4-.6-2-1-.6-.4-.1-1.2.5-1 .5.2 1.1.4 1.6.2V8c0-2.8 2.1-5 5-5Z"/></svg>`;
 /* ================= البوتات: المضيف يلعب عنهم ================= */
 const isBot = u => !!room?.players?.[u]?.bot;
-const BOT_NAMES = ["بوت أبو فهد", "بوت سعود", "بوت نوره", "بوت أبو خالد", "بوت ريم", "بوت تركي"];
+const BOT_NAMES = [1, 2, 3, 4, 5, 6].map(n => "نجم " + ar(n));
 async function addBot() {
   if (!isHost()) return;
   const ps = order(), max = room.game === "bal" || room.game === "jak" ? 4 : 0;
@@ -4912,7 +4913,7 @@ const ROOM_VIEWS = {
     V.innerHTML = `<section class="lob">
       <div class="lob-code"><span class="lob-lbl">كود الغرفة</span><button class="lob-pill" id="copyLink" dir="ltr" aria-label="انسخ الرابط">${esc(roomCode)}</button>
         <button class="lob-share" id="shareInv">${ICONS.share || "📤"} مشاركة</button></div>
-      <div class="lob-ps">${ps.map(u => `<div class="lob-p ${npArt(prof(u)) ? "np" : ""}">${npArt(prof(u))}<button class="lob-who" data-pf="${esc(u)}"><span class="lob-av">${u === room.host ? `<i class="lob-crown" aria-label="المضيف">👑</i>` : ""}${prof(u) ? avF(prof(u), 46) : avatar(pname(u), "", 46)}</span><span class="lob-nm${nsC(prof(u))}" dir="auto">${at(pname(u))}</span>${u === me.uid ? `<span class="lob-me">أنت</span>` : room.players[u]?.g ? `<span class="lob-me">ضيف</span>` : ""}</button>${host && u !== me.uid ? `<button class="lob-kick" data-kick="${esc(u)}" aria-label="اطرد ${esc(pname(u))}">✕</button>` : ""}</div>`).join("")}
+      <div class="lob-ps">${ps.map(u => `<div class="lob-p ${npArt(prof(u)) ? "np" : ""}">${npArt(prof(u))}<button class="lob-who" data-pf="${esc(u)}"><span class="lob-av">${u === room.host ? `<i class="lob-crown" aria-label="المضيف">👑</i>` : ""}${prof(u) ? avF(prof(u), 46) : avatar(pname(u), "", 46)}</span><span class="lob-nm${nsC(prof(u))}" dir="auto">${at(pname(u))}</span>${u === me.uid ? `<span class="lob-me">أنت</span>` : room.players[u]?.bot ? `<span class="lob-me">🤖 بوت</span>` : room.players[u]?.g ? `<span class="lob-me">ضيف</span>` : ""}</button>${host && u !== me.uid ? `<button class="lob-kick" data-kick="${esc(u)}" aria-label="اطرد ${esc(pname(u))}">✕</button>` : ""}</div>`).join("")}
         ${n < 12 ? `<button class="lob-p lob-add" id="addInv"><span class="lob-plus">＋</span><span class="lob-nm">دعوة</span></button>${host && (room.game === "bal" || room.game === "jak") && ps.length < 4 ? `<button class="lob-add" id="addBot">🤖 أضف بوت</button>` : ""}` : ""}</div>
       ${onlineFriends.length ? `<div class="lob-fr">${onlineFriends.map(([u, f]) => `<button class="chip" data-inv="${esc(u)}"><i class="dot on"></i> اعزم ${esc(f.username)}</button>`).join("")}</div>` : ""}
       <div class="lob-game">${host ? `<button class="lob-arr" data-gs="${esc(gStep(1))}" aria-label="اللعبة الثانية">‹</button>` : ""}<b>${GAMES[room.game]}</b>${host ? `<button class="lob-arr" data-gs="${esc(gStep(-1))}" aria-label="اللعبة اللي قبل">›</button>` : ""}</div>
