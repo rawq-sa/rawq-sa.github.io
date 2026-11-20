@@ -1304,6 +1304,51 @@ function fitGame() {
   const avail = vh - top - extra;
   if (avail < bh) board.style.maxWidth = Math.max(200, Math.floor(avail * ratio)) + "px";
 }
+/* ================= نافذة الدعوة: أصحابك + مشاركة برا روق ================= */
+const invSent = new Set();
+function openInviteSheet() {
+  if (!roomCode) return;
+  const url = location.origin + location.pathname + "?r=" + roomCode;
+  const msg = `تعال العب معنا ${GAMES[room?.game] || ""} في روق 🎉\nكود الغرفة: ${roomCode}\n${url}`;
+  const el = sheet(`<b class="pf-name">اعزم أصحابك</b><span class="inv-code">كود الغرفة <b dir="ltr">${esc(roomCode)}</b></span>
+    <input class="inv-q" type="search" placeholder="ابحث عن صاحبك" aria-label="ابحث عن صاحبك" autocomplete="off">
+    <div class="inv-list"></div>
+    <span class="inv-or">أو ارسل الدعوة برا روق</span>
+    <div class="inv-share">
+      <button data-sh="wa"><i style="background:#25d366">${ICO_WA}</i>واتساب</button>
+      <button data-sh="sc"><i style="background:#fffc00;color:#111">${ICO_SC}</i>سناب</button>
+      <button data-sh="cp"><i>🔗</i>نسخ الرابط</button>
+      <button data-sh="more"><i>⋯</i>المزيد</button>
+    </div>`);
+  const list = el.querySelector(".inv-list"), q = el.querySelector(".inv-q");
+  const row = ([u, f]) => { const p = playingOf(f), on = isOnline(f), sent = invSent.has(roomCode + u);
+    return `<div class="inv-row"><span class="av-wrap">${avatar(f.username, f.photo, 42)}${on ? `<i class="dot on"></i>` : ""}</span>
+      <span class="inv-nm"><b dir="auto">${esc(f.username)}</b><small>${p ? `يلعب ${esc(GAMES[p.g])}` : on ? "أونلاين" : "أوفلاين"}</small></span>
+      <button class="inv-b ${sent ? "done" : ""}" data-iv="${esc(u)}" ${sent ? "disabled" : ""}>${sent ? "انرسلت ✓" : "اعزمه"}</button></div>`; };
+  const draw = () => {
+    const t = q.value.trim().toLowerCase();
+    const all = [...friends.entries()].filter(([u, f]) => f.username && f.username !== "…" && !room?.players?.[u] && (!t || f.username.toLowerCase().includes(t)));
+    const onl = all.filter(([, f]) => isOnline(f)), off = all.filter(([, f]) => !isOnline(f));
+    list.innerHTML = !friends.size ? `<p class="inv-empty">ما عندك أصحاب في روق للحين، ارسل لهم الرابط تحت 👇</p>`
+      : !all.length ? `<p class="inv-empty">${t ? "ما لقينا أحد بهالاسم" : "كل أصحابك داخل الغرفة 🎉"}</p>`
+      : (onl.length ? `<span class="inv-h on">أونلاين الحين · ${ar(onl.length)}</span>${onl.map(row).join("")}` : "")
+      + (off.length ? `<span class="inv-h">باقي أصحابك</span>${off.map(row).join("")}` : "");
+    list.querySelectorAll("[data-iv]").forEach(b => b.addEventListener("click", () => {
+      invSent.add(roomCode + b.dataset.iv); b.disabled = true; b.classList.add("done"); b.textContent = "انرسلت ✓"; sendInvite(b.dataset.iv);
+    }));
+  };
+  q.addEventListener("input", draw); draw();
+  const ext = u => { const w = window.open(u, "_blank"); if (!w) location.href = u; };
+  el.querySelectorAll("[data-sh]").forEach(b => b.addEventListener("click", async () => {
+    const k = b.dataset.sh;
+    if (k === "wa") ext("https://wa.me/?text=" + encodeURIComponent(msg));
+    else if (k === "sc") ext("https://www.snapchat.com/share?link=" + encodeURIComponent(url));
+    else if (k === "cp") copyText(url, "انسخ رابط الدعوة");
+    else { if (navigator.share) { try { await navigator.share({ text: msg }); return; } catch (e) { if (e?.name === "AbortError") return; } } copyText(msg, "انسخ الدعوة"); }
+  }));
+}
+const ICO_WA = `<svg viewBox="0 0 24 24" width="24" height="24" fill="#fff" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2c0 1.3.9 2.5 1 2.7.1.2 1.8 2.8 4.5 3.9 1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.5-.3Z"/></svg>`;
+const ICO_SC = `<svg viewBox="0 0 24 24" width="24" height="24" fill="#fff" stroke="#111" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2.9 0 5 2.2 5 5v2.4c.5.2 1.1 0 1.6-.2.6-.2 1.1.6.5 1-.6.4-1.6.7-2 1 .3 1.4 1.7 3 3.4 3.4.5.1.4.7 0 .9-.6.3-1.4.4-2 .6-.2.4-.1 1-.6 1-.8 0-1.6-.2-2.6.3-1 .6-1.8 1.6-3.3 1.6s-2.3-1-3.3-1.6c-1-.5-1.8-.3-2.6-.3-.5 0-.4-.6-.6-1-.6-.2-1.4-.3-2-.6-.4-.2-.5-.8 0-.9 1.7-.4 3.1-2 3.4-3.4-.4-.3-1.4-.6-2-1-.6-.4-.1-1.2.5-1 .5.2 1.1.4 1.6.2V8c0-2.8 2.1-5 5-5Z"/></svg>`;
 /* ================= البوتات: المضيف يلعب عنهم ================= */
 const isBot = u => !!room?.players?.[u]?.bot;
 const BOT_NAMES = ["بوت أبو فهد", "بوت سعود", "بوت نوره", "بوت أبو خالد", "بوت ريم", "بوت تركي"];
@@ -4889,7 +4934,7 @@ const ROOM_VIEWS = {
     const invite = async () => { const url = location.origin + location.pathname + "?r=" + roomCode, text = `تعال العب معنا ${GAMES[room.game] || ""} في روق 🎉\nكود الغرفة: ${roomCode}\n${url}`;
       if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e?.name === "AbortError") return; } }
       copyText(url, "انسخ رابط الدعوة"); };
-    on("shareInv", "click", invite); on("addInv", "click", invite);
+    on("shareInv", "click", invite); on("addInv", "click", () => openInviteSheet());
     onAll("[data-gs]", b => setRoom({ game: b.dataset.gs }));
     on("copyLink", "click", () => copyText(location.origin + location.pathname + "?r=" + roomCode, "انسخ رابط الدعوة"));
     onAll("[data-inv]", b => { b.disabled = true; sendInvite(b.dataset.inv); });
