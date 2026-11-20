@@ -3768,7 +3768,25 @@ const IAP_LIST = [
   { id: "frame_gold", name: "إطار ذهبي", desc: "إطار يدور حول صورتك ويشوفه الكل", sar: "14.99", g: ["f_gold"] },
   { id: "frame_fire", name: "إطار ناري", desc: "إطار يدور حول صورتك ويشوفه الكل", sar: "14.99", g: ["f_fire"] },
   { id: "frame_sadu", name: "إطار سدو", desc: "إطار يدور حول صورتك ويشوفه الكل", sar: "14.99", g: ["f_sadu"] },
-  { id: "back_royal", name: "ظهر الورق الملكي", desc: "عنابي بتاج ذهبي في أونو", sar: "9.99", g: ["b_royal"] }
+  { id: "back_royal", name: "ظهر الورق الملكي", desc: "عنابي بتاج ذهبي في أونو", sar: "9.99", g: ["b_royal"] },
+  { id: "col_g", name: "مجموعة البنات 💗", desc: "٦ إطارات مرسومة ومتحركة", sar: "99.99", g: ["fr_roses", "fr_butterfly", "fr_princess", "fr_sakura", "fr_hearts", "fr_moon"] },
+  { id: "col_b", name: "مجموعة العيال ⚡", desc: "٦ إطارات مرسومة ومتحركة", sar: "99.99", g: ["fr_flame", "fr_falcon", "fr_lightning", "fr_desert", "fr_galaxy", "fr_crown"] },
+  { id: "fr_roses", name: "إطار ورود وردية", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_roses"] },
+  { id: "fr_butterfly", name: "إطار فراشات", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_butterfly"] },
+  { id: "fr_princess", name: "إطار تاج الأميرة", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_princess"] },
+  { id: "fr_sakura", name: "إطار أزهار ساكورا", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_sakura"] },
+  { id: "fr_hearts", name: "إطار قلوب كريستالية", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_hearts"] },
+  { id: "fr_moon", name: "إطار قمر ونجوم", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_moon"] },
+  { id: "fr_flame", name: "إطار لهب أزرق", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_flame"] },
+  { id: "fr_falcon", name: "إطار جناح الصقر", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_falcon"] },
+  { id: "fr_lightning", name: "إطار برق فخم", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_lightning"] },
+  { id: "fr_desert", name: "إطار صحراء نجد", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_desert"] },
+  { id: "fr_galaxy", name: "إطار مجرة النجوم", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_galaxy"] },
+  { id: "fr_crown", name: "إطار تاج للملوك", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_crown"] },
+  { id: "pl_roses", name: "لوحة الورود", desc: "تطلع خلف اسمك في قائمة اللاعبين", sar: "21.99", g: ["pl_roses"] },
+  { id: "pl_moon", name: "لوحة القمر", desc: "تطلع خلف اسمك في قائمة اللاعبين", sar: "21.99", g: ["pl_moon"] },
+  { id: "pl_desert", name: "لوحة الصحراء", desc: "تطلع خلف اسمك في قائمة اللاعبين", sar: "21.99", g: ["pl_desert"] },
+  { id: "pl_galaxy", name: "لوحة المجرة", desc: "تطلع خلف اسمك في قائمة اللاعبين", sar: "21.99", g: ["pl_galaxy"] }
 ];
 const IAP_PID = id => "sa.rawq.app." + id;
 let iapPrices = null, iapBusy = null;

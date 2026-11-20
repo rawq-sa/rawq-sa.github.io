@@ -175,7 +175,25 @@ const IAP = {
   "sa.rawq.app.vip.month": { d: 30, n: "اشتراك VIP شهر", p: "29.99" },
   "sa.rawq.app.vip.quarter": { d: 90, n: "اشتراك VIP ٣ شهور", p: "69.99" },
   "sa.rawq.app.vip.year": { d: 365, n: "اشتراك VIP سنة", p: "199.99" },
-  "sa.rawq.app.king": { g: [...ALL_VIP, "king"], d: 365, n: "باقة الملك 👑", p: "299.99" }
+  "sa.rawq.app.king": { g: [...ALL_VIP, "king"], d: 365, n: "باقة الملك 👑", p: "299.99" },
+  "sa.rawq.app.col_g": { g: ["fr_roses", "fr_butterfly", "fr_princess", "fr_sakura", "fr_hearts", "fr_moon"], n: "مجموعة البنات", p: "99.99" },
+  "sa.rawq.app.col_b": { g: ["fr_flame", "fr_falcon", "fr_lightning", "fr_desert", "fr_galaxy", "fr_crown"], n: "مجموعة العيال", p: "99.99" },
+  "sa.rawq.app.fr_roses": { g: ["fr_roses"], n: "إطار ورود وردية", p: "21.99" },
+  "sa.rawq.app.fr_butterfly": { g: ["fr_butterfly"], n: "إطار فراشات", p: "21.99" },
+  "sa.rawq.app.fr_princess": { g: ["fr_princess"], n: "إطار تاج الأميرة", p: "21.99" },
+  "sa.rawq.app.fr_sakura": { g: ["fr_sakura"], n: "إطار أزهار ساكورا", p: "21.99" },
+  "sa.rawq.app.fr_hearts": { g: ["fr_hearts"], n: "إطار قلوب كريستالية", p: "21.99" },
+  "sa.rawq.app.fr_moon": { g: ["fr_moon"], n: "إطار قمر ونجوم", p: "21.99" },
+  "sa.rawq.app.fr_flame": { g: ["fr_flame"], n: "إطار لهب أزرق", p: "21.99" },
+  "sa.rawq.app.fr_falcon": { g: ["fr_falcon"], n: "إطار جناح الصقر", p: "21.99" },
+  "sa.rawq.app.fr_lightning": { g: ["fr_lightning"], n: "إطار برق فخم", p: "21.99" },
+  "sa.rawq.app.fr_desert": { g: ["fr_desert"], n: "إطار صحراء نجد", p: "21.99" },
+  "sa.rawq.app.fr_galaxy": { g: ["fr_galaxy"], n: "إطار مجرة النجوم", p: "21.99" },
+  "sa.rawq.app.fr_crown": { g: ["fr_crown"], n: "إطار تاج للملوك", p: "21.99" },
+  "sa.rawq.app.pl_roses": { g: ["pl_roses"], n: "لوحة الورود", p: "21.99" },
+  "sa.rawq.app.pl_moon": { g: ["pl_moon"], n: "لوحة القمر", p: "21.99" },
+  "sa.rawq.app.pl_desert": { g: ["pl_desert"], n: "لوحة الصحراء", p: "21.99" },
+  "sa.rawq.app.pl_galaxy": { g: ["pl_galaxy"], n: "لوحة المجرة", p: "21.99" }
 };
 async function iapGrant(env, uid, { jws }) {
   if (typeof jws !== "string" || jws.length > 20000) throw 400;
