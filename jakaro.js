@@ -115,10 +115,10 @@ const CELLS = (() => {
   const out = [];
   for (let d = 0; d < 4; d++) {
     const a = armAng(d), b = armAng(d + 1);
-    out.push(P2(10 * U, 0, a), P2(10 * U, U, a));
+    // خانة الطلعة = أول خانة بالصف بعد رأس الذراع، والرأس (٣ خانات) آخر شي قبل الدار
     for (let k = 9; k >= 2; k--) out.push(P2(k * U, U, a));
     for (let k = 2; k <= 9; k++) out.push(P2(k * U, -U, b));
-    out.push(P2(10 * U, -U, b));
+    out.push(P2(10 * U, -U, b), P2(10 * U, 0, b), P2(10 * U, U, b));
   }
   return out;
 })();
@@ -151,7 +151,16 @@ export function jCardSVG(c, attrs = "") {
 // dests = وين بتوصل الكورة [[مقعد، موقع]]، left = مقعد اللي نوريه كم باقي له للدار
 const D = P => "M" + P.map(p => f1(p[0]) + " " + f1(p[1])).join("L") + "Z";
 const OCT = (r, cx = CX, cy = CY) => Array.from({ length: 8 }, (_, k) => { const a = Math.PI / 8 + k * Math.PI / 4, q = r / Math.cos(Math.PI / 8); return [cx + q * Math.cos(a), cy + q * Math.sin(a)]; });
-export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, turnSeat = null, dests = [], left = null } = {}) {
+// طريق الكورة خطوة خطوة (عشان تمشي بالخانات مثل الواقع بدل ما تطير)
+function jPath(s, i, r0, r1, rot) {
+  if (r0 == null || r0 === r1 || r0 < 0 || r0 >= TRACK && r1 < TRACK) return null;
+  const P = [];
+  if (r1 > r0 && r1 - r0 <= 13) for (let t = r0 + 1; t <= r1; t++) P.push(jSpot(s, i, t, rot));
+  else if (r1 < TRACK && r0 < TRACK && (r0 - r1 + TRACK) % TRACK === 4) for (let q = 1; q <= 4; q++) P.push(jSpot(s, i, (r0 - q + TRACK) % TRACK, rot));
+  else return null;
+  return P;
+}
+export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, prevPos = null, turnSeat = null, dests = [], left = null } = {}) {
   const seats = jSeats(g), now = {}, AR = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
   const GOLD = "#e6c06a";
   let s = `<svg class="jsvg" viewBox="0 0 440 440" direction="ltr" style="direction:ltr" role="img" aria-label="لوح الجكارو">
@@ -190,12 +199,21 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, t
   for (const k of seats) for (let i = 0; i < 4; i++) {
     const key = k + ":" + i, r = g.pos[k][i], [x, y] = jSpot(k, i, r, rot), p = prev[key];
     now[key] = [x, y];
-    const dx = p ? p[0] - x : 0, dy = p ? p[1] - y : 0, moved = Math.abs(dx) + Math.abs(dy) > .5;
+    const dx = p ? p[0] - x : 0, dy = p ? p[1] - y : 0;
+    let moved = Math.abs(dx) + Math.abs(dy) > .5, anim = "";
+    const path = moved && prevPos?.[k] ? jPath(k, i, prevPos[k][i], r, rot) : null;
+    if (path) {
+      // نط خفيف بين كل خانة والثانية
+      const V = [`${f1(dx)},${f1(dy)}`]; let px = p[0], py = p[1];
+      path.forEach(([qx, qy]) => { V.push(`${f1((px + qx) / 2 - x)},${f1((py + qy) / 2 - y - 6)}`, `${f1(qx - x)},${f1(qy - y)}`); px = qx; py = qy; });
+      anim = `<animateTransform attributeName="transform" type="translate" values="${V.join(";")}" dur="${(path.length * .16).toFixed(2)}s" begin="0s" fill="freeze"/>`;
+      moved = false;
+    }
     const cl = `jm${cand.has(key) ? " can" : ""}${pick === key ? " pick" : ""}`;
     // كم باقي للدار (لكوراتي اللي على المسار)
     const rem = k === left && r >= 0 && r < TRACK ? TRACK - r : 0;
     const badge = rem ? `<g transform="translate(0 -13.5)"><rect x="-8.5" y="-6" width="17" height="11" rx="5.5" fill="#000" fill-opacity=".82" stroke="${GOLD}" stroke-width=".8"/><text y="2.6" text-anchor="middle" font-family="Tajawal,system-ui,sans-serif" font-weight="800" font-size="8.5" fill="#ffe7a3">${AR(rem)}</text></g>` : "";
-    marbles.push({ z: cand.has(key) || pick === key ? 2 : rem ? 1 : 0, h: `<g class="${cl}" data-m="${key}" transform="translate(${f1(x)} ${f1(y)})"><g class="${moved ? "mv" : ""}" style="${moved ? `--dx:${f1(dx)}px;--dy:${f1(dy)}px` : ""}">
+    marbles.push({ z: cand.has(key) || pick === key ? 2 : rem ? 1 : 0, h: `<g class="${cl}" data-m="${key}" transform="translate(${f1(x)} ${f1(y)})"><g class="${moved ? "mv" : ""}" style="${moved ? `--dx:${f1(dx)}px;--dy:${f1(dy)}px` : ""}">${anim}
       ${cand.has(key) || pick === key ? `<circle r="10.5" class="ring" fill="none" stroke="#fff" stroke-width="2"/>` : ""}
       <circle r="12" fill="transparent"/><ellipse cx="1" cy="3.2" rx="5.6" ry="2.5" fill="#000" opacity=".5"/><circle cy="-.5" r="6.6" fill="url(#jM${k})"/><ellipse cx="-2.2" cy="-3.2" rx="2.2" ry="1.4" fill="#fff" opacity=".85" transform="rotate(-30 -2.2 -3.2)"/>${badge}</g></g>` });
   }

@@ -37,11 +37,11 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=118">
+<link rel="modulepreload" href="./app.js?v=119">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=32">
 <link rel="modulepreload" href="./uno.js?v=38">
-<link rel="modulepreload" href="./jakaro.js?v=13">
+<link rel="modulepreload" href="./jakaro.js?v=14">
 <link rel="modulepreload" href="./deco.js?v=1">
 <link rel="modulepreload" href="./firebase-config.js?v=27">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -525,6 +525,17 @@ body:has(#chatFab) main{padding-bottom:78px}
 @font-face{font-family:RawqRuqaa;src:url(fonts/ruqaa-rawq.ttf?v=3) format("truetype");font-display:swap}
 .jak{gap:12px}
 .ubar .jtop{width:30px;height:auto;flex:none;transform:rotate(-6deg);filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.jpile{display:flex;align-items:center;gap:10px;flex:none}
+.jdeck{position:relative;width:30px;height:45px;flex:none}
+.jdeck svg{position:absolute;inset:0;width:30px;height:auto;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+.jdeck svg:first-child{transform:translate(-3px,-3px) rotate(-4deg)}
+.jdeck b{position:absolute;bottom:-6px;left:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--saffron);color:#1c1530;font-size:11px;display:grid;place-items:center}
+.jdeck.shuf svg:first-child{animation:jshufA .45s ease-in-out 3}
+.jdeck.shuf svg:nth-child(2){animation:jshufB .45s ease-in-out 3}
+@keyframes jshufA{50%{transform:translate(-16px,-2px) rotate(-14deg)}}
+@keyframes jshufB{50%{transform:translate(14px,2px) rotate(12deg)}}
+.jcard.dealt{animation:jdeal .5s cubic-bezier(.2,1.2,.4,1) both;animation-delay:calc(var(--i) * .12s)}
+@keyframes jdeal{from{opacity:0;transform:translate(-40vw,-38vh) rotate(-30deg) scale(.4)}}
 .jplayers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .jp{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:7px 10px;color:var(--ink);font:inherit;text-align:start;min-width:0}
 .jp.turn{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 25%,transparent)}
@@ -1120,6 +1131,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=118"></script>
+<script type="module" src="./app.js?v=119"></script>
 </body>
 </html>
