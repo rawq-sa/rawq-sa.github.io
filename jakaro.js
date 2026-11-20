@@ -188,7 +188,7 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, a
   <path d="${D(OCT(212))}" fill="url(#jBlk)"/><path d="${D(OCT(212))}" fill="url(#jGrain)"/>
   <path d="${D(OCT(205))}" fill="none" stroke="${GOLD}" stroke-opacity=".55" stroke-width="1.2"/>`;
   // دور مين: توهج ذهبي خفيف على ذراعه
-  if (turnSeat != null) { const d0 = ((turnSeat - rot) % 4 + 4) % 4, a = armAng(d0), p0 = P2(2 * U, 0, a), p1 = P2(10 * U, 0, a); s += `<line x1="${f1(p0[0])}" y1="${f1(p0[1])}" x2="${f1(p1[0])}" y2="${f1(p1[1])}" stroke="#ffe7a3" stroke-opacity=".14" stroke-width="66" stroke-linecap="round"/>`; }
+  // (توهج الدور صار على صورة اللاعب بدل الخط)
   // خط المسار: خيط ذهبي خفيف يوصل الخانات بالترتيب عشان الطريق يبان
   s += `<path d="${D(CELLS)}" fill="none" stroke="${GOLD}" stroke-opacity=".28" stroke-width="1.4" stroke-linejoin="round"/>`;
   for (let d = 0; d < 4; d++) {

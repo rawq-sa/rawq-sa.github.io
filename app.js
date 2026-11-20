@@ -15,7 +15,7 @@ import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } fr
 import { ICONS } from "./icons.js?v=33";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=41";
-import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL, jSeats, TRACK, jSpot } from "./jakaro.js?v=22";
+import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL, jSeats, TRACK, jSpot } from "./jakaro.js?v=23";
 import { bDeck, bRank, bSuit, legal, trickWinner, projects, scoreHand, teamOf, bAbnat, SUIT_IC, PRJ_AR } from "./baloot.js?v=1";
 import { classicFace, balFace, balBack } from "./cards.js?v=2";
 
@@ -5141,11 +5141,11 @@ const ROOM_VIEWS = {
     const jfan = k => { const d = k - (hn - 1) / 2, r = d * jda; return `--x:${(d * jstep).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .12).toFixed(1)}px;z-index:${k + 1}`; };
     V.innerHTML = `<section class="jak">
       ${statusBar()}
-      <div class="jstage"><div class="jboard">${svg}</div>${ord.map(u => { const s = g.seats[u], [bx, by] = jSpot(s, 0, -1, rot), px = 50 + (bx - 220) / 440 * 100 * 1.38, py = 50 + (by - 220) / 440 * 100 * 1.38, mate = ord.length === 4 && u !== me.uid && teamOf(u) === (playing ? teamOf(me.uid) : 0);
-        return `<button class="jpod ${u === turnU && g.winner == null ? "turn" : ""} ${py > 70 ? "bot" : ""}" style="--c:${JCOL[s].fill};left:${Math.min(88, Math.max(12, px)).toFixed(1)}%;top:${Math.min(92, Math.max(6, py)).toFixed(1)}%" data-pf="${esc(u)}">
+      <div class="jstage"><div class="jboard">${svg}</div>${ord.map(u => { const s = g.seats[u], [bx, by] = jSpot(s, 0, -1, rot), ba = Math.atan2(by - 220, bx - 220) - Math.PI / 4, cx = Math.cos(ba) > 0, cy = Math.sin(ba) > 0, mate = ord.length === 4 && u !== me.uid && teamOf(u) === (playing ? teamOf(me.uid) : 0);
+        return `<button class="jpod ${cy ? "bot" : "top"} ${cx ? "rt" : "lf"} ${u === turnU && g.winner == null ? "turn" : ""}" style="--c:${JCOL[s].fill}" data-pf="${esc(u)}">
+          <span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}</span>
           ${g.cnt && u !== me.uid ? `<span class="jpbk">${Array.from({ length: g.cnt[u] ?? 0 }, () => jCardSVG(null)).join("")}</span>` : ""}
-          <span class="jring">${prof(u) ? avF(prof(u), 46) : avatar(pname(u), "", 46)}</span>
-          <b class="jtag" dir="ltr">${u === me.uid ? "أنت" : esc(pname(u))}${mate ? " 🤝" : ""} · 🏠${ar(jHomeCount(g, s))}</b></button>`; }).join("")}</div>
+          <b class="jtag">${u === me.uid ? "أنت" : esc(pname(u))}${mate ? " 🤝" : ""} · 🏠${ar(jHomeCount(g, s))}</b></button>`; }).join("")}</div>
       ${ctrl != null && ctrl !== mySeat ? `<p class="jnote">خلّصت كوراتك 👑 الحين تلعب بكورات خويك</p>` : ""}
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="jpile"><span class="jdeck ${shufNow ? "shuf" : ""}" title="الكومة">${jCardSVG(null)}${jCardSVG(null)}<b>${ar(g.deck ?? 0)}</b></span>${g.top ? jCardSVG(g.top, 'class="jtop"') : ""}</span><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 8 ? "hot" : ""}" id="jSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
       ${g.winner != null ? "" : `<div class="utime ${myTurn ? "mine" : ""}" aria-hidden="true"><i style="--s:${(tm.left / tm.dur).toFixed(3)};--d:${tm.left.toFixed(2)}s"></i></div>`}
