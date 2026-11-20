@@ -1290,6 +1290,20 @@ function unoTimerStart() {
     if (over > 8 && ui.unoStallV !== uno.v) { ui.unoStallV = uno.v; if (isHost()) ui.unoKickV = null; resyncRoom("stall"); }
   }, 500);
 }
+
+// شاشة اللعب كاملة بدون سكرول: نصغّر اللوح لين يدخل هو والأوراق في الشاشة
+addEventListener("resize", () => fitGame());
+function fitGame() {
+  const sec = V.querySelector("section.jak, section.bal"); if (!sec) return;
+  const board = sec.querySelector(".jboard, .btable"), hand = sec.querySelector(".uhand"); if (!board || !hand) return;
+  board.style.maxWidth = "";
+  const vh = window.visualViewport?.height || window.innerHeight;
+  const top = board.getBoundingClientRect().top + window.scrollY, bh = board.getBoundingClientRect().height;
+  const end = hand.getBoundingClientRect().bottom + window.scrollY + 6;
+  const extra = end - top - bh, ratio = board.getBoundingClientRect().width / bh;
+  const avail = vh - top - extra;
+  if (avail < bh) board.style.maxWidth = Math.max(200, Math.floor(avail * ratio)) + "px";
+}
 /* ================= البوتات: المضيف يلعب عنهم ================= */
 const isBot = u => !!room?.players?.[u]?.bot;
 const BOT_NAMES = ["بوت أبو فهد", "بوت سعود", "بوت نوره", "بوت أبو خالد", "بوت ريم", "بوت تركي"];
@@ -5129,7 +5143,7 @@ const ROOM_VIEWS = {
       ${statusBar()}
       <div class="jplayers">${ord.map(u => { const s = g.seats[u]; return `<button class="jp ${u === turnU && g.winner == null ? "turn" : ""}" style="--c:${JCOL[s].fill}" data-pf="${esc(u)}">
         ${prof(u) ? avF(prof(u), 30) : avatar(pname(u), "", 30)}<span class="jp-n" dir="ltr">${esc(pname(u))}${u === me.uid ? " (أنت)" : ""}</span>
-        <span class="jp-s"><i></i>${ord.length === 4 ? (teamOf(u) === (playing ? teamOf(me.uid) : 0) ? "فريقك" : "الخصم") + " · " : ""}🏠 ${ar(jHomeCount(g, s))}/${ar(4)}${g.cnt ? ` · 🃏 ${ar(g.cnt[u] ?? 0)}` : ""}</span></button>`; }).join("")}</div>
+        <span class="jp-s"><i></i>${ord.length === 4 ? (teamOf(u) === (playing ? teamOf(me.uid) : 0) ? "فريقك" : "الخصم") + " · " : ""}🏠 ${ar(jHomeCount(g, s))}/${ar(4)}</span>${g.cnt && u !== me.uid ? `<span class="jpbk" aria-label="${ar(g.cnt[u] ?? 0)} أوراق">${Array.from({ length: g.cnt[u] ?? 0 }, () => jCardSVG(null)).join("")}</span>` : ""}</button>`; }).join("")}</div>
       <div class="jboard">${svg}</div>
       ${ctrl != null && ctrl !== mySeat ? `<p class="jnote">خلّصت كوراتك 👑 الحين تلعب بكورات خويك</p>` : ""}
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="jpile"><span class="jdeck ${shufNow ? "shuf" : ""}" title="الكومة">${jCardSVG(null)}${jCardSVG(null)}<b>${ar(g.deck ?? 0)}</b></span>${g.top ? jCardSVG(g.top, 'class="jtop"') : ""}</span><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 8 ? "hot" : ""}" id="jSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
@@ -5155,7 +5169,7 @@ const ROOM_VIEWS = {
       <div class="foot">${leaveBtn()}</div></section>`;
     if (shufNow) toast("🔀 خلص الورق… تخبّص وتوزّع من جديد");
     else if (dealNow && g.deal > 1) toast("🃏 خلصت الأوراق، توزّعت ٤ جديدة");
-    jakTimerStart();
+    jakTimerStart(); requestAnimationFrame(fitGame);
     const send = m => { const c = J.card; ui.jk = { v: g.v, round: room.round, card: null, a: null, k: null }; jakMove("play", c, m); };
     onAll("[data-card]", b => {
       const c = b.dataset.card;
@@ -5240,7 +5254,7 @@ const ROOM_VIEWS = {
         <li><b>أشكال</b>: تشتري صن لخويك</li><li>لازم تلحق الشكل، وبالحكم لو ما عندك تقطع بالحكم (إلا لو خويك ماسك اللمّة)</li>
         <li><b>المشاريع</b> تنعلن تلقائي: سرا، خمسين، مية، أربعمية، بلوت</li><li>المشتري لازم يجيب أكثر من الخصم وإلا ينقهر، وأول فريق يوصل ${ar(BAL_WIN)} يفوز 🏆</li></ul></details>
       <div class="foot">${leaveBtn()}</div></section>`;
-    balTimerStart();
+    balTimerStart(); requestAnimationFrame(fitGame);
     onAll("[data-bid]", b => { const x = b.dataset.bid; x === "pass" ? balMove("pass") : balMove("play", "", { bid: x, suit: b.dataset.s || "" }); });
     onAll("[data-bc]", b => {
       const c = b.dataset.bc;
