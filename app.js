@@ -2982,6 +2982,7 @@ function showChatFab() {
     document.body.appendChild(fab);
   }
   const n = document.getElementById("chatPanel") ? 0 : chatUnread();
+  document.getElementById("gChat")?.classList.toggle("dot", n > 0);
   fab.innerHTML = `💬<span>شات</span>${n ? `<i class="badge">${ar(n)}</i>` : ""}`;
 }
 function openChatPanel() {
@@ -4812,8 +4813,10 @@ function votedCount() {
   return Object.entries(votes).filter(([u, v]) => v.round === room.round && ps.includes(u)).length;
 }
 const statusBar = () => `<div class="status"><span>الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""}</span><span>${room.game === "kal" && room.k ? `الكلمة ${ar(room.k.idx || 1)} من ${ar(room.k.n || 10)}` : `الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}`}</span></div>`;
-const gameBar = (extra = "") => `<div class="gbar"><span class="gb-info">الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""} · الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}</span><span class="gb-btns">${extra}<button class="gi" id="gRules" aria-label="القوانين">؟</button><button class="gx" id="gExit">${isHost() ? "إنهاء" : "خروج"} ✕</button></span></div>`;
+const gameBar = (extra = "") => `<div class="gbar"><span class="gb-info">الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""} · الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}</span><span class="gb-btns">${extra}<button class="gi gchat ${chatUnread() ? "dot" : ""}" id="gChat" aria-label="شات الغرفة">💬</button><button class="gi" id="gRx" aria-label="رياكشن">😂</button><button class="gi" id="gRules" aria-label="القوانين">؟</button><button class="gx" id="gExit">${isHost() ? "إنهاء" : "خروج"} ✕</button></span></div>`;
 document.addEventListener("click", e => {
+  if (e.target.closest?.("#gChat")) { openChatPanel(); document.getElementById("gChat")?.classList.remove("dot"); return; }
+  if (e.target.closest?.("#gRx")) { const bar = document.getElementById("rxBar"); if (bar) { const o = bar.classList.toggle("open"); bar.querySelector(".rx-tog")?.setAttribute("aria-expanded", o); } return; }
   if (e.target.closest?.("#gRules")) { const ul = V.querySelector(".jrules ul"); if (ul) sheet(`<b class="pf-name">القوانين باختصار</b><div class="rules-sh">${ul.outerHTML}</div><button class="btn" data-close>تمام</button>`); }
   else if (e.target.closest?.("#gExit")) { const h = isHost(), el = sheet(`<b class="pf-name">${h ? "تنهي الجلسة؟" : "تطلع من الجلسة؟"}</b><p class="pf-bio">${h ? "الغرفة بتنقفل على الكل." : "تقدر ترجع بكود الغرفة."}</p><button class="btn danger" id="gExitOk">${h ? "إنهاء الجلسة" : "خروج"}</button><button class="btn ghost" data-close>كمّل لعب</button>`); el.querySelector("#gExitOk").addEventListener("click", () => { el.remove(); leaveRoom(); }); }
 });
