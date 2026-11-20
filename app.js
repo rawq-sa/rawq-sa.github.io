@@ -3346,7 +3346,9 @@ async function shrinkBanner(file) {
   } finally { URL.revokeObjectURL(url); }
 }
 
-VIEWS.loading = () => { V.innerHTML = `<div class="spinner" aria-label="جاري التحميل"></div>`; };
+const BOOT_TIPS = ["نرتّب الطاولة لك…", "نخبّص الورق 🃏", "ندوّر الدخيل 🕵️", "نجيب القهوة ☕", "نعزم الشلة 🎉"];
+setInterval(() => { const t = document.querySelector(".bt-tip"); if (t) t.textContent = BOOT_TIPS[(BOOT_TIPS.indexOf(t.textContent) + 1) % BOOT_TIPS.length]; }, 2600);
+VIEWS.loading = () => { if (V.querySelector(".boot")) return; V.innerHTML = `<div class="boot" role="status" aria-label="جاري التحميل"><div class="bt-fan"><i class="bt-c a">♥</i><i class="bt-c c">♠</i><i class="bt-c b">روق</i></div><b class="bt-logo">روق</b><span class="bt-dots"><i></i><i></i><i></i></span><span class="bt-tip">${BOOT_TIPS[0]}</span></div>`; };
 
 VIEWS.setup = () => {
   V.innerHTML = `<section>

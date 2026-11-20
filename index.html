@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=155">
+<link rel="modulepreload" href="./app.js?v=156">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=33">
 <link rel="modulepreload" href="./uno.js?v=41">
@@ -837,6 +837,22 @@ section.gscreen .uhand.jfan{height:122px;margin-top:4px}
 section.gscreen .ulast{font-size:12.5px}
 .btable{margin:46px -8px 40px!important}
 .jstage{margin:26px -8px 24px!important}
+/* صفحة التحميل */
+.boot{margin:auto;min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+.app:has(#view>.boot)>header{visibility:hidden}
+.bt-fan{position:relative;width:120px;height:82px}
+.bt-c{position:absolute;bottom:0;left:50%;width:48px;height:68px;margin-left:-24px;border-radius:8px;background:#f6f1e4;border:2px solid #d9b45a;transform-origin:50% 100%;display:grid;place-items:center;font-style:normal;font-size:20px;color:#1c1530;box-shadow:0 6px 14px #0007}
+.bt-c.a{color:#c0392b;animation:btA 1.6s ease-in-out infinite}.bt-c.c{animation:btC 1.6s ease-in-out infinite}
+.bt-c.b{z-index:2;background:#2a2146;border-color:var(--saffron);color:var(--saffron);font-family:var(--display);font-size:17px;animation:btB 1.6s ease-in-out infinite}
+@keyframes btA{0%,100%{transform:none}50%{transform:rotate(-22deg) translate(-6px,-4px)}}
+@keyframes btC{0%,100%{transform:none}50%{transform:rotate(22deg) translate(6px,-4px)}}
+@keyframes btB{0%,100%{transform:none}50%{transform:translateY(-10px)}}
+.bt-logo{font-family:var(--display);font-weight:400;font-size:68px;line-height:1;color:var(--saffron);animation:btGlow 2.4s ease-in-out infinite}
+@keyframes btGlow{0%,100%{transform:scale(1);text-shadow:0 0 0 #f2b13400}50%{transform:scale(1.06);text-shadow:0 0 22px #f2b134aa}}
+.bt-dots{display:flex;gap:8px}.bt-dots i{width:10px;height:10px;border-radius:50%;background:var(--saffron);animation:btDot 1.2s infinite}.bt-dots i:nth-child(2){animation-delay:.2s}.bt-dots i:nth-child(3){animation-delay:.4s}
+@keyframes btDot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1.1)}}
+.bt-tip{font-size:14px;color:var(--muted);min-height:20px}
+@media (prefers-reduced-motion:reduce){.bt-c,.bt-logo,.bt-dots i{animation:none!important}}
 /* نافذة الدعوة */
 .inv-code{font-size:12px;color:var(--muted);margin-top:-6px}.inv-code b{color:var(--saffron);letter-spacing:2px}
 .inv-q{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px}
@@ -1302,9 +1318,9 @@ video.share-img{background:#000}
     <div class="hdr" id="hdr"></div>
   </header>
   <div id="banner"></div>
-  <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
+  <main id="view"><div class="boot" role="status" aria-label="جاري التحميل"><div class="bt-fan"><i class="bt-c a">♥</i><i class="bt-c c">♠</i><i class="bt-c b">روق</i></div><b class="bt-logo">روق</b><span class="bt-dots"><i></i><i></i><i></i></span><span class="bt-tip">نرتّب الطاولة لك…</span></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=155"></script>
+<script type="module" src="./app.js?v=156"></script>
 </body>
 </html>
