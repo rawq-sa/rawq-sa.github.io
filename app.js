@@ -5278,7 +5278,7 @@ const ROOM_VIEWS = {
     const spot = k => ["b", "r", "t", "l"][(k - base + 4) % 4];
     const seat = k => { const u = ord[k], sp = spot(k); return `<button class="bseat ${sp} ${k === g.turn && g.winner == null && g.phase !== "res" ? "turn" : ""} ${teamOf(k) === myT ? "mate" : ""}" data-pf="${esc(u)}" style="--c:${teamOf(k) === myT ? "#3ecf8e" : "#e0565b"}"><span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}</span><b class="btag">${u === me.uid ? "أنت" : esc(pname(u))}${k === g.buyer ? " 🛒" : ""}${k === g.dealer ? " 🃏" : ""}</b>${sp !== "b" ? `<span class="bbk">${Array.from({ length: Math.min(8, g.cnt?.[u] ?? 0) }, () => backS()).join("")}</span>` : ""}</button>`; };
     const trick = (g.trick.length ? g.trick : g.lastTrick || []).map(x => `<span class="btc ${spot(x.k)} ${g.trick.length ? "" : "old"}">${face(x.c)}</span>`).join("");
-    const modeTxt = g.mode ? (g.mode === "sun" ? "☀️ صن" : "🃏 حكم " + SUIT_IC[g.trump]) + " · @" + esc(pname(ord[g.buyer])) : g.phase === "bid2" ? "الشراء: الدور الثاني" : "الشراء";
+    const modeTxt = g.mode ? (g.mode === "sun" ? "☀️ صن" : "🃏 حكم " + SUIT_IC[g.trump]) + " · " + esc(atn(pname(ord[g.buyer]))) : g.phase === "bid2" ? "الشراء: الدور الثاني" : "الشراء";
     const tm = balTimeLeft(g);
     const bidding = g.phase === "bid1" || g.phase === "bid2";
     const tip = g.winner != null ? "" : g.phase === "res" ? "انتهت التوزيعة 🎉" : !myTurn ? `ننتظر ${esc(atn(pname(turnU)))}` : waiting ? "لحظة…" : bidding ? "دورك تشتري؟" : "دورك! العب ورقة 👇";
