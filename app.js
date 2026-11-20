@@ -111,7 +111,17 @@ const FXF = {
   fr_desert: { n: "صحراء نجد", g: "#f0b45a", s: "b" }, fr_galaxy: { n: "مجرة النجوم", g: "#b45cff", s: "b" }, fr_crown: { n: "تاج للملوك", g: "#f2c14e", s: "b" }
 };
 const PLATES = { pl_roses: "الورود", pl_moon: "القمر", pl_desert: "الصحراء", pl_galaxy: "المجرة" };
-const NEWC = new Set([...Object.keys(FXF), ...Object.keys(PLATES)]);
+// ثيمات البروفايل الأسطورية (صور كانفا + حركة فوقها)
+const THX = {
+  tx_mermaid: { n: "قصر الحورية", fx: "لآلئ تطفو", s: "g", a: "#ffc2e0" }, tx_butterfly: { n: "ملكة الفراشات", fx: "فراشات تطير", s: "g", a: "#ffcf8a" },
+  tx_throne: { n: "عرش الزهور", fx: "بتلات ورد", s: "g", a: "#ffb3c7" }, tx_moon: { n: "أميرة القمر", fx: "نجوم تلمع", s: "g", a: "#ffd6f0" },
+  tx_dragon: { n: "التنين الأسود", fx: "برق وشرار", s: "b", a: "#6fb8ff" }, tx_falcon: { n: "الصقر الذهبي", fx: "غبار ذهبي", s: "b", a: "#ffcf7a" },
+  tx_horse: { n: "فارس الصحراء", fx: "رمل يطير", s: "b", a: "#ffc46b" }, tx_portal: { n: "بوابة الفضاء", fx: "البوابة تدور", s: "b", a: "#c79bff" },
+  tx_city: { n: "مدينة العرب", fx: "فوانيس تطلع", s: "m", a: "#ffd27a" }, tx_phoenix: { n: "الفينيق", fx: "شرار نار", s: "m", a: "#ff9a4a" },
+  tx_aurora: { n: "الحوت والشفق", fx: "نجوم وشفق", s: "m", a: "#7cf0c8" }, tx_cyber: { n: "رياض المستقبل", fx: "مطر نيون", s: "m", a: "#ff5fd8" }
+};
+const txImg = k => `img/th/${k.slice(3)}.webp`;
+const NEWC = new Set([...Object.keys(FXF), ...Object.keys(PLATES), ...Object.keys(THX)]);
 const KING_PICKS = 2;
 SHOP[0].grants.push(...NEWC);
 const FX_IDS = s => Object.keys(FXF).filter(k => FXF[k].s === s);
@@ -119,11 +129,12 @@ SHOP.splice(1, 0,
   { id: "col_g", name: "مجموعة البنات 💗", desc: "٦ إطارات مرسومة ومتحركة", price: 99, grants: FX_IDS("g"), days: 0, col6: "fr_princess" },
   { id: "col_b", name: "مجموعة العيال ⚡", desc: "٦ إطارات مرسومة ومتحركة", price: 99, grants: FX_IDS("b"), days: 0, col6: "fr_crown" },
   ...Object.entries(FXF).map(([k, f]) => ({ id: k, name: "إطار " + f.n, desc: "إطار متحرك حول صورتك يشوفه الكل", price: 21, grants: [k], days: 0 })),
-  ...Object.entries(PLATES).map(([k, n]) => ({ id: k, name: "لوحة " + n, desc: "تطلع خلف اسمك في قائمة اللاعبين", price: 21, grants: [k], days: 0 })));
+  ...Object.entries(PLATES).map(([k, n]) => ({ id: k, name: "لوحة " + n, desc: "تطلع خلف اسمك في قائمة اللاعبين", price: 21, grants: [k], days: 0 })),
+  ...Object.entries(THX).map(([k, t]) => ({ id: k, name: "ثيم " + t.n, desc: "خلفية أسطورية لبروفايلك + " + t.fx + "، يشوفها كل من يفتح بروفايلك", price: 21, grants: [k], days: 0 })));
 const FRAMES = { f_gold: "ذهبي", f_fire: "ناري", f_sadu: "سدو", ...Object.fromEntries(Object.entries(FXF).map(([k, f]) => [k, f.n])) };
 // ستايل الاسم: تفتح بالمستوى، وقوس قزح للـ VIP
 const NSTYLES = { gold: { name: "ذهبي", lvl: 3 }, sea: { name: "بحري", lvl: 6 }, fire: { name: "ناري", lvl: 10 }, neon: { name: "نيون", lvl: 15 }, rainbow: { name: "قوس قزح", shop: "ns_rainbow" } };
-const DECO_NAMES = { ns_rainbow: "ستايل قوس قزح", ...Object.fromEntries(Object.entries(PLATES).map(([k, n]) => [k, "لوحة " + n])), ...Object.fromEntries(Object.entries(DECO).flatMap(([k, d]) => [["th_" + k, "ثيم " + d.name], ["np_" + k, "لوحة " + d.name]])) };
+const DECO_NAMES = { ns_rainbow: "ستايل قوس قزح", ...Object.fromEntries(Object.entries(THX).map(([k, t]) => [k, "ثيم " + t.n])), ...Object.fromEntries(Object.entries(PLATES).map(([k, n]) => [k, "لوحة " + n])), ...Object.fromEntries(Object.entries(DECO).flatMap(([k, d]) => [["th_" + k, "ثيم " + d.name], ["np_" + k, "لوحة " + d.name]])) };
 let shopCfg = null; // روابط المنتجات في متجر روق
 const vipOn = p => (p?.vipUntil || 0) > Date.now();
 const owns = (p, id) => STAFF(p?.username) || (p?.owned || []).includes(id) || (!NEWC.has(id) && vipOn(p));
@@ -133,7 +144,7 @@ const myLook = () => ({ t: TABLES[me?.look?.t] && lookOpen(TABLES[me.look.t]) ? 
 // زينة البروفايل (كلها محفوظة داخل look)
 // الثيمات ولوحات الأسماء موقفة مؤقتًا لين نجهز رسومات احترافية
 const DECO_ON = false;
-const themeOf = p => { const k = p?.look?.th; return DECO_ON && k && DECO[k] && owns(p, "th_" + k) ? k : ""; };
+const themeOf = p => { const k = p?.look?.th; if (k && THX[k]) return owns(p, k) ? k : ""; return DECO_ON && k && DECO[k] && owns(p, "th_" + k) ? k : ""; };
 const plateOf = p => { const k = p?.look?.np; return DECO_ON && k && DECO[k] && owns(p, "np_" + k) ? k : ""; };
 const plOf = p => { const k = p?.look?.np; return k && PLATES[k] && owns(p, k) ? k : ""; };
 // لوحة الاسم خلف الصف: المرسومة أولًا، وبعدها لوحات DECO القديمة
@@ -143,8 +154,28 @@ const nsOf = p => { const k = p?.look?.ns; return k && nsOpen(k, p) ? k : ""; };
 const favOf = p => { const k = p?.look?.fav; return k && GAMES[k] ? k : ""; };
 const nsC = p => { const k = nsOf(p); return k ? ` ns ns-${k}` : ""; };
 // الثيم يلوّن البروفايل كامل بالتدريج، والتأثير يتحرك فوقه
-const thC = k => k ? ` thm th-${k}` : "";
-const fxOf = (k, n = 16) => k ? fxLayer(DECO[k].fx, n) : "";
+const thC = k => !k ? "" : THX[k] ? ` thm thx ${k}` : ` thm th-${k}`;
+const fxOf = (k, n = 16) => !k ? "" : THX[k] ? txFx(k, n) : fxLayer(DECO[k].fx, n);
+// حركة الثيمات الأسطورية
+function txFx(k, n = 16) {
+  const R = (a, b) => (a + Math.random() * (b - a)).toFixed(2), m = Math.max(4, Math.round(n * .9)); let h = "";
+  const P = (cls, c, inner = "", st = () => "") => { for (let i = 0; i < c; i++) h += `<i class="tp ${cls}" style="left:${R(0, 100)}%;--d:${R(6, 12)}s;--dl:-${R(0, 12)}s;--x:${R(-40, 40)}px;${st(i)}">${inner}</i>`; };
+  const ST = (c, t0, t1) => { for (let i = 0; i < c; i++) h += `<i class="tp tw star" style="left:${R(0, 100)}%;top:${R(t0, t1)}%;--d:${R(2, 5)}s;--dl:-${R(0, 5)}s"></i>`; };
+  const BF = c => `<svg viewBox="0 0 40 32"><path fill="${c}" d="M20 16C14 2 2 2 3 10s9 9 17 6zm0 0c6-14 18-14 17-6s-9 9-17 6zm0 0c-5 4-13 12-9 14s8-6 9-14zm0 0c5 4 13 12 9 14s-8-6-9-14z"/></svg>`;
+  if (k === "tx_mermaid") P("rise pearl", m);
+  if (k === "tx_butterfly") { h = ""; for (let i = 0; i < Math.round(m * .6); i++) h += `<i class="tp rise bf" style="left:${R(5, 90)}%;--d:${R(9, 15)}s;--dl:-${R(0, 14)}s;--x:${R(-60, 60)}px">${BF(["#ffd59a", "#ffc2e6", "#d9a6ff"][i % 3])}</i>`; }
+  if (k === "tx_throne") P("fall petal", m);
+  if (k === "tx_moon" || k === "tx_portal") ST(m + 8, 0, k === "tx_moon" ? 70 : 100);
+  if (k === "tx_portal") h += `<i class="swirl"></i>`;
+  if (k === "tx_dragon") { h += `<i class="flash"></i>`; P("rise ember", m); }
+  if (k === "tx_falcon") P("rise dust", m);
+  if (k === "tx_horse") for (let i = 0; i < m * 2; i++) h += `<i class="tp sand" style="left:${R(40, 120)}%;bottom:${R(0, 45)}%;--d:${R(2, 4)}s;--dl:-${R(0, 4)}s"></i>`;
+  if (k === "tx_city") P("rise lan", m);
+  if (k === "tx_phoenix") P("rise fire", m + 8);
+  if (k === "tx_aurora") ST(m + 6, 0, 55);
+  if (k === "tx_cyber") for (let i = 0; i < m * 2; i++) h += `<i class="nrain" style="left:${R(0, 110)}%;--d:${R(.5, 1)}s;--dl:-${R(0, 1)}s;background:linear-gradient(transparent,${i % 2 ? "#ff4fd8" : "#3ef0ff"})"></i>`;
+  return `<div class="txf" aria-hidden="true">${h}</div>`;
+}
 // البنر: صورة يختارها اللاعب بنفسه
 const bannerOf = p => typeof p?.banner === "string" && p.banner.startsWith("data:image/jpeg") ? p.banner : "";
 // كرت لعبتي المفضلة
@@ -3706,6 +3737,7 @@ function shopPreview(it) {
   if (g[0] === "e_royal") return `<span class="sp-ent"><span>👑</span>${avF(prof(me.uid), 40)}<b>دخل الجلسة</b></span>`;
   if (g[0] === "b_royal") return `<span class="sp-back">${cardSVG(null, "royal")}</span>`;
   if (it.col6) return `<span class="sp-col6">${frWrap(it.col6, avatar(me.username, me.photo, 52), 52)}<b>×٦</b></span>`;
+  if (THX[g[0]]) return `<span class="sp-th thm thx ${g[0]}">${txFx(g[0], 6)}<span class="sp-av">${avF(prof(me.uid), 34)}</span></span>`;
   if (PLATES[g[0]]) return `<span class="sp-pl"><img src="img/pl/${g[0]}.webp" alt=""><b dir="ltr">@${esc(me.username)}</b></span>`;
   if (FRAMES[g[0]]) return FXF[g[0]] ? frWrap(g[0], avatar(me.username, me.photo, 56), 56) : `<span class="fr ${g[0]}" style="--fs:4px">${avatar(me.username, me.photo, 64)}</span>`;
   return "";
@@ -3874,7 +3906,7 @@ VIEWS.shop = () => {
     </form>
     ${ui.kCode ? `<div class="kingpick"><b>👑 مبروك باقة الملك! اختر هديتك</b><span class="hint">اختار ${ar(KING_PICKS)} قطع بس من الإطارات واللوحات. الباقي ينفتح لك بالشراء.</span>
       <div class="kp-grid">${[...NEWC].map(k => { const on = (ui.kSel || []).includes(k), have = owns(p, k);
-        return `<button type="button" class="kp-it ${on ? "on" : ""}" data-kp="${k}" ${have ? "disabled" : ""} aria-pressed="${on}">${FXF[k] ? frWrap(k, avatar(me.username, me.photo, 34), 34) : `<span class="sp-pl mini"><img src="img/pl/${k}.webp" alt=""></span>`}<span>${FXF[k] ? FXF[k].n : "لوحة " + PLATES[k]}</span>${have ? `<i>عندك</i>` : on ? `<i>✓</i>` : ""}</button>`; }).join("")}</div>
+        return `<button type="button" class="kp-it ${on ? "on" : ""}" data-kp="${k}" ${have ? "disabled" : ""} aria-pressed="${on}">${FXF[k] ? frWrap(k, avatar(me.username, me.photo, 34), 34) : THX[k] ? `<span class="sp-th mini" style="background-image:url(${txImg(k)})"></span>` : `<span class="sp-pl mini"><img src="img/pl/${k}.webp" alt=""></span>`}<span>${FXF[k] ? FXF[k].n : THX[k] ? "ثيم " + THX[k].n : "لوحة " + PLATES[k]}</span>${have ? `<i>عندك</i>` : on ? `<i>✓</i>` : ""}</button>`; }).join("")}</div>
       <button class="btn" id="kpOk" ${(ui.kSel || []).length === KING_PICKS ? "" : "disabled"}>ثبّت اختياري (${ar((ui.kSel || []).length)} من ${ar(KING_PICKS)})</button>
       <button class="btn ghost small" id="kpNo">إلغاء</button></div>` : ""}
     <details class="giftbox" ${ui.giftOpen ? "open" : ""}><summary>🎁 فاجئ أحد من ربعك بهدية</summary>
@@ -4247,6 +4279,9 @@ VIEWS.profile = () => {
       <div class="nps">\${[["", null], ...Object.entries(DECO)].map(([k, d]) => { const open = !k || owns(prof(me.uid), "np_" + k), sel = plateOf(prof(me.uid)) === k;
         return \`<button class="npb li \${k ? "np" : ""} \${sel ? "sel" : ""}" data-np="\${k}" \${open ? "" : "aria-disabled=\"true\""} aria-pressed="\${sel}">\${k ? \`<span class="np-art">\${d.art(360, 60)}</span>\` : ""}\${avF(prof(me.uid), 32)}<span class="nm\${nsC(prof(me.uid))}" dir="ltr">@\${esc(me.username)}</span><span class="tag">\${open ? (sel ? "✓" : k ? d.name : "بدون") : "🛍️"}</span></button>\`; }).join("")}</div>
 ` : ""}
+      <span class="hint">ثيم البروفايل (خلفية أسطورية وحركة، يشوفها كل من يفتح بروفايلك)</span>
+      <div class="txs">${[["", null], ...Object.entries(THX)].map(([k, t]) => { const P = prof(me.uid), open = !k || owns(P, k), sel = (themeOf(P) || "") === k;
+        return `<button class="txb ${sel ? "sel" : ""}" data-th="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}"><span class="txb-pv" ${k ? `style="background-image:url(${txImg(k)})"` : ""}>${k ? "" : "بدون"}</span><b>${k ? t.n : "بدون ثيم"}</b><span class="hint">${open ? (sel ? "مختار ✓" : k ? "✨ " + t.fx : "") : "🛍️ ٢١ ر.س"}</span></button>`; }).join("")}</div>
       <span class="hint">لوحة الاسم (تطلع خلف اسمك في قائمة اللاعبين)</span>
       <div class="nps">${[["", ""], ...Object.entries(PLATES)].map(([k, n]) => { const P = prof(me.uid), open = !k || owns(P, k), sel = (plOf(P) || "") === k;
         return `<button class="npb li ${k ? "np" : ""} ${sel ? "sel" : ""}" data-pl="${k}" ${open ? "" : "aria-disabled=\"true\""} aria-pressed="${sel}">${k ? `<span class="np-art np-img"><img src="img/pl/${k}.webp" alt=""></span>` : ""}${avF(P, 32)}<span class="nm${nsC(P)}" dir="ltr">@${esc(me.username)}</span><span class="tag">${open ? (sel ? "✓" : k ? n : "بدون") : "🛍️"}</span></button>`; }).join("")}</div>
@@ -4276,7 +4311,7 @@ VIEWS.profile = () => {
   onAll("[data-ns]", b => { const k = b.dataset.ns;
     if (k && !nsOpen(k, prof(me.uid))) return NSTYLES[k].shop ? (toast("هذا للـ VIP 👑"), go("shop")) : toast(`يفتح لك في المستوى ${ar(NSTYLES[k].lvl)} ⭐`);
     setDeco("ns", k); });
-  onAll("[data-th]", b => { const k = b.dataset.th; if (k && !owns(prof(me.uid), "th_" + k)) { toast(SHOP_MSG); return go("shop"); } setDeco("th", k); });
+  onAll("[data-th]", b => { const k = b.dataset.th; if (k && !owns(prof(me.uid), THX[k] ? k : "th_" + k)) { toast(SHOP_MSG); return go("shop"); } setDeco("th", k); });
   onAll("[data-np]", b => { const k = b.dataset.np; if (k && !owns(prof(me.uid), "np_" + k)) { toast(SHOP_MSG); return go("shop"); } setDeco("np", k); });
   onAll("[data-fav]", b => setDeco("fav", b.dataset.fav));
   onAll("[data-pl]", b => { const k = b.dataset.pl; if (k && !owns(prof(me.uid), k)) { toast(SHOP_MSG); return go("shop"); } setDeco("np", k); });
