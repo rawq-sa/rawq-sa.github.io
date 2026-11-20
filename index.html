@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=126">
+<link rel="modulepreload" href="./app.js?v=127">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=32">
 <link rel="modulepreload" href="./uno.js?v=38">
@@ -817,59 +817,6 @@ body:has(#chatFab) main{padding-bottom:78px}
 .kp-it.on{border-color:var(--saffron);box-shadow:0 0 0 2px var(--saffron) inset}
 .kp-it:disabled{opacity:.45}
 .kp-it i{position:absolute;top:4px;inset-inline-start:6px;font-style:normal;font-size:11px;color:var(--saffron)}
-
-/* ثيمات البروفايل الأسطورية */
-.thm.thx{--t1:#120a22;--t2:#120a22;--t3:#120a22;background:linear-gradient(180deg,rgba(8,4,20,.08) 0,rgba(8,4,20,.42) 45%,rgba(8,4,20,.88) 100%),var(--img) center/cover no-repeat!important}
-.thx.tx_mermaid{--img:url(img/th/mermaid.webp);--acc:#ffc2e0}
-.thx.tx_butterfly{--img:url(img/th/butterfly.webp);--acc:#ffcf8a}
-.thx.tx_throne{--img:url(img/th/throne.webp);--acc:#ffb3c7}
-.thx.tx_moon{--img:url(img/th/moon.webp);--acc:#ffd6f0}
-.thx.tx_dragon{--img:url(img/th/dragon.webp);--acc:#6fb8ff}
-.thx.tx_falcon{--img:url(img/th/falcon.webp);--acc:#ffcf7a}
-.thx.tx_horse{--img:url(img/th/horse.webp);--acc:#ffc46b}
-.thx.tx_portal{--img:url(img/th/portal.webp);--acc:#c79bff}
-.thx.tx_city{--img:url(img/th/city.webp);--acc:#ffd27a}
-.thx.tx_phoenix{--img:url(img/th/phoenix.webp);--acc:#ff9a4a}
-.thx.tx_aurora{--img:url(img/th/aurora.webp);--acc:#7cf0c8}
-.thx.tx_cyber{--img:url(img/th/cyber.webp);--acc:#ff5fd8}
-.pf-head.thx .pf-ban:not(.on){background:none}
-.txf{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;border-radius:inherit}
-.thx>.txf{z-index:1}.thx>*:not(.txf):not(.fx):not([class*="close"]){position:relative;z-index:2}
-.txf .tp{position:absolute;top:-8%;will-change:transform}
-.txf .fall{animation:txfall var(--d) linear var(--dl) infinite}
-@keyframes txfall{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(-14px,55cqh) rotate(180deg)}100%{transform:translate(10px,115cqh) rotate(360deg)}}
-.txf{container-type:size}
-.txf .rise{top:auto;bottom:-8%;animation:txrise var(--d) ease-in var(--dl) infinite}
-@keyframes txrise{0%{transform:translate(0,0) scale(.6);opacity:0}15%{opacity:1}100%{transform:translate(var(--x),-112cqh) scale(1.1);opacity:0}}
-.txf .tw{animation:txtw var(--d) ease-in-out var(--dl) infinite}
-@keyframes txtw{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:1;transform:scale(1)}}
-.txf .petal{width:10px;height:7px;border-radius:70% 0 70% 0;background:linear-gradient(135deg,#ffd6e4,#ff8fb8)}
-.txf .bf{width:26px;height:21px;filter:drop-shadow(0 0 5px #fff)}
-.txf .bf svg{width:100%;height:100%;animation:txflap .35s ease-in-out infinite alternate}
-@keyframes txflap{to{transform:scaleX(.35)}}
-.txf .star{width:4px;height:4px;border-radius:50%;background:#fff;box-shadow:0 0 8px 2px #ffe6f6}
-.txf .ember{width:5px;height:5px;border-radius:50%;background:#bfe6ff;box-shadow:0 0 10px 3px #3ab0ff}
-.txf .dust{width:3px;height:3px;border-radius:50%;background:#ffe1a8;box-shadow:0 0 6px 2px rgba(255,190,110,.6)}
-.txf .pearl{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#ffd6e8 50%,#d8a0c0);box-shadow:0 0 10px rgba(255,220,240,.8)}
-.txf .lan{width:9px;height:12px;border-radius:3px 3px 5px 5px;background:radial-gradient(circle at 50% 60%,#fff2b0,#ffb43a 60%,#c86a10);box-shadow:0 0 12px 3px rgba(255,170,60,.7)}
-.txf .fire{width:4px;height:4px;border-radius:50%;background:#ffe08a;box-shadow:0 0 10px 3px #ff6a1a}
-.txf .sand{top:auto;width:3px;height:3px;border-radius:50%;background:#ffd38a;opacity:.8;animation:txsand var(--d) linear var(--dl) infinite}
-@keyframes txsand{to{transform:translate(-90cqw,-20cqh)}}
-.txf .nrain{position:absolute;width:1.5px;height:26px;top:-10%;animation:txrain var(--d) linear var(--dl) infinite}
-@keyframes txrain{to{transform:translate(-40px,120cqh)}}
-.txf .flash{position:absolute;inset:0;background:#c9b8ff;mix-blend-mode:overlay;opacity:0;animation:txflash 6s infinite}
-@keyframes txflash{0%,88%,100%{opacity:0}89%{opacity:.7}90%{opacity:.1}91.5%{opacity:.85}94%{opacity:0}}
-.txf .swirl{position:absolute;left:50%;top:40%;width:70%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:conic-gradient(transparent,rgba(200,140,255,.45),transparent 40%,rgba(120,220,255,.35),transparent 75%);mix-blend-mode:screen;filter:blur(6px);animation:txsw 6s linear infinite}
-@keyframes txsw{to{transform:translate(-50%,-50%) rotate(360deg)}}
-.txs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
-.txb{display:grid;gap:4px;padding:6px;border-radius:14px;background:var(--surface);border:1px solid var(--line);color:var(--ink);font:inherit;cursor:pointer;text-align:center}
-.txb.sel{border-color:var(--saffron);box-shadow:0 0 0 2px var(--saffron) inset}
-.txb[aria-disabled=true]{opacity:.7}
-.txb-pv{display:grid;place-items:center;aspect-ratio:9/13;border-radius:10px;background:var(--bg) center/cover;color:var(--muted);font-size:13px}
-.txb b{font-size:12px}.txb .hint{font-size:11px}
-.sp-th{position:relative;display:grid;place-items:center;width:84px;height:120px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.2)}
-.sp-th.mini{width:46px;height:64px;background:center/cover;border-radius:8px}
-@media (prefers-reduced-motion:reduce){.txf *{animation:none!important}}
 @media (prefers-reduced-motion:reduce){.frx>img,.frx>.sp,.frx>.sp::before,.np-art.np-img::after{animation:none}}
 
 /* سلسلة الأيام */
@@ -1268,6 +1215,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=126"></script>
+<script type="module" src="./app.js?v=127"></script>
 </body>
 </html>
