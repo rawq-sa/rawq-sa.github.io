@@ -4272,7 +4272,7 @@ VIEWS.profile = () => {
   onAll("[data-lt]", b => setLook("t", b.dataset.lt, TABLES));
   onAll("[data-lb]", b => setLook("b", b.dataset.lb, BACKS));
   const setDeco = async (kind, k) => { const look = { ...myLook(), [kind]: k }; me.look = look; render(false);
-    try { await updateDoc(doc(db, "users", me.uid), { look }); } catch (e) { console.error(e); } };
+    try { await updateDoc(doc(db, "users", me.uid), { look }); } catch (e) { console.error(e); toast("ما انحفظ، جرّب مرة ثانية"); } };
   onAll("[data-ns]", b => { const k = b.dataset.ns;
     if (k && !nsOpen(k, prof(me.uid))) return NSTYLES[k].shop ? (toast("هذا للـ VIP 👑"), go("shop")) : toast(`يفتح لك في المستوى ${ar(NSTYLES[k].lvl)} ⭐`);
     setDeco("ns", k); });
@@ -4283,8 +4283,9 @@ VIEWS.profile = () => {
   onAll("[data-lf]", async b => {
     const k = b.dataset.lf;
     if (k && !owns(prof(me.uid), k)) { toast(SHOP_MSG); go("shop"); return; }
-    me.frame = k; render(false);
-    try { await updateDoc(doc(db, "users", me.uid), { frame: k }); } catch (e) { console.error(e); }
+    const old = me.frame; me.frame = k; render(false);
+    try { await updateDoc(doc(db, "users", me.uid), { frame: k }); toast(k ? "تم، الإطار صار عليك ✨" : "شلنا الإطار"); }
+    catch (e) { console.error(e); me.frame = old; render(false); toast("ما انحفظ الإطار، جرّب مرة ثانية"); }
   });
   on("toShop", "click", () => go("shop"));
   on("wrapBtn", "click", () => openWrap(false));
