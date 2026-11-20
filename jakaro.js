@@ -139,9 +139,7 @@ const SUIT = { h: "M0 6C-8-1-6-8 0-3.6C6-8 8-1 0 6Z", d: "M0-7L5.2 0L0 7L-5.2 0Z
 let cardN = 0;
 export function jCardSVG(c, attrs = "") {
   const id = "jc" + (++cardN);
-  if (!c) return `<svg ${attrs} viewBox="0 0 60 90" direction="ltr" style="direction:ltr" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a2a2e"/><stop offset="1" stop-color="#0b0b0d"/></linearGradient></defs>
-    <rect x=".5" y=".5" width="59" height="89" rx="6" fill="url(#${id})" stroke="#e6c06a" stroke-width="1"/><rect x="4.5" y="4.5" width="51" height="81" rx="4" fill="none" stroke="#e6c06a" stroke-opacity=".5"/>
-    <text x="30" y="45" text-anchor="middle" dominant-baseline="central" font-family="RawqRuqaa,Amiri,serif" font-weight="700" font-size="20" fill="#e6c06a">روق</text></svg>`;
+  if (!c) return `<svg ${attrs} viewBox="0 0 60 90" direction="ltr" style="direction:ltr" aria-hidden="true"><defs><clipPath id="${id}"><rect width="60" height="90" rx="6"/></clipPath></defs><rect width="60" height="90" rx="6" fill="#0b0b0d"/><image href="img/cards/back_jak.webp?v=1" width="60" height="90" clip-path="url(#${id})" preserveAspectRatio="xMidYMid slice"/></svg>`;
   const R = jRank(c), S = jSuit(c), red = S === "h" || S === "d", col = red ? "#d0202f" : "#16161a";
   const face = R === "J" || R === "Q" || R === "K", ten = R === "10";
   const corner = (x, y, rot) => `<g transform="translate(${x} ${y}) rotate(${rot})"><text x="0" y="0" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="${ten ? 11 : 13}" fill="${col}" letter-spacing="${ten ? -1 : 0}">${R}</text><path d="${SUIT[S]}" transform="translate(0 8) scale(.62)" fill="${col}"/></g>`;

@@ -106,6 +106,7 @@ export const BACKS = {
   royal: { name: "ملكي", lvl: 9999, shop: "b_royal" }
 };
 function backSVG(id, back) {
+  if (!back || back === "classic") return `<svg viewBox="0 0 60 90" class="ucard-svg" direction="ltr" style="direction:ltr" aria-hidden="true"><defs><clipPath id="${id}c"><rect width="60" height="90" rx="6"/></clipPath></defs><rect width="60" height="90" rx="6" fill="#fff"/><image href="img/cards/back_uno.webp?v=1" width="60" height="90" clip-path="url(#${id}c)" preserveAspectRatio="xMidYMid slice"/></svg>`;
   const word = (fill, stroke = "#1a1426") => `<text x="30" y="51" text-anchor="middle" ${FONT} font-size="18" fill="${fill}" stroke="${stroke}" stroke-linejoin="round" paint-order="stroke" stroke-width="2.4" transform="rotate(-30 30 45)">روق</text>`;
   if (back === "sadu") {
     const rows = [10, 22, 34, 46, 58, 70].map((y, i) => `<path d="${Array.from({ length: 7 }, (_, k) => `M${4 + k * 8} ${y + 8} l4 -8 l4 8z`).join(" ")}" fill="${i % 2 ? "#f2b134" : "#fff3e0"}" opacity=".9"/>`).join("");

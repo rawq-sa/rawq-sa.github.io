@@ -3,6 +3,7 @@ const bg = (id, a, b) => `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" 
 const shine = `<path d="M6 18 Q6 6 18 6 H46 Q30 10 6 30Z" fill="#fff" opacity=".14"/>`;
 const wrap = s => `<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">${s}</svg>`;
 
+const pic = k => `<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><defs><clipPath id="gi_${k}"><rect width="64" height="64" rx="18"/></clipPath></defs><image href="img/gi/${k}.webp?v=1" width="64" height="64" clip-path="url(#gi_${k})" preserveAspectRatio="xMidYMid slice"/></svg>`;
 export const ICONS = {
   // المتجر: دكّان بمظلة سدو
   shop: wrap(bg("gShop", "#3b2a6e", "#1c1530") + shine + `
@@ -171,3 +172,5 @@ export const ICONS = {
     <path d="M32 36 L32 20 A16 16 0 0 1 47.2 31z" fill="#ef6f6c"/>
     <text x="32" y="45" text-anchor="middle" font-family="Lalezar,Tahoma,sans-serif" font-size="20" fill="#1c1530">٥</text>`)
 };
+// صور الألعاب ثلاثية الأبعاد (كانفا)
+for (const k of ["kal", "jak", "uno", "draw", "who", "tf", "imp", "most", "hhnj", "five", "baloot"]) ICONS[k] = pic(k);
