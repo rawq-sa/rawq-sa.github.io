@@ -5290,16 +5290,16 @@ const ROOM_VIEWS = {
     const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(52, (HW - 70) / (hn - 1)) : 0;
     const fan = k => { const d = k - (hn - 1) / 2, r = d * 3.2; return `--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
     V.innerHTML = `<section class="bal gscreen">${gameBar(`<button class="gi" id="bLook" aria-label="شكل الورق">🎴</button>`)}
-      <div class="btop"><div class="bsc"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
       <div class="btable">${tableSVG(myLook().t)}
+        <div class="btop"><div class="bsc"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
         ${ord.map((u, k) => seat(k)).join("")}
         <div class="btrick">${bidding ? `<span class="bshown">${face(g.shown)}<i>ورقة الشراء</i></span>` : trick}</div>
         ${g.prj?.length && (g.tricks <= 2 || g.last?.includes("بلوت!")) ? `<span class="bprj">📣 ${g.prj.map(x => `${esc(pname(ord[x.k]))}: ${PRJ_AR[x.t]}`).join(" · ")}</span>` : ""}
         ${res}
+        <p class="ulast">${esc(g.last || "")}</p>${bidBtns}
       </div>
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
-      <p class="ulast">${esc(g.last || "")}</p>
-      ${bidBtns}
+      
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules" hidden><summary>قوانين البلوت باختصار</summary><ul>
         <li><b>الشراء</b>: صن ☀️ (بدون حكم) أو حكم بشكل ورقة الشراء، أو بس. الدور الثاني تقدر تحكم بأي شكل ثاني</li>

@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=150">
+<link rel="modulepreload" href="./app.js?v=151">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=33">
 <link rel="modulepreload" href="./uno.js?v=41">
@@ -819,6 +819,12 @@ body:has(#chatFab) main{padding-bottom:78px}
 .rules-sh{width:100%;text-align:start;font-size:14px;line-height:1.8;max-height:55vh;overflow-y:auto}.rules-sh ul{padding-inline-start:18px;margin:0}
 .btn.danger{background:var(--rose);color:#fff}
 body.ingame .app>header{display:none}
+.btable .btop{position:absolute;top:-46px;right:4px;width:auto;flex-direction:column;align-items:flex-end;gap:4px;margin:0;z-index:5}
+.btable .btop .hint{display:none}.btable .bsc div{padding:1px 9px;font-size:11px;border-radius:10px}.btable .bsc b{font-size:15px;line-height:1.1}
+.btable .bmode{font-size:11px;padding:3px 9px}
+.btable .ulast{position:absolute;top:19%;left:50%;transform:translateX(-50%);z-index:4;background:#000a;border-radius:10px;padding:3px 10px;font-size:12px;color:#eee;white-space:nowrap;max-width:78%;overflow:hidden;text-overflow:ellipsis}
+.btable .ulast:empty{display:none}
+.btable .bbids{position:absolute;bottom:13%;left:0;right:0;z-index:6;margin:0}
 /* نافذة الدعوة */
 .inv-code{font-size:12px;color:var(--muted);margin-top:-6px}.inv-code b{color:var(--saffron);letter-spacing:2px}
 .inv-q{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px}
@@ -840,12 +846,12 @@ body.ingame .app>header{display:none}
 .btop{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;margin:6px 0}
 .bsc{display:flex;gap:6px}.bsc div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 12px;text-align:center;font-size:12px}.bsc b{display:block;font-size:20px;color:var(--saffron);font-family:var(--display)}
 .bmode{background:#3a2508;border:1px solid #f2b13466;border-radius:999px;padding:5px 12px;font-size:13px;white-space:nowrap}
-.btable{position:relative;width:calc(100% + 16px);aspect-ratio:1/1.02;max-width:520px;margin:54px -8px 50px;flex:none;align-self:center}.btable>svg{position:absolute;inset:0;width:100%;height:100%}
+.btable{position:relative;width:calc(100% + 16px);aspect-ratio:1/1.02;max-width:520px;margin:48px -8px 44px;flex:none;align-self:center}.btable>svg{position:absolute;inset:0;width:100%;height:100%}
 .bseat{position:absolute;z-index:3;width:0;height:0;background:none;border:0;color:var(--ink);font:inherit;font-size:12px;padding:0}
 .bseat>.jring{position:absolute;left:0;top:0;transform:translate(-50%,-50%)}
 .bseat .btag{position:absolute;left:0;transform:translateX(-50%);margin:0}
 .bseat .bbk{position:absolute;margin:0}
-.bseat.t{top:1.5%;left:50%}.bseat.t .btag{bottom:34px}.bseat.t .bbk{left:34px;top:-15px}
+.bseat.t{top:1.5%;left:50%}.bseat.t .btag{bottom:34px}.bseat.t .bbk{right:34px;top:-15px;flex-direction:row-reverse}
 .bseat.b{top:98.5%;left:50%}.bseat.b .btag{top:34px}
 .bseat.l{left:8%;top:47%}.bseat.r{left:92%;top:47%}
 .bseat.l .btag,.bseat.r .btag{top:33px}.bseat.l .btag{left:-28px;transform:none}.bseat.r .btag{left:auto;right:-28px;transform:none}
@@ -1287,6 +1293,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=150"></script>
+<script type="module" src="./app.js?v=151"></script>
 </body>
 </html>
