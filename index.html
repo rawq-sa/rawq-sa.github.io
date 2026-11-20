@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=149">
+<link rel="modulepreload" href="./app.js?v=150">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=33">
 <link rel="modulepreload" href="./uno.js?v=41">
@@ -810,6 +810,15 @@ body:has(#chatFab) main{padding-bottom:78px}
 .jpod.rt .jpbk svg{margin-left:0;margin-right:-12px}.jpod.rt .jpbk svg:first-child{margin-right:0}
 .jhint{display:block;margin-top:3px;font-size:10.5px;font-weight:700;line-height:1.2;color:#ffd66b;background:#1c1530ee;border:1px solid #f2b13488;border-radius:8px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .jplayers{display:none}
+/* شريط اللعبة فوق: معلومات + قوانين + خروج */
+.gbar{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px;min-height:34px}
+.gb-info{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gb-info b{color:var(--ink)}
+.gb-btns{display:flex;gap:6px;flex:none}
+.gi,.gx{height:32px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;font-weight:700;display:grid;place-items:center}
+.gi{width:32px;padding:0}.gx{padding:0 12px;font-size:12px;color:#ffb3b1;border-color:#ef6f6c66}
+.rules-sh{width:100%;text-align:start;font-size:14px;line-height:1.8;max-height:55vh;overflow-y:auto}.rules-sh ul{padding-inline-start:18px;margin:0}
+.btn.danger{background:var(--rose);color:#fff}
+body.ingame .app>header{display:none}
 /* نافذة الدعوة */
 .inv-code{font-size:12px;color:var(--muted);margin-top:-6px}.inv-code b{color:var(--saffron);letter-spacing:2px}
 .inv-q{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px}
@@ -1278,6 +1287,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=149"></script>
+<script type="module" src="./app.js?v=150"></script>
 </body>
 </html>

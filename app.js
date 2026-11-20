@@ -339,6 +339,7 @@ function render(fresh) {
   }
   renderHeader(); renderBanner();
   (VIEWS[screen] || VIEWS.loading)();
+  document.body.classList.toggle("ingame", !!V.querySelector("section.gscreen"));
   if (!fresh) {
     for (const id in saved) { const el = document.getElementById(id); if (el) el.value = saved[id]; }
     if (focusId) { const el = document.getElementById(focusId); if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.focus(); }
@@ -1295,7 +1296,7 @@ function unoTimerStart() {
 // شاشة اللعب كاملة بدون سكرول: نصغّر اللوح لين يدخل هو والأوراق في الشاشة
 addEventListener("resize", () => fitGame());
 function fitGame() {
-  const sec = V.querySelector("section.jak, section.bal"); if (!sec) return;
+  const sec = V.querySelector("section.jak, section.bal"); document.body.classList.toggle("ingame", !!sec); if (!sec) return;
   const board = sec.querySelector(".jstage, .btable"), hand = sec.querySelector(".uhand"); if (!board || !hand) return;
   board.style.maxWidth = "";
   const vh = window.visualViewport?.height || window.innerHeight;
@@ -4810,6 +4811,11 @@ function votedCount() {
   return Object.entries(votes).filter(([u, v]) => v.round === room.round && ps.includes(u)).length;
 }
 const statusBar = () => `<div class="status"><span>الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""}</span><span>${room.game === "kal" && room.k ? `الكلمة ${ar(room.k.idx || 1)} من ${ar(room.k.n || 10)}` : `الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}`}</span></div>`;
+const gameBar = (extra = "") => `<div class="gbar"><span class="gb-info">الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""} · الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}</span><span class="gb-btns">${extra}<button class="gi" id="gRules" aria-label="القوانين">؟</button><button class="gx" id="gExit">${isHost() ? "إنهاء" : "خروج"} ✕</button></span></div>`;
+document.addEventListener("click", e => {
+  if (e.target.closest?.("#gRules")) { const ul = V.querySelector(".jrules ul"); if (ul) sheet(`<b class="pf-name">القوانين باختصار</b><div class="rules-sh">${ul.outerHTML}</div><button class="btn" data-close>تمام</button>`); }
+  else if (e.target.closest?.("#gExit")) { const h = isHost(), el = sheet(`<b class="pf-name">${h ? "تنهي الجلسة؟" : "تطلع من الجلسة؟"}</b><p class="pf-bio">${h ? "الغرفة بتنقفل على الكل." : "تقدر ترجع بكود الغرفة."}</p><button class="btn danger" id="gExitOk">${h ? "إنهاء الجلسة" : "خروج"}</button><button class="btn ghost" data-close>كمّل لعب</button>`); el.querySelector("#gExitOk").addEventListener("click", () => { el.remove(); leaveRoom(); }); }
+});
 const leaveBtn = () => `<button class="btn ghost" id="leave">${isHost() ? "إنهاء الغرفة" : "خروج من الغرفة"}</button>`;
 function bindLeave() { on("leave", "click", e => { if (confirmTap(e.currentTarget)) leaveRoom(); }); }
 
@@ -5185,8 +5191,8 @@ const ROOM_VIEWS = {
     const teamOf = u => jTeamOf(g, g.seats[u]);
     const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, jstep = hn > 1 ? Math.min(70, (HW - 74) / (hn - 1)) : 0, jda = Math.min(6, 30 / Math.max(hn, 1));
     const jfan = k => { const d = k - (hn - 1) / 2, r = d * jda; return `--x:${(d * jstep).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .12).toFixed(1)}px;z-index:${k + 1}`; };
-    V.innerHTML = `<section class="jak">
-      ${statusBar()}
+    V.innerHTML = `<section class="jak gscreen">
+      ${gameBar()}
       <div class="jstage"><div class="jboard">${svg}</div>${ord.map(u => { const s = g.seats[u], [bx, by] = jSpot(s, 0, -1, rot), ba = Math.atan2(by - 220, bx - 220) - Math.PI / 4, cx = Math.cos(ba) > 0, cy = Math.sin(ba) > 0, mate = ord.length === 4 && u !== me.uid && teamOf(u) === (playing ? teamOf(me.uid) : 0);
         return `<button class="jpod ${cy ? "bot" : "top"} ${cx ? "rt" : "lf"} ${u === turnU && g.winner == null ? "turn" : ""}" style="--c:${JCOL[s].fill}" data-pf="${esc(u)}">
           <span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}</span>
@@ -5202,18 +5208,18 @@ const ROOM_VIEWS = {
       ${myTurn && !anyMove && J.card && !waiting ? `<button class="btn" id="jBurn">احرق هالورقة 🔥</button>` : ""}
       ${live && J.card && jRank(J.card) === "10" && !J.a ? `<button class="btn" id="jTen">🔥 احرق على @${esc(pname(ord[(g.turn + 1) % ord.length]))} (يختار ورقة يحرقها ويروح دوره)</button><p class="hint center">أو اختار كورة تمشي ${ar(10)}</p>` : ""}
       ${playing ? `<div class="uhand jfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => { const ok = movesOf(c).length > 0; return `<button style="${jfan(ci)};--i:${ci}" class="ucard jc ${dealNow ? "dealt" : ""} ${J.card === c ? "sel" : ""} ${myTurn && ok ? "ok" : myTurn && anyMove ? "no" : ""}" data-card="${esc(c)}" aria-label="${esc(jHelp(c))}">${jCardSVG(c)}<span class="jhint">${esc(jHelp(c))}</span></button>`; }).join("")}</div></div>` : `<p class="hint center">تتفرج 👀</p>`}
-      <details class="jrules"><summary>قوانين الجكارو باختصار</summary><ul>
+      <details class="jrules" hidden><summary>قوانين الجكارو باختصار</summary><ul>
         <li><b>A</b>: تطلّع كورة من البيت، أو تمشي ١ أو ١١</li>
         <li><b>K</b>: تطلّع كورة من البيت، أو تمشي ١٣</li>
         <li><b>٤</b>: ترجع ٤ خطوات لورا (حيلة: من خانة الطلعة ترجع وتصير قريب من الدار)</li>
         <li><b>٧</b>: تقسمها على كورتين (مثلاً ٣ + ٤)</li>
         <li><b>J</b>: تبدّل مكان كورتك مع كورة خصم (مو من البيت ولا الدار ولا خانة الطلعة)</li>
-        <li><b>٥</b>: تحرك كورتك أو كورة خويك ٥ خطوات</li>
+        <li><b>٥</b>: تحرك أي كورة على اللوح ٥ خطوات (كورتك أو كورة خويك أو الخصم)</li>
         <li><b>١٠</b>: تمشي ١٠، أو تحرق على اللي بعدك: يختار ورقة يحرقها ويروح دوره 🔥</li>
         <li><b>Q</b> = ١٢، والباقي بأرقامها</li>
         <li>لو وقفت على كورة خصم ترجعها البيت 💥</li>
         <li>اللي يدخّل كوراته كلها يلعب بكورات خويه، وأول فريق يدخّل الثمان يفوز 🏆</li></ul></details>
-      <div class="foot">${leaveBtn()}</div></section>`;
+      </section>`;
     if (shufNow) toast("🔀 خلص الورق… تخبّص وتوزّع من جديد");
     else if (dealNow && g.deal > 1) toast("🃏 خلصت الأوراق، توزّعت ٤ جديدة");
     jakTimerStart(); requestAnimationFrame(fitGame);
@@ -5283,7 +5289,7 @@ const ROOM_VIEWS = {
     const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres"><b>${g.res.mode === "sun" ? "صن" : "حكم"}</b><span>لنا +${ar(g.res.pts[myT])}</span><span>لهم +${ar(g.res.pts[1 - myT])}</span>${g.res.note ? `<i>${esc(g.res.note)}</i>` : ""}${isHost() && g.phase === "res" ? `<button class="btn small" id="bNext">التوزيعة الجاية</button>` : ""}</div>` : "";
     const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(52, (HW - 70) / (hn - 1)) : 0;
     const fan = k => { const d = k - (hn - 1) / 2, r = d * 3.2; return `--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
-    V.innerHTML = `<section class="bal">${statusBar()}
+    V.innerHTML = `<section class="bal gscreen">${gameBar(`<button class="gi" id="bLook" aria-label="شكل الورق">🎴</button>`)}
       <div class="btop"><div class="bsc"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
       <div class="btable">${tableSVG(myLook().t)}
         ${ord.map((u, k) => seat(k)).join("")}
@@ -5295,12 +5301,11 @@ const ROOM_VIEWS = {
       <p class="ulast">${esc(g.last || "")}</p>
       ${bidBtns}
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
-      <div class="chips center"><button class="chip" id="bLook" aria-pressed="${look === "najdi"}">🎴 شكل الورق: ${look === "najdi" ? "نجدي" : "كلاسيك"}${najdiOk ? "" : " · النجدي 🛍️"}</button></div>
-      <details class="jrules"><summary>قوانين البلوت باختصار</summary><ul>
+      <details class="jrules" hidden><summary>قوانين البلوت باختصار</summary><ul>
         <li><b>الشراء</b>: صن ☀️ (بدون حكم) أو حكم بشكل ورقة الشراء، أو بس. الدور الثاني تقدر تحكم بأي شكل ثاني</li>
         <li><b>أشكال</b>: تشتري صن لخويك</li><li>لازم تلحق الشكل، وبالحكم لو ما عندك تقطع بالحكم (إلا لو خويك ماسك اللمّة)</li>
         <li><b>المشاريع</b> تنعلن تلقائي: سرا، خمسين، مية، أربعمية، بلوت</li><li>المشتري لازم يجيب أكثر من الخصم وإلا ينقهر، وأول فريق يوصل ${ar(BAL_WIN)} يفوز 🏆</li></ul></details>
-      <div class="foot">${leaveBtn()}</div></section>`;
+      </section>`;
     balTimerStart(); requestAnimationFrame(fitGame);
     onAll("[data-bid]", b => { const x = b.dataset.bid; x === "pass" ? balMove("pass") : balMove("play", "", { bid: x, suit: b.dataset.s || "" }); });
     onAll("[data-bc]", b => {
