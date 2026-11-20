@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=157">
+<link rel="modulepreload" href="./app.js?v=159">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=33">
 <link rel="modulepreload" href="./uno.js?v=41">
@@ -854,6 +854,23 @@ section.gscreen .ulast{font-size:12.5px}
 @keyframes btWeave{to{background-position:-32px 0}}
 .bt-tip{font-size:15px;color:var(--muted);min-height:22px}
 @media (prefers-reduced-motion:reduce){.bt-c,.bt-logo,.bt-sadu{animation:none!important}.bt-c.a{transform:rotate(-16deg) translate(-8px,-2px)}.bt-c.c{transform:rotate(16deg) translate(8px,-2px)}}
+/* ترتيب الأسبوع */
+.h-rank{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:20px;border:1px solid #f2b13455;background:linear-gradient(150deg,#4a3410,#2a1d08);color:var(--ink);font:inherit;text-align:start;cursor:pointer}
+.h-rank .hr-ic{font-size:28px}.h-rank b{display:block;font-size:15px}.h-rank .hint{font-size:12px;color:#e9d7a8}.h-rank>span:nth-child(2){flex:1;min-width:0}.h-rank .hr-go{font-size:22px;color:var(--saffron)}
+.rank .rk-h{display:flex;justify-content:space-between;align-items:center}.rank .rk-h h2{margin:0}
+.rk-tabs{display:flex;gap:8px}.rk-tabs button{flex:1;padding:9px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:14px;font-weight:700}.rk-tabs button.on{background:var(--saffron);border-color:var(--saffron);color:#2a1a00}
+.rk-champ{text-align:center;font-size:13px;color:#e9d7a8;background:#2a1d08;border:1px solid #f2b13444;border-radius:14px;padding:8px}
+.rk-pod{display:grid;grid-template-columns:1fr 1.12fr 1fr;align-items:end;gap:8px;margin-top:6px}
+.rk-p{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:var(--ink);font:inherit;padding:0;min-width:0}
+.rk-p b{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk-p .rk-st{width:100%;display:grid;place-items:center;border-radius:14px 14px 0 0;background:var(--surface);font-size:13px;font-weight:700}
+.rk-p.m0 .rk-st{height:84px;background:linear-gradient(#4a3410,#2a1d08);border:1px solid #f2b13466;color:var(--saffron)}.rk-p.m1 .rk-st{height:62px;color:#d3d8e4}.rk-p.m2 .rk-st{height:48px;color:#d9a06a}
+.rk-p.m0 .rk-av{border-radius:50%;box-shadow:0 0 0 3px var(--saffron),0 0 20px #f2b13488}.rk-p.m1 .rk-av{border-radius:50%;box-shadow:0 0 0 3px #c0c6d6}.rk-p.m2 .rk-av{border-radius:50%;box-shadow:0 0 0 3px #cd8a4f}
+.rk-cr{font-size:22px;line-height:1}
+.rk-list{display:flex;flex-direction:column}
+.rk-row{display:flex;align-items:center;gap:10px;padding:10px 6px;border:0;border-top:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:start}
+.rk-row.me{background:#f2b13414;border-radius:12px}.rk-row .rk-n{width:20px;color:var(--muted)}.rk-row span[dir]{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rk-row .rk-w{color:var(--muted);font-size:13px}
+.rk-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px 14px;text-align:center}
 /* نافذة الدعوة */
 .inv-code{font-size:12px;color:var(--muted);margin-top:-6px}.inv-code b{color:var(--saffron);letter-spacing:2px}
 .inv-q{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px}
@@ -1322,6 +1339,6 @@ video.share-img{background:#000}
   <main id="view"><div class="boot" role="status" aria-label="جاري التحميل"><div class="bt-fan"><i class="bt-c a"><img src="img/gi/imp.webp" alt=""></i><i class="bt-c c"><img src="img/gi/draw.webp" alt=""></i><i class="bt-c b"><img src="img/gi/uno.webp" alt=""></i></div><b class="bt-logo">روق</b><span class="bt-sadu"></span><span class="bt-tip">نجهّز الجلسة…</span></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=157"></script>
+<script type="module" src="./app.js?v=159"></script>
 </body>
 </html>

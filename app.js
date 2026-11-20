@@ -315,8 +315,8 @@ const IAP_ON = IN_APP && capPlug("NativePurchases");
 const SHOP_TAG = IN_APP && !IAP_ON ? "✨ حصري" : "🛍️ من المتجر";
 const SHOP_MSG = IN_APP && !IAP_ON ? "هذا من الحصريات ✨" : "هذا من متجر روق 🛍️";
 /* ================= navigation & rendering ================= */
-const REFRESH = new Set(["home", "friends", "room", "profile", "admin", "inbox", "shop"]);
-const GUEST_NO = new Set(["home", "profile", "friends", "shop", "inbox", "dm", "pub", "admin", "rename", "welcome"]);
+const REFRESH = new Set(["home", "rank", "friends", "room", "profile", "admin", "inbox", "shop"]);
+const GUEST_NO = new Set(["home", "rank", "profile", "friends", "shop", "inbox", "dm", "pub", "admin", "rename", "welcome"]);
 function go(name) {
   if (me?.guest && GUEST_NO.has(name)) name = roomCode ? "room" : "auth";
   if (IN_APP && !IAP_ON && name === "shop") return;
@@ -350,7 +350,7 @@ function on(id, ev, fn) { const el = document.getElementById(id); if (el) el.add
 function onAll(sel, fn) { V.querySelectorAll(sel).forEach(el => el.addEventListener("click", e => fn(e.currentTarget, e))); }
 
 const BACK = {
-  pub: "home", shop: "home", friends: "home", profile: "home", admin: "home", rename: "profile", inbox: "home", dm: "inbox",
+  pub: "home", rank: "home", shop: "home", friends: "home", profile: "home", admin: "home", rename: "profile", inbox: "home", dm: "inbox",
   "l-hhnj": "local",
   email: "auth", forgot: () => (ui.emailMode = "login", "email"),
   local: () => me?.username ? "home" : (configured ? "auth" : "setup"),
@@ -1352,6 +1352,36 @@ function openInviteSheet() {
 }
 const ICO_WA = `<svg viewBox="0 0 24 24" width="24" height="24" fill="#fff" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2c0 1.3.9 2.5 1 2.7.1.2 1.8 2.8 4.5 3.9 1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.5-.3Z"/></svg>`;
 const ICO_SC = `<svg viewBox="0 0 24 24" width="24" height="24" fill="#fff" stroke="#111" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2.9 0 5 2.2 5 5v2.4c.5.2 1.1 0 1.6-.2.6-.2 1.1.6.5 1-.6.4-1.6.7-2 1 .3 1.4 1.7 3 3.4 3.4.5.1.4.7 0 .9-.6.3-1.4.4-2 .6-.2.4-.1 1-.6 1-.8 0-1.6-.2-2.6.3-1 .6-1.8 1.6-3.3 1.6s-2.3-1-3.3-1.6c-1-.5-1.8-.3-2.6-.3-.5 0-.4-.6-.6-1-.6-.2-1.4-.3-2-.6-.4-.2-.5-.8 0-.9 1.7-.4 3.1-2 3.4-3.4-.4-.3-1.4-.6-2-1-.6-.4-.1-1.2.5-1 .5.2 1.1.4 1.6.2V8c0-2.8 2.1-5 5-5Z"/></svg>`;
+/* ================= ترتيب الأسبوع (بين الأصحاب) ================= */
+// الأسبوع يبدأ الأحد بتوقيت السعودية
+const wkKey = (ms = Date.now()) => { const d = new Date(ms + 3 * 3600e3); d.setUTCDate(d.getUTCDate() - d.getUTCDay()); return d.toISOString().slice(0, 10); };
+const wkDaysLeft = () => 7 - new Date(Date.now() + 3 * 3600e3).getUTCDay();
+const wkWins = (p, g, k = wkKey()) => { const st = p?.stats || {}; return st.wk?.k === k ? st.wk[g] || 0 : st.wkPrev?.k === k ? st.wkPrev[g] || 0 : 0; };
+function rankRows(g, k) {
+  const all = [[me.uid, me], ...[...friends.entries()].filter(([, f]) => f.username && f.username !== "…")];
+  return all.map(([u, p]) => ({ u, p, w: wkWins(p, g, k) })).filter(x => x.w > 0).sort((a, b) => b.w - a.w || String(a.p.username).localeCompare(b.p.username));
+}
+function myRankLine() {
+  const r = ["bal", "jak"].map(g => { const rows = rankRows(g), i = rows.findIndex(x => x.u === me.uid); return i < 0 ? null : [g, i + 1]; }).filter(Boolean).sort((a, b) => a[1] - b[1])[0];
+  return r ? `أنت #${ar(r[1])} في ${r[0] === "bal" ? "البلوت" : "الجكارو"} بين أصحابك` : "العب بلوت أو جكارو مع أصحابك وتصدّر";
+}
+VIEWS.rank = () => {
+  const g = ui.rankG || "bal", rows = rankRows(g), lastK = wkKey(Date.now() - 7 * 864e5), champ = rankRows(g, lastK)[0];
+  const top = rows.slice(0, 3), rest = rows.slice(3), d = wkDaysLeft();
+  const pod = (x, i) => !x ? `<div class="rk-p e"></div>` : `<button class="rk-p m${i}" data-pf="${esc(x.u)}">${i === 0 ? `<span class="rk-cr">👑</span>` : ""}<span class="rk-av">${avF(x.p, i === 0 ? 62 : 52)}</span><b dir="auto">${x.u === me.uid ? "أنت" : esc(x.p.username)}</b><span class="rk-st">${["🥇", "🥈", "🥉"][i]} ${ar(x.w)} فوز</span></button>`;
+  V.innerHTML = `<section class="rank">
+    <div class="rk-h"><h2>🏆 ترتيب الأسبوع</h2><span class="hint">${d <= 1 ? "يتصفّر الليلة" : `يتصفّر بعد ${ar(d)} أيام`}</span></div>
+    <div class="rk-tabs"><button class="${g === "bal" ? "on" : ""}" data-rg="bal">🃏 بلوت</button><button class="${g === "jak" ? "on" : ""}" data-rg="jak">🔴 جكارو</button></div>
+    ${champ ? `<div class="rk-champ">👑 بطل الأسبوع الماضي: <b>${champ.u === me.uid ? "أنت" : esc(champ.p.username)}</b> (${ar(champ.w)} فوز)</div>` : ""}
+    ${rows.length ? `<div class="rk-pod">${pod(top[1], 1)}${pod(top[0], 0)}${pod(top[2], 2)}</div>
+      ${rest.length ? `<div class="rk-list">${rest.map((x, i) => `<button class="rk-row ${x.u === me.uid ? "me" : ""}" data-pf="${esc(x.u)}"><b class="rk-n">${ar(i + 4)}</b>${avF(x.p, 36)}<span dir="auto">${x.u === me.uid ? "أنت" : esc(x.p.username)}</span><span class="rk-w">${ar(x.w)} فوز</span></button>`).join("")}</div>` : ""}`
+      : `<div class="card rk-empty"><span class="big">🏁</span><b>محد فاز هالأسبوع للحين</b><span class="hint">العب ${g === "bal" ? "بلوت" : "جكارو"} مع أصحابك وكن أول واحد في الترتيب</span></div>`}
+    <p class="hint center">ينحسب الفوز في الجيمات اللي فيها لاعب حقيقي غيرك، مو ضد البوتات بس 🤖</p>
+    <button class="btn ghost" id="rkBack">رجوع</button>
+  </section>`;
+  onAll("[data-rg]", b => { ui.rankG = b.dataset.rg; render(); });
+  on("rkBack", "click", () => go("home"));
+};
 /* ================= البوتات: المضيف يلعب عنهم ================= */
 const isBot = u => !!room?.players?.[u]?.bot;
 const BOT_NAMES = [1, 2, 3, 4, 5, 6].map(n => "نجم " + ar(n));
@@ -1400,11 +1430,18 @@ function botJakMove(g, s, hand) {
   }
   return best;
 }
+// بوت يلعب عن اللاعب اللي طلع أو فاته الدور مرتين، ويرجع له أول ما يلعب بنفسه
+function autoMark(g, u, mv, wasTurn) {
+  if (isBot(u)) return;
+  g.auto = g.auto || {}; g.miss = g.miss || {};
+  if (mv.type === "kick") { if (!wasTurn) return; g.miss[u] = (g.miss[u] || 0) + 1; if (g.miss[u] >= 2 && !g.auto[u]) { g.auto[u] = 1; g.last = (g.last || "") + ` · 🤖 بوت يلعب عن ${atn(pname(u))} لين يرجع`; } }
+  else if (!mv.auto) { if (g.auto[u]) { delete g.auto[u]; g.last = (g.last || "") + ` · 👋 رجع ${atn(pname(u))}`; } g.miss[u] = 0; }
+}
 function botTick() {
   if (!isHost() || !room) return;
   if (room.phase === "bal") {
     const g = room.bal; if (!g || g.winner != null || g.phase === "res") return;
-    const u = g.order[g.turn]; if (!isBot(u) || ui.botKey === "b" + g.v) return;
+    const u = g.order[g.turn]; if (!(isBot(u) || g.auto?.[u]) || ui.botKey === "b" + g.v) return;
     ui.botKey = "b" + g.v;
     setTimeout(async () => {
       if (room?.phase !== "bal" || room.bal?.v !== g.v) return;
@@ -1413,12 +1450,12 @@ function botTick() {
       let mv;
       if (gg.phase === "bid1" || gg.phase === "bid2") { const b = botBalBid(gg, hand); mv = b ? { type: "play", card: "", color: JSON.stringify(b) } : { type: "pass", card: "", color: "" }; }
       else mv = { type: "play", card: botBalPlay(gg, k, hand), color: "" };
-      balProcess([{ u, mv: { round: room.round, seq: (BAL.processed[u] || 0) + 1, ...mv } }]);
+      balProcess([{ u, mv: { round: room.round, seq: (BAL.processed[u] || 0) + 1, auto: 1, ...mv } }]);
     }, 1200 + Math.random() * 900);
   }
   if (room.phase === "jak") {
     const g = room.jak; if (!g || g.winner != null) return;
-    const u = g.order[g.turn]; if (!isBot(u) || ui.botKey === "j" + g.v) return;
+    const u = g.burn?.u || g.order[g.turn]; if (!(isBot(u) || g.auto?.[u]) || ui.botKey === "j" + g.v) return;
     ui.botKey = "j" + g.v;
     setTimeout(async () => {
       if (room?.phase !== "jak" || room.jak?.v !== g.v) return;
@@ -1427,7 +1464,7 @@ function botTick() {
       let mv;
       if (gg.burn?.u === u) mv = { type: "pass", card: hand[Math.floor(Math.random() * hand.length)], color: "" };
       else { const b = botJakMove(gg, s, hand); mv = b ? { type: "play", card: b.c, color: JSON.stringify(b.m) } : { type: "pass", card: hand[0], color: "" }; }
-      jakProcess([{ u, mv: { round: room.round, seq: (JAK.processed[u] || 0) + 1, ...mv } }]);
+      jakProcess([{ u, mv: { round: room.round, seq: (JAK.processed[u] || 0) + 1, auto: 1, ...mv } }]);
     }, 1300 + Math.random() * 900);
   }
 }
@@ -1551,9 +1588,10 @@ async function balProcess(list) {
       const { u, mv } = BAL.queue.shift();
       if (!BAL.st || mv.round !== room.round || (BAL.processed[u] || 0) >= mv.seq) continue;
       BAL.processed[u] = mv.seq;
-      const g = JSON.parse(JSON.stringify(room.bal));
+      const g = JSON.parse(JSON.stringify(room.bal)), wasTurn = g.phase !== "res" && g.order[g.turn] === u;
       const changed = balApply(u, mv, g, BAL.st);
       if (!changed) continue;
+      autoMark(g, u, mv, wasTurn);
       const b = writeBatch(db);
       changed.forEach(x => b.set(doc(db, "rooms", roomCode, "secrets", x), { round: room.round, role: "bal", hand: BAL.st.hands[x] || [] }));
       b.set(doc(db, "rooms", roomCode, "hidden", "bal"), { round: room.round, ...BAL.st, processed: BAL.processed });
@@ -1574,10 +1612,12 @@ async function balProcess(list) {
 }
 function balCleanup() {
   const g = room.bal; if (!g || g.winner != null || BAL.busy || ui.balCleaning) return;
-  const gone = g.order.filter(u => !room.players[u]);
+  const gone = g.order.filter(u => !room.players[u] && !g.auto?.[u]);
   if (!gone.length) return;
   ui.balCleaning = true;
-  const g2 = JSON.parse(JSON.stringify(g)); g2.end = "left"; g2.v++; g2.last = `طلع ${gone.map(u => atn(pname(u))).join(" و ")} من اللعبة، انتهى البلوت`;
+  const g2 = JSON.parse(JSON.stringify(g)); g2.v++;
+  if (g.order.some(u => room.players[u] && !isBot(u))) { g2.auto = g2.auto || {}; gone.forEach(u => g2.auto[u] = 1); g2.last = `طلع ${gone.map(u => atn(pname(u))).join(" و ")} 🤖 وبوت يكمل عنه لين يرجع`; ui.balCleaning = true; setRoom({ bal: g2 }).catch(e => console.error(e)).finally(() => ui.balCleaning = false); return; }
+  g2.end = "left"; g2.last = `طلع ${gone.map(u => atn(pname(u))).join(" و ")} من اللعبة، انتهى البلوت`;
   setRoom({ bal: g2, phase: "balend" }).catch(e => console.error(e)).finally(() => ui.balCleaning = false);
 }
 function watchBalMoves() {
@@ -1722,9 +1762,10 @@ async function jakProcess(list) {
       const { u, mv } = JAK.queue.shift();
       if (!JAK.st || mv.round !== room.round || (JAK.processed[u] || 0) >= mv.seq) continue;
       JAK.processed[u] = mv.seq;
-      const g = JSON.parse(JSON.stringify(room.jak));
+      const g = JSON.parse(JSON.stringify(room.jak)), wasTurn = (g.burn?.u || g.order[g.turn]) === u;
       const changed = jakApply(u, mv, g, JAK.st);
       if (!changed) continue;
+      autoMark(g, u, mv, wasTurn);
       const b = writeBatch(db);
       changed.forEach(x => b.set(doc(db, "rooms", roomCode, "secrets", x), { round: room.round, role: "jak", hand: JAK.st.hands[x] }));
       b.set(doc(db, "rooms", roomCode, "hidden", "jak"), { round: room.round, ...JAK.st, processed: JAK.processed });
@@ -1746,10 +1787,12 @@ async function jakProcess(list) {
 // لو طلع لاعب نوقف اللعبة (الجكارو تحتاج الكل)
 function jakCleanup() {
   const g = room.jak; if (!g || g.winner != null || JAK.busy || ui.jakCleaning) return;
-  const gone = g.order.filter(u => !room.players[u]);
+  const gone = g.order.filter(u => !room.players[u] && !g.auto?.[u]);
   if (!gone.length) return;
   ui.jakCleaning = true;
-  const g2 = JSON.parse(JSON.stringify(g)); g2.end = "left"; g2.v++; g2.last = `طلع ${gone.map(u => atn(pname(u))).join(" و ")} من اللعبة، انتهت الجولة`;
+  const g2 = JSON.parse(JSON.stringify(g)); g2.v++;
+  if (g.order.some(u => room.players[u] && !isBot(u))) { g2.auto = g2.auto || {}; gone.forEach(u => g2.auto[u] = 1); g2.last = `طلع ${gone.map(u => atn(pname(u))).join(" و ")} 🤖 وبوت يكمل عنه لين يرجع`; ui.jakCleaning = true; setRoom({ jak: g2 }).catch(e => console.error(e)).finally(() => ui.jakCleaning = false); return; }
+  g2.end = "left"; g2.last = `طلع ${gone.map(u => atn(pname(u))).join(" و ")} من اللعبة، انتهت الجولة`;
   setRoom({ jak: g2, phase: "jakend" }).catch(e => console.error(e)).finally(() => ui.jakCleaning = false);
 }
 function watchJakMoves() {
@@ -1924,6 +1967,11 @@ async function awardXp() {
   const s = { ...(me.stats || {}) };
   s.games = (s.games || 0) + 1; s["g_" + game] = (s["g_" + game] || 0) + 1;
   if (won) { s.wins = (s.wins || 0) + 1; s["w_" + game] = (s["w_" + game] || 0) + 1; }
+  if (won && (game === "bal" || game === "jak") && (room.roundPlayers || []).some(u => u !== me.uid && !room.players?.[u]?.bot)) {
+    const wk = wkKey();
+    if (s.wk?.k !== wk) { if (s.wk?.k) s.wkPrev = s.wk; s.wk = { k: wk, bal: 0, jak: 0 }; } else s.wk = { ...s.wk };
+    s.wk[game] = (s.wk[game] || 0) + 1;
+  }
   const h = new Date().getHours(); if (h >= 2 && h < 5) s.night = (s.night || 0) + 1;
   const before = achGot(me.stats, me.xp, me.username).map(x => x.id), oldL = myLvl();
   const mu = monUpdate(game, won);
@@ -4371,6 +4419,7 @@ VIEWS.home = () => {
       <button class="h-tile pub" id="pubBtn"><span class="ht-ic" aria-hidden="true">🌍</span><b>غرف عامة</b><span>العب مع ناس جدد</span></button>
       <button class="h-tile inv" id="invBtn"><span class="ht-ic" aria-hidden="true">🎁</span><b>جيب ربعك</b><span>VIP أسبوع 👑</span></button>
     </div>
+    <button class="h-rank" id="rankBtn"><span class="hr-ic" aria-hidden="true">🏆</span><span><b>ترتيب الأسبوع</b><span class="hint">${myRankLine()}</span></span><span class="hr-go" aria-hidden="true">‹</span></button>
 
     <div class="h-sec games-h"><b>الألعاب</b><div class="h-tabs" role="tablist">${[["all", "الكل"], ["on", "أونلاين"], ["lo", "بجوال واحد"], ["new", "جديد 🔥"]].map(([k, t]) => `<button class="h-tab ${tab === k ? "on" : ""}" data-gtab="${k}" role="tab" aria-selected="${tab === k}">${t}</button>`).join("")}</div></div>
     ${showFeat ? `<button class="h-feat" data-game-card="${feat.id}"><span class="hf-ic">${ICONS[feat.icon]}</span><span class="hf-t"><span class="hf-tag">🔥 لعبة اليوم</span><b>${feat.title}</b><span>${esc(feat.desc.split(/[.،]/)[0])}</span><span class="hint">👥 ${ar(feat.min)}-${ar(gMax(feat.id))}</span></span></button>` : ""}
@@ -4383,6 +4432,7 @@ VIEWS.home = () => {
   on("pushGo", "click", enablePush);
   on("pushHide", "click", () => { store.set("pushHide", Date.now()); render(false); });
   on("pubBtn", "click", () => go("pub"));
+  on("rankBtn", "click", () => go("rank"));
   on("invBtn", "click", openInvite);
   on("wakeBtn", "click", openInvite);
   on("dailyBtn", "click", () => go("daily"));
@@ -5205,7 +5255,7 @@ const ROOM_VIEWS = {
         return `<button class="jpod ${cy ? "bot" : "top"} ${cx ? "rt" : "lf"} ${u === turnU && g.winner == null ? "turn" : ""}" style="--c:${JCOL[s].fill}" data-pf="${esc(u)}">
           <span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}</span>
           ${g.cnt && u !== me.uid ? `<span class="jpbk">${Array.from({ length: g.cnt[u] ?? 0 }, () => jCardSVG(null)).join("")}</span>` : ""}
-          <b class="jtag">${u === me.uid ? "أنت" : esc(pname(u))}${mate ? " 🤝" : ""} · 🏠${ar(jHomeCount(g, s))}</b></button>`; }).join("")}</div>
+          <b class="jtag">${g.auto?.[u] ? "🤖 " : ""}${u === me.uid ? "أنت" : esc(pname(u))}${mate ? " 🤝" : ""} · 🏠${ar(jHomeCount(g, s))}</b></button>`; }).join("")}</div>
       ${ctrl != null && ctrl !== mySeat ? `<p class="jnote">خلّصت كوراتك 👑 الحين تلعب بكورات خويك</p>` : ""}
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="jpile"><span class="jdeck ${shufNow ? "shuf" : ""}" title="الكومة">${jCardSVG(null)}${jCardSVG(null)}<b>${ar(g.deck ?? 0)}</b></span>${g.top ? jCardSVG(g.top, 'class="jtop"') : ""}</span><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 8 ? "hot" : ""}" id="jSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
       ${g.winner != null ? "" : `<div class="utime ${myTurn ? "mine" : ""}" aria-hidden="true"><i style="--s:${(tm.left / tm.dur).toFixed(3)};--d:${tm.left.toFixed(2)}s"></i></div>`}
@@ -5283,7 +5333,7 @@ const ROOM_VIEWS = {
     const ok = myTurn && g.phase === "play" && !waiting ? legal(g, myK, myHand) : [];
     const myT = playing ? teamOf(myK) : 0, us = g.score[myT], them = g.score[1 - myT];
     const spot = k => ["b", "r", "t", "l"][(k - base + 4) % 4];
-    const seat = k => { const u = ord[k], sp = spot(k); return `<button class="bseat ${sp} ${k === g.turn && g.winner == null && g.phase !== "res" ? "turn" : ""} ${teamOf(k) === myT ? "mate" : ""}" data-pf="${esc(u)}" style="--c:${teamOf(k) === myT ? "#3ecf8e" : "#e0565b"}"><span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}</span><b class="btag">${u === me.uid ? "أنت" : esc(pname(u))}${k === g.buyer ? " 🛒" : ""}${k === g.dealer ? " 🃏" : ""}</b>${sp !== "b" ? `<span class="bbk">${Array.from({ length: Math.min(8, g.cnt?.[u] ?? 0) }, () => backS()).join("")}</span>` : ""}</button>`; };
+    const seat = k => { const u = ord[k], sp = spot(k); return `<button class="bseat ${sp} ${k === g.turn && g.winner == null && g.phase !== "res" ? "turn" : ""} ${teamOf(k) === myT ? "mate" : ""}" data-pf="${esc(u)}" style="--c:${teamOf(k) === myT ? "#3ecf8e" : "#e0565b"}"><span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}</span><b class="btag">${g.auto?.[u] ? "🤖 " : ""}${u === me.uid ? "أنت" : esc(pname(u))}${k === g.buyer ? " 🛒" : ""}${k === g.dealer ? " 🃏" : ""}</b>${sp !== "b" ? `<span class="bbk">${Array.from({ length: Math.min(8, g.cnt?.[u] ?? 0) }, () => backS()).join("")}</span>` : ""}</button>`; };
     const trick = (g.trick.length ? g.trick : g.lastTrick || []).map(x => `<span class="btc ${spot(x.k)} ${g.trick.length ? "" : "old"}">${face(x.c)}</span>`).join("");
     const modeTxt = g.mode ? (g.mode === "sun" ? "☀️ صن" : "🃏 حكم " + SUIT_IC[g.trump]) + " · " + esc(atn(pname(ord[g.buyer]))) : g.phase === "bid2" ? "الشراء: الدور الثاني" : "الشراء";
     const tm = balTimeLeft(g);
