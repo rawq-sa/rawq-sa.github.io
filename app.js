@@ -3885,10 +3885,10 @@ const shopBase = () => /^https:\/\//.test(shopCfg?.base || "") ? shopCfg.base : 
 const shopLink = id => { const l = shopCfg?.links?.[id]; return /^https:\/\//.test(l || "") ? l : shopBase(); };
 function shopPreview(it) {
   const g = it.grants || [];
-  if (it.id === "king") return `<span class="sp-king">👑</span>`;
+  if (it.id === "king") return `<img class="sp-ic" src="img/shop/king.webp" alt="">`;
   if (it.col) return `<span class="sp-col${thC(it.col)}">${fxOf(it.col, 8)}<span class="sp-av">${avatar(me.username, me.photo, 34)}</span><span class="sp-np">${DECO[it.col].art(200, 34)}<b dir="ltr">@${esc(me.username)}</b></span></span>`;
-  if (it.days && !g.length) return `<span class="sp-vip">VIP</span>`;
-  if (g[0] === "t_royal") return tableSVG("royal");
+  if (it.days && !g.length) return `<img class="sp-ic" src="img/shop/vip.webp" alt="">`;
+  if (g[0] === "t_royal") return `<img class="sp-ic" src="img/shop/table.webp" alt="">`;
   if (g[0] === "e_royal") return `<span class="sp-ent"><span>👑</span>${avF(prof(me.uid), 40)}<b>دخل الجلسة</b></span>`;
   if (g[0] === "b_royal") return `<span class="sp-back">${cardSVG(null, "royal")}</span>`;
   if (it.col6) return `<span class="sp-col6">${frWrap(it.col6, avatar(me.username, me.photo, 52), 52)}<b>×٦</b></span>`;
