@@ -5141,7 +5141,7 @@ const ROOM_VIEWS = {
     const jfan = k => { const d = k - (hn - 1) / 2, r = d * jda; return `--x:${(d * jstep).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .12).toFixed(1)}px;z-index:${k + 1}`; };
     V.innerHTML = `<section class="jak">
       ${statusBar()}
-      <div class="jstage"><div class="jboard">${svg}</div>${ord.map(u => { const s = g.seats[u], [bx, by] = jSpot(s, 0, -1, rot), px = 50 + (bx - 220) / 440 * 100 * 1.32, py = 50 + (by - 220) / 440 * 100 * 1.32, mate = ord.length === 4 && u !== me.uid && teamOf(u) === (playing ? teamOf(me.uid) : 0);
+      <div class="jstage"><div class="jboard">${svg}</div>${ord.map(u => { const s = g.seats[u], [bx, by] = jSpot(s, 0, -1, rot), px = 50 + (bx - 220) / 440 * 100 * 1.38, py = 50 + (by - 220) / 440 * 100 * 1.38, mate = ord.length === 4 && u !== me.uid && teamOf(u) === (playing ? teamOf(me.uid) : 0);
         return `<button class="jpod ${u === turnU && g.winner == null ? "turn" : ""} ${py > 70 ? "bot" : ""}" style="--c:${JCOL[s].fill};left:${Math.min(88, Math.max(12, px)).toFixed(1)}%;top:${Math.min(92, Math.max(6, py)).toFixed(1)}%" data-pf="${esc(u)}">
           ${g.cnt && u !== me.uid ? `<span class="jpbk">${Array.from({ length: g.cnt[u] ?? 0 }, () => jCardSVG(null)).join("")}</span>` : ""}
           <span class="jring">${prof(u) ? avF(prof(u), 46) : avatar(pname(u), "", 46)}</span>
