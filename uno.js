@@ -153,6 +153,8 @@ export const TABLES = {
   gold: { name: "ذهبي", lvl: 30, rim: ["#f7d77a", "#b8862b", "#e8c25a", "#7a5512"], felt: ["#2e2e33", "#18181b", "#060607"], line: "#e8c25a", mark: "rgba(232,194,90,.1)", noise: 1 }
 };
 export function tableSVG(key = "felt") {
+  // الطاولة الملكية: نفس صورة المتجر بالضبط
+  if (key === "royal") return `<svg viewBox="0 0 400 400" class="utable-svg" aria-hidden="true"><image href="img/shop/table_royal_full.webp?v=1" x="4" y="4" width="392" height="392" preserveAspectRatio="none"/><text x="200" y="300" text-anchor="middle" font-family="RawqRuqaa,Amiri,serif" font-size="34" fill="#f2c14e" opacity=".14">روق</text></svg>`;
   const t = TABLES[key] || TABLES.felt, k = "t" + key;
   const deco = [];
   if (t.sadu) deco.push(`<g opacity=".55">${[70, 318].map(y => `<path d="${Array.from({ length: 22 }, (_, i) => `M${70 + i * 12} ${y + 10} l6 -10 l6 10z`).join(" ")}" fill="#f2b134"/>`).join("")}</g>`);
