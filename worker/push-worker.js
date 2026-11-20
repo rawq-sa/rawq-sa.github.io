@@ -176,6 +176,7 @@ const IAP = {
   "sa.rawq.app.vip.quarter": { d: 90, n: "اشتراك VIP ٣ شهور", p: "69.99" },
   "sa.rawq.app.vip.year": { d: 365, n: "اشتراك VIP سنة", p: "199.99" },
   "sa.rawq.app.king": { g: [...ALL_VIP, "king"], d: 365, n: "باقة الملك 👑", p: "299.99" },
+  "sa.rawq.app.bk_najdi": { g: ["bk_najdi"], n: "ورق البلوت النجدي", p: "19.99" },
   "sa.rawq.app.col_g": { g: ["fr_roses", "fr_butterfly", "fr_princess", "fr_sakura", "fr_hearts", "fr_moon"], n: "مجموعة البنات", p: "99.99" },
   "sa.rawq.app.col_b": { g: ["fr_flame", "fr_falcon", "fr_lightning", "fr_desert", "fr_galaxy", "fr_crown"], n: "مجموعة العيال", p: "99.99" },
   "sa.rawq.app.fr_roses": { g: ["fr_roses"], n: "إطار ورود وردية", p: "21.99" },

@@ -3956,6 +3956,7 @@ const IAP_LIST = [
   { id: "frame_fire", name: "إطار ناري", desc: "إطار يدور حول صورتك ويشوفه الكل", sar: "14.99", g: ["f_fire"] },
   { id: "frame_sadu", name: "إطار سدو", desc: "إطار يدور حول صورتك ويشوفه الكل", sar: "14.99", g: ["f_sadu"] },
   { id: "back_royal", name: "ظهر الورق الملكي", desc: "عنابي بتاج ذهبي في أونو", sar: "9.99", g: ["b_royal"] },
+  { id: "bk_najdi", name: "ورق البلوت النجدي ☕", desc: "ورق بلوت أخضر وذهبي بطابع سعودي", sar: "19.99", g: ["bk_najdi"] },
   { id: "col_g", name: "مجموعة البنات 💗", desc: "٦ إطارات مرسومة ومتحركة", sar: "99.99", g: ["fr_roses", "fr_butterfly", "fr_princess", "fr_sakura", "fr_hearts", "fr_moon"] },
   { id: "col_b", name: "مجموعة العيال ⚡", desc: "٦ إطارات مرسومة ومتحركة", sar: "99.99", g: ["fr_flame", "fr_falcon", "fr_lightning", "fr_desert", "fr_galaxy", "fr_crown"] },
   { id: "fr_roses", name: "إطار ورود وردية", desc: "إطار متحرك حول صورتك يشوفه الكل", sar: "21.99", g: ["fr_roses"] },
