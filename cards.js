@@ -42,3 +42,13 @@ export function balFace(r, s, attrs = "") {
 ${mid}${corners}<g transform="translate(8 12)">${idx}</g><g transform="translate(52 78) rotate(180)">${idx}</g>`);
 }
 export const balBack = (attrs = "") => { const i = "bb" + (++n); return wrap(attrs, "", `<defs><clipPath id="${i}"><rect width="60" height="90" rx="6"/></clipPath></defs><rect width="60" height="90" rx="6" fill="#0d4a33"/><image href="img/cards/back_baloot.webp?v=1" width="60" height="90" clip-path="url(#${i})" preserveAspectRatio="xMidYMid slice"/>`); };
+// الورق الكلاسيكي (الأساسي للبلوت): أبيض، أحمر وأسود، صور الشايب والبنت والولد التقليدية
+export function classicFace(r, s, attrs = "") {
+  const i = "cf" + (++n), red = s === "h" || s === "d", col = red ? "#d0202f" : "#16161a";
+  const sym = `<path d="${SU[s]}" fill="${col}"/>`;
+  const idx = `<text x="0" y="0" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="${r === "10" ? 10 : 12}" fill="${col}">${r}</text><g transform="translate(0 7.5) scale(.3)">${sym}</g>`;
+  const art = { K: "cK", Q: "cQ", J: "cJ" }[r];
+  const mid = art ? `<image href="img/cards/${art}.webp?v=1" x="13" y="12" width="34" height="66" preserveAspectRatio="none"/><rect x="13" y="12" width="34" height="66" fill="none" stroke="${col}" stroke-width=".8"/>`
+    : r === "A" ? `<g transform="translate(30 45) scale(.95)">${sym}</g>` : pips(r, sym);
+  return wrap(attrs, r, `<rect x=".5" y=".5" width="59" height="89" rx="5" fill="#fff" stroke="#cfc8b8"/>${mid}<g transform="translate(7.5 12)">${idx}</g><g transform="translate(52.5 78) rotate(180)">${idx}</g>`);
+}

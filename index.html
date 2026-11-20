@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=130">
+<link rel="modulepreload" href="./app.js?v=131">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=33">
 <link rel="modulepreload" href="./uno.js?v=40">
@@ -790,6 +790,25 @@ body:has(#chatFab) main{padding-bottom:78px}
 .fr.f_fire{filter:drop-shadow(0 0 8px rgba(255,110,40,.6))}
 .fr.f_sadu::before{background:repeating-conic-gradient(#b8323a 0 15deg,#f2b134 15deg 30deg,#1a1426 30deg 45deg,#fff3e0 45deg 60deg);animation-duration:9s}
 @media (prefers-reduced-motion:reduce){.fr::before{animation:none}}
+/* بلوت */
+.btop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0}
+.bsc{display:flex;gap:6px}.bsc div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 12px;text-align:center;font-size:12px}.bsc b{display:block;font-size:20px;color:var(--saffron);font-family:var(--display)}
+.bmode{background:#3a2508;border:1px solid #f2b13466;border-radius:999px;padding:5px 12px;font-size:13px;white-space:nowrap}
+.btable{position:relative;aspect-ratio:1/1.05;max-width:440px;margin:0 auto}.btable>svg{position:absolute;inset:0;width:100%;height:100%}
+.bseat{position:absolute;z-index:3;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;color:var(--ink);font:inherit;font-size:12px;padding:0;max-width:96px}
+.bseat b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;text-shadow:0 1px 3px #000}
+.bseat.t{top:2%;left:50%;transform:translateX(-50%)}.bseat.r{right:1%;top:40%}.bseat.l{left:1%;top:40%}.bseat.b{bottom:1%;left:50%;transform:translateX(-50%)}
+.bseat .av,.bseat .frx{box-shadow:0 0 0 2px rgba(255,255,255,.25)}.bseat.mate b{color:#9fe3c0}
+.bseat.turn .av{box-shadow:0 0 0 3px var(--saffron),0 0 16px var(--saffron)}
+.bbk{display:flex;margin-top:2px}.bbk svg{width:13px;height:20px;margin-inline-start:-8px}
+.btrick{position:absolute;inset:22% 22%;z-index:2}.btc{position:absolute;width:24%;max-width:62px;transition:.3s}.btc svg,.bshown svg{width:100%;height:auto;display:block;filter:drop-shadow(0 4px 6px #0007)}
+.btc.b{bottom:4%;left:50%;transform:translateX(-50%)}.btc.t{top:4%;left:50%;transform:translateX(-50%) rotate(180deg)}.btc.r{right:4%;top:50%;transform:translateY(-50%) rotate(-90deg)}.btc.l{left:4%;top:50%;transform:translateY(-50%) rotate(90deg)}
+.btc.old{opacity:.45}
+.bshown{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:28%;max-width:70px;display:grid;justify-items:center;gap:4px}.bshown i{font-style:normal;font-size:11px;white-space:nowrap;background:#0009;border-radius:999px;padding:1px 8px}
+.bprj{position:absolute;z-index:4;bottom:16%;left:50%;transform:translateX(-50%);background:#000a;border-radius:10px;padding:3px 10px;font-size:12px;white-space:nowrap}
+.bres{position:absolute;z-index:5;inset:30% 14% auto;background:#1c1530ee;border:1px solid var(--saffron);border-radius:16px;padding:12px;display:grid;gap:4px;justify-items:center;text-align:center}.bres b{color:var(--saffron);font-family:var(--display);font-size:20px}.bres i{font-style:normal;color:#ffb3b3}
+.bbids{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0}
+.uhand.jfan.bfan .ucard{width:62px}
 /* الإطارات المرسومة */
 .frx{position:relative;display:inline-grid;place-items:center;width:var(--s);height:var(--s);flex:none;isolation:isolate;margin:calc(var(--s) * .12)}
 .frx>.av{position:relative;z-index:0}
@@ -1215,6 +1234,6 @@ video.share-img{background:#000}
   <main id="view"><div class="spinner" aria-label="جاري التحميل"></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=130"></script>
+<script type="module" src="./app.js?v=131"></script>
 </body>
 </html>

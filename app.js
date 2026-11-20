@@ -16,6 +16,8 @@ import { ICONS } from "./icons.js?v=33";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=40";
 import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=18";
+import { bDeck, bRank, bSuit, legal, trickWinner, projects, scoreHand, teamOf, bAbnat, SUIT_IC, PRJ_AR } from "./baloot.js?v=1";
+import { classicFace, balFace, balBack } from "./cards.js?v=1";
 
 /* ================= helpers ================= */
 const ar = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
@@ -180,7 +182,7 @@ function avatar(name, photo, size = 40, label) {
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const ONLINE_MS = 420000; // ٧ دقايق (النبضة كل ٣ دقايق عشان نوفر في Firebase)
 const INVITE_MS = 15 * 60 * 1000;
-const GAMES = { kal: "كمّل الكلمة", draw: "ارسم وخمّن", who: "مين قالها؟", tf: "صح ولا خطأ", uno: "أونو", imp: "الدخيل", most: "مين أكثر واحد", hhnj: "إنسان حيوان نبات جماد", jak: "جكارو" };
+const GAMES = { kal: "كمّل الكلمة", draw: "ارسم وخمّن", who: "مين قالها؟", tf: "صح ولا خطأ", uno: "أونو", imp: "الدخيل", most: "مين أكثر واحد", hhnj: "إنسان حيوان نبات جماد", jak: "جكارو", bal: "بلوت" };
 // كل ألعاب روق: وين تنلعب (أونلاين، بجوال واحد)
 const CATALOG = [
   { id: "kal", icon: "kal", title: "كمّل الكلمة", desc: "فريقين أحمر وأزرق. كلمة ناقصة حروف، وكل دور واحد يحط حرف أو يخمّن الكلمة كاملة قبل يخلص وقته.", online: true, local: "l-kal", min: 2, hot: true },
@@ -189,6 +191,7 @@ const CATALOG = [
   { id: "tf", icon: "tf", title: "صح ولا خطأ", desc: "كل جولة واحد يكتب شي عن نفسه، والباقين يخمّنون: صح ولا كذب؟ تنفع حتى لو أنتم اثنين.", online: true, local: "l-tf", min: 2, hot: true },
   { id: "uno", icon: "uno", title: "أونو روق", desc: "الأونو اللي تعرفه، بأوراق وطاولة روق. من ٢ إلى ٨ لاعبين، كل واحد من جواله.", online: true, local: null, min: 2 },
   { id: "jak", icon: "jak", title: "جكارو", desc: "لعبة الكور والأوراق الشعبية. ٤ لاعبين فريقين (أو ٢ ضد بعض)، دخّل كوراتك الأربع الدار قبلهم، واضرب كوراتهم ورجّعها البيت!", online: true, local: null, min: 2, hot: true },
+  { id: "bal", icon: "baloot", title: "بلوت", desc: "البلوت السعودي: ٤ لاعبين فريقين، صن وحكم ومشاريع، وأول فريق يوصل ١٥٢ يفوز.", online: true, min: 4 },
   { id: "imp", icon: "imp", title: "الدخيل", desc: "الكل يعرف الكلمة إلا واحد. اكشفوه قبل ما يكشف الكلمة.", online: true, local: "l-imp", min: 3 },
   { id: "most", icon: "most", title: "مين أكثر واحد؟", desc: "سؤال، وكل واحد يصوّت على واحد من الشلة.", online: true, local: "l-most", min: 2 },
   { id: "hhnj", icon: "hhnj", title: "إنسان حيوان نبات جماد", desc: "حرف عشوائي، واكتب أربع كلمات تبدأ فيه قبل يخلص الوقت.", online: true, local: "l-hhnj", min: 2 },
@@ -884,10 +887,11 @@ async function resyncRoom(why = "") {
     const s = await getDocFromServer(doc(db, "rooms", roomCode));
     if (s.exists() && roomCode) {
       const fresh = s.data();
-      if (!room || ((fresh.uno?.v || 0) >= (room.uno?.v || 0) && (fresh.jak?.v || 0) >= (room.jak?.v || 0)) || fresh.round !== room.round || fresh.phase !== room.phase) room = fresh;
+      if (!room || ((fresh.uno?.v || 0) >= (room.uno?.v || 0) && (fresh.jak?.v || 0) >= (room.jak?.v || 0) && (fresh.bal?.v || 0) >= (room.bal?.v || 0)) || fresh.round !== room.round || fresh.phase !== room.phase) room = fresh;
       ["room", "secret", "votes", "rchat", "rx", "umoves", "hdone", "dguess", "dcanvas", "priv"].forEach(k => off(k));
       if (isHost() && room.phase === "uno") { UNO.st = null; UNO.busy = false; UNO.queue = []; ui.unoKickV = null; }
       if (isHost() && room.phase === "jak") { JAK.st = null; JAK.busy = false; JAK.queue = []; ui.jKickV = null; }
+      if (isHost() && room.phase === "bal") { BAL.st = null; BAL.busy = false; BAL.queue = []; ui.bKickV = null; }
       enterRoom(roomCode, true);
       if (screen === "room") render(false);
     }
@@ -1285,6 +1289,185 @@ function unoTimerStart() {
     if (over > 8 && ui.unoStallV !== uno.v) { ui.unoStallV = uno.v; if (isHost()) ui.unoKickV = null; resyncRoom("stall"); }
   }, 500);
 }
+/* ================= بلوت ================= */
+const BAL = { st: null, processed: {}, busy: false, queue: [] };
+const balState = () => room?.bal || null;
+const BAL_T = 15, BAL_WIN = 152;
+function balDeal(g, st) {
+  const deck = shuffle(bDeck());
+  st.hands = {}; g.order.forEach(u => st.hands[u] = deck.splice(0, 5));
+  g.shown = deck.pop(); st.deck = deck; st.prjc = null;
+  Object.assign(g, { phase: "bid1", turn: (g.dealer + 1) % 4, asked: 0, bid: null, mode: null, trump: null, buyer: null, trick: [], lastTrick: null, won: [0, 0], ab: [0, 0], prj: [], tricks: 0, res: null });
+  g.cnt = Object.fromEntries(g.order.map(u => [u, 5]));
+}
+async function startBal() {
+  const ps = order();
+  if (ps.length !== 4) return toast("البلوت تنلعب ٤ لاعبين (فريقين)");
+  const ord = shuffle(ps), round = (room.round || 0) + 1, names = {}; ps.forEach(u => names[u] = pname(u));
+  const g = { order: ord, dealer: 3, hand: 1, score: [0, 0], v: 1, winner: null, end: "" }, st = {};
+  balDeal(g, st); g.last = "بدأ البلوت! الشراء يبدأ من @" + names[ord[g.turn]];
+  BAL.st = st; BAL.processed = {};
+  const b = writeBatch(db);
+  ps.forEach(u => b.set(doc(db, "rooms", roomCode, "secrets", u), { round, role: "bal", hand: st.hands[u] }));
+  b.set(doc(db, "rooms", roomCode, "hidden", "bal"), { round, ...st, processed: {} });
+  b.update(roomRef(), { game: "bal", phase: "bal", round, roundPlayers: ps, names, bal: g, result: null });
+  try { await b.commit(); } catch (e) { console.error(e); toast("ما قدرنا نبدأ البلوت"); }
+}
+async function balLoadHost() {
+  if (BAL.st || !isHost()) return;
+  const h = await getDoc(doc(db, "rooms", roomCode, "hidden", "bal")).catch(() => null);
+  if (h?.exists() && h.data().round === room.round) { const d = h.data(); BAL.st = { hands: d.hands, deck: d.deck, prjc: d.prjc || null }; BAL.processed = d.processed || {}; }
+}
+const balSort = (g, h) => [...h].sort((a, b) => "shdc".indexOf(bSuit(a)) - "shdc".indexOf(bSuit(b)) || bAbnat({ mode: "sun" }, b) - bAbnat({ mode: "sun" }, a) || ["7", "8", "9", "10", "J", "Q", "K", "A"].indexOf(bRank(b)) - ["7", "8", "9", "10", "J", "Q", "K", "A"].indexOf(bRank(a)));
+function balFinalizeBid(g, st) {
+  const b = g.bid; g.mode = b.mode; g.trump = b.mode === "hokm" ? b.suit : null; g.buyer = b.k;
+  const ord = g.order;
+  ord.forEach((u, k) => { const add = k === b.k ? [g.shown, ...st.deck.splice(0, 2)] : st.deck.splice(0, 3); st.hands[u] = [...st.hands[u], ...add]; });
+  g.phase = "play"; g.turn = (g.dealer + 1) % 4; g.trick = []; g.cnt = Object.fromEntries(ord.map(u => [u, 8]));
+  // المشاريع تنحسب من الثمان أوراق وتنعلن بعد أول لمّة
+  st.prjc = ord.map((u, k) => ({ k, list: projects(g, st.hands[u]), baloot: g.mode === "hokm" && st.hands[u].includes("K" + g.trump) && st.hands[u].includes("Q" + g.trump) }));
+  return [...ord];
+}
+function balAnnounce(g, st) {
+  const best = [0, 1].map(t => Math.max(0, ...st.prjc.filter(p => teamOf(p.k) === t).flatMap(p => p.list.map(x => x.v * 10 + x.hi))));
+  const win = best[0] === best[1] ? (best[0] ? [0, 1] : []) : [best[0] > best[1] ? 0 : 1];
+  g.prj = [];
+  st.prjc.forEach(p => { if (win.includes(teamOf(p.k))) p.list.forEach(x => g.prj.push({ team: teamOf(p.k), k: p.k, t: x.t })); if (p.baloot) g.prj.push({ team: teamOf(p.k), k: p.k, t: "baloot" }); });
+  // أبناط المشاريع تدخل بالمقارنة (سرا ٢٠، خمسين ٥٠، مية ١٠٠، بلوت ٢٠)
+  g.prj.forEach(x => g.ab[x.team] += { sira: 20, "50": 50, "100": 100, "400": 400, baloot: 20 }[x.t]);
+}
+function balApply(u, mv, g, st) {
+  const ord = g.order, k = ord.indexOf(u), who = "@" + pname(u);
+  if (k < 0 || g.winner != null) return null;
+  if (g.phase === "res") {
+    if (mv.type !== "kick" && !(mv.type === "play" && u === room.host)) return null;
+    g.dealer = (g.dealer + 1) % 4; g.hand++; balDeal(g, st); g.last = `🃏 توزيعة جديدة · الشراء من ${"@" + pname(ord[g.turn])}`; g.v++; return [...ord];
+  }
+  if (k !== g.turn) return null;
+  if (g.phase === "bid1" || g.phase === "bid2") {
+    let b = null; try { b = mv.color ? JSON.parse(mv.color) : null; } catch (e) { return null; }
+    const act = mv.type === "pass" || mv.type === "kick" ? "pass" : b?.bid;
+    if (act === "sun" || act === "ashkal") {
+      if (act === "ashkal" && g.bid?.mode === "sun") return null;
+      g.bid = { k: act === "ashkal" ? (k + 2) % 4 : k, mode: "sun" };
+      g.last = act === "ashkal" ? `${who} قال أشكال 🔁 · صن لخويه @${pname(ord[(k + 2) % 4])}` : `${who} اشترى صن ☀️`;
+      const ch = balFinalizeBid(g, st); g.v++; return ch;
+    }
+    if (act === "hokm") {
+      if (g.bid) return null;
+      const suit = g.phase === "bid1" ? bSuit(g.shown) : b.suit;
+      if (!"shdc".includes(suit || "x") || (g.phase === "bid2" && suit === bSuit(g.shown))) return null;
+      g.bid = { k, mode: "hokm", suit }; g.last = `${who} قال حكم ${SUIT_IC[suit]}`;
+    } else if (act === "pass") g.last = `${who} قال بس${mv.type === "kick" ? " ⏰" : ""}`;
+    else return null;
+    g.asked++; g.turn = (g.turn + 1) % 4;
+    if (g.asked >= 4) {
+      if (g.bid) { const ch = balFinalizeBid(g, st); g.last += ` · المشتري @${pname(ord[g.bid.k])} حكم ${SUIT_IC[g.trump]}`; g.v++; return ch; }
+      if (g.phase === "bid1") { g.phase = "bid2"; g.asked = 0; g.turn = (g.dealer + 1) % 4; g.last += " · الكل قال بس، الدور الثاني"; }
+      else { g.dealer = (g.dealer + 1) % 4; balDeal(g, st); g.last = "الكل قال بس 🔄 تنعاد التوزيعة"; g.v++; return [...ord]; }
+    }
+    g.v++; return [u];
+  }
+  // اللعب
+  const hand = st.hands[u] || [], ok = legal(g, k, hand);
+  let card = mv.card;
+  if (mv.type === "kick") card = ok[Math.floor(Math.random() * ok.length)];
+  else if (mv.type !== "play" || !ok.includes(card)) return null;
+  hand.splice(hand.indexOf(card), 1); st.hands[u] = hand; g.cnt[u] = hand.length;
+  g.trick = [...g.trick, { k, c: card }];
+  g.last = `${who} لعب ${card.slice(0, -1)}${SUIT_IC[bSuit(card)]}${mv.type === "kick" ? " ⏰" : ""}`;
+  if (g.trick.length < 4) { g.turn = (k + 1) % 4; g.v++; return [u]; }
+  const w = trickWinner(g, g.trick), t = teamOf(w);
+  g.ab[t] += g.trick.reduce((s, x) => s + bAbnat(g, x.c), 0); g.won[t]++; g.tricks++;
+  g.lastTrick = g.trick; g.trick = []; g.turn = w;
+  g.last += ` · اللمّة لـ @${pname(ord[w])}`;
+  if (g.tricks === 1) { balAnnounce(g, st); if (g.prj.length) g.last += " · 📣 " + g.prj.map(x => `@${pname(ord[x.k])} ${PRJ_AR[x.t]}`).join("، "); }
+  if (g.tricks === 8) {
+    g.ab[t] += 10;
+    const { pts, note } = scoreHand(g);
+    g.score = [g.score[0] + pts[0], g.score[1] + pts[1]];
+    g.res = { pts, note, ab: [...g.ab], mode: g.mode, buyer: g.buyer };
+    g.last = `انتهت التوزيعة: لنا/لهم +${ar(pts[0])} / +${ar(pts[1])}${note ? " · " + note : ""}`;
+    if (g.score[0] >= BAL_WIN || g.score[1] >= BAL_WIN) g.winner = g.score[0] === g.score[1] ? teamOf(g.buyer) : g.score[0] > g.score[1] ? 0 : 1;
+    else g.phase = "res";
+  }
+  g.v++; return [u];
+}
+async function balProcess(list) {
+  if (!isHost() || room?.phase !== "bal") return;
+  BAL.queue.push(...list);
+  if (BAL.busy) return;
+  BAL.busy = true;
+  try {
+    await balLoadHost();
+    while (BAL.queue.length) {
+      const { u, mv } = BAL.queue.shift();
+      if (!BAL.st || mv.round !== room.round || (BAL.processed[u] || 0) >= mv.seq) continue;
+      BAL.processed[u] = mv.seq;
+      const g = JSON.parse(JSON.stringify(room.bal));
+      const changed = balApply(u, mv, g, BAL.st);
+      if (!changed) continue;
+      const b = writeBatch(db);
+      changed.forEach(x => b.set(doc(db, "rooms", roomCode, "secrets", x), { round: room.round, role: "bal", hand: BAL.st.hands[x] || [] }));
+      b.set(doc(db, "rooms", roomCode, "hidden", "bal"), { round: room.round, ...BAL.st, processed: BAL.processed });
+      const upd = { bal: g };
+      if (g.winner != null) {
+        const scores = { ...(room.scores || {}) };
+        g.order.filter((x, k) => teamOf(k) === g.winner).forEach(x => scores[x] = (scores[x] || 0) + 1);
+        upd.scores = scores; upd.phase = "balend";
+      }
+      b.update(roomRef(), upd);
+      const prev = room.bal, prevPhase = room.phase;
+      room.bal = g; if (upd.phase) room.phase = upd.phase;
+      try { await b.commit(); }
+      catch (e) { room.bal = prev; room.phase = prevPhase; delete BAL.processed[u]; BAL.st = null; throw e; }
+    }
+  } catch (e) { console.error(e); BAL.busy = false; BAL.queue = []; setTimeout(() => resyncRoom("commit"), 800); return; }
+  BAL.busy = false;
+}
+function balCleanup() {
+  const g = room.bal; if (!g || g.winner != null || BAL.busy || ui.balCleaning) return;
+  const gone = g.order.filter(u => !room.players[u]);
+  if (!gone.length) return;
+  ui.balCleaning = true;
+  const g2 = JSON.parse(JSON.stringify(g)); g2.end = "left"; g2.v++; g2.last = `طلع ${gone.map(u => "@" + pname(u)).join(" و ")} من اللعبة، انتهى البلوت`;
+  setRoom({ bal: g2, phase: "balend" }).catch(e => console.error(e)).finally(() => ui.balCleaning = false);
+}
+function watchBalMoves() {
+  sub("umoves", onSnapshot(collection(db, "rooms", roomCode, "moves"), q => {
+    const list = [];
+    q.forEach(d => { const mv = d.data(); if (mv.round === room?.round && (BAL.processed[d.id] || 0) < mv.seq) list.push({ u: d.id, mv }); });
+    list.sort((a, b) => a.mv.seq - b.mv.seq);
+    if (list.length) balProcess(list);
+  }, err));
+}
+async function balMove(type, card, extra) {
+  const g = balState(); if (!g) return;
+  ui.bWait = g.v; const v0 = g.v, mv = { round: room.round, seq: Date.now(), type, card: card || "", color: extra ? JSON.stringify(extra) : "" };
+  setTimeout(() => { if (ui.bWait === v0 && room?.bal?.v === v0) setDoc(doc(db, "rooms", roomCode, "moves", me.uid), { ...mv, seq: Date.now() }).catch(() => {}); }, 4000);
+  setTimeout(() => { if (ui.bWait === v0) { ui.bWait = null; resyncRoom("move"); render(false); } }, 9000);
+  try { await setDoc(doc(db, "rooms", roomCode, "moves", me.uid), mv); }
+  catch (e) { console.error(e); ui.bWait = null; toast("ما انرسلت الحركة، جرّب مرة ثانية"); }
+  render(false);
+}
+function balTimeLeft(g) {
+  if (!ui.bSeen || ui.bSeen.v !== g.v || ui.bSeen.round !== room.round) ui.bSeen = { v: g.v, round: room.round, t: Date.now() };
+  return { dur: BAL_T, left: Math.max(0, BAL_T - (Date.now() - ui.bSeen.t) / 1000) };
+}
+function balTimerStart() {
+  if (ui.bTimer) return;
+  ui.bTimer = setInterval(() => {
+    const g = balState();
+    if (screen !== "room" || room?.phase !== "bal" || !g) { clearInterval(ui.bTimer); ui.bTimer = null; return; }
+    if (g.winner != null) return;
+    const { left } = balTimeLeft(g);
+    const el = document.getElementById("bSec");
+    if (el) { el.textContent = "⏱ " + ar(Math.ceil(left)); el.classList.toggle("hot", left <= 5); }
+    if (left <= 0 && isHost() && ui.bKickV !== g.v) { ui.bKickV = g.v; const u = g.phase === "res" ? room.host : g.order[g.turn]; balProcess([{ u, mv: { round: room.round, seq: (BAL.processed[u] || 0) + 1, type: "kick" } }]); }
+    const over = (Date.now() - ui.bSeen.t) / 1000 - BAL_T;
+    if (over > 8 && ui.bStallV !== g.v) { ui.bStallV = g.v; if (isHost()) ui.bKickV = null; resyncRoom("stall"); }
+  }, 500);
+}
 /* ================= جكارو ================= */
 const JAK = { st: null, processed: {}, busy: false, queue: [] };
 const jakState = () => room?.jak || null;
@@ -1460,7 +1643,7 @@ function jakTimerStart() {
   }, 500);
 }
 // نقاط الخبرة: كل ما تخلص جولة لعبت فيها
-const END_PHASES = { jakend: "jak", kend: "kal", result: "imp", hres: "hhnj", unoend: "uno", mresult: "most", wres: "who", tres: "tf", dres: "draw" };
+const END_PHASES = { balend: "bal", jakend: "jak", kend: "kal", result: "imp", hres: "hhnj", unoend: "uno", mresult: "most", wres: "who", tres: "tf", dres: "draw" };
 /* ================= ملخص الجلسة ================= */
 function trackSession() {
   if (!room || !roomCode) return;
@@ -1489,13 +1672,14 @@ function sessHighlight(s) {
       }
     } catch (e) {}
   }
+  else if (ph === "balend" && room.bal?.winner != null) h = { w: 2, t: `🃏 فريق ${(room.bal.order || []).filter((u, k) => teamOf(k) === room.bal.winner).map(u => "@" + pname(u)).join(" و ")} فاز بالبلوت` };
   else if (ph === "jakend" && room.jak?.winner != null) h = { w: 2, t: `🎲 ${jakTeamName(room.jak, room.jak.winner)} فازوا بالجكارو` };
   else if (ph === "unoend" && room.uno?.winner) h = { w: 2, t: `🃏 ${nm(room.uno.winner)} قهركم بالأونو` };
   else if (ph === "mresult" && room.prompt) { const top = topOf(r.tally || {}, roundPlayers()); if (top.length === 1) h = { w: 2, t: `👀 ${nm(top[0])} أكثر واحد ${room.prompt}` }; }
   else if (ph === "kend" && r.win) h = { w: 1, t: `🔤 فاز الفريق ${kTeamName(r.win)} في كمّل الكلمة` };
   if (h) s.hl.push({ ...h, i: s.hl.length });
 }
-const GAME_OF = { jak: "jak", imp: "imp", hhnj: "hhnj", uno: "uno", most: "most", who: "who", tf: "tf", draw: "draw" };
+const GAME_OF = { bal: "bal", jak: "jak", imp: "imp", hhnj: "hhnj", uno: "uno", most: "most", who: "who", tf: "tf", draw: "draw" };
 function sessionData(s = ui.sess) {
   if (!s || !s.rounds.size) return null;
   const rows = Object.entries(s.names).map(([u, n]) => ({ u, n, p: s.scores[u] || 0 })).sort((x, y) => y.p - x.p);
@@ -1587,7 +1771,7 @@ async function awardXp() {
   ui.xpBase.done.add(key);
   if (!(room.roundPlayers || []).includes(me.uid)) return;
   const gained = Math.max(0, myScore - ui.xpBase.score); ui.xpBase.score = myScore;
-  const won = game === "jak" ? room.jak?.winner != null && jTeamOf(room.jak, room.jak.seats?.[me.uid] ?? -1) === room.jak.winner : game === "uno" ? room.uno?.winner === me.uid : game === "hhnj" ? !!room.result?.rows?.[me.uid]?.win : gained > 0;
+  const won = game === "bal" ? room.bal?.winner != null && teamOf((room.bal.order || []).indexOf(me.uid)) === room.bal.winner : game === "jak" ? room.jak?.winner != null && jTeamOf(room.jak, room.jak.seats?.[me.uid] ?? -1) === room.jak.winner : game === "uno" ? room.uno?.winner === me.uid : game === "hhnj" ? !!room.result?.rows?.[me.uid]?.win : gained > 0;
   const base = Math.min(45, 10 + Math.min(gained, 4) * 5 + ((game === "uno" || game === "jak") && won ? 15 : 0));
   const boost = vipOn(me) && !STAFF(me.username), add = boost ? Math.min(68, Math.round(base * 1.5)) : base;
   const s = { ...(me.stats || {}) };
@@ -2262,6 +2446,7 @@ async function openShare() {
 /* ================= بطاقة الفايز (للسناب والستوري) ================= */
 function winUids() {
   const ps = order(), r = room?.result || {};
+  if (room.phase === "balend") { const g = room.bal; return g?.winner == null ? [] : (g.order || []).filter((u, k) => teamOf(k) === g.winner); }
   if (room.phase === "jakend") { const g = room.jak; return g?.winner == null ? [] : (g.order || []).filter(u => jTeamOf(g, g.seats[u]) === g.winner); }
   if (room.phase === "unoend") return room.uno?.winner ? [room.uno.winner] : [];
   if (room.phase === "hres") { const rows = r.rows || {}, ids = Object.keys(rows); const max = Math.max(0, ...ids.map(u => rows[u].total || 0)); return max > 0 ? ids.filter(u => rows[u].total === max) : []; }
@@ -3990,8 +4175,8 @@ function promoBlock() {
   if (!pimg) return ""; const plink = promo && /^https:\/\//.test(promo.link || "") ? promo.link : "";
   return plink ? `<a class="promo" href="${esc(plink)}" target="_blank" rel="noopener"><img src="${esc(pimg)}" alt="${esc(promo.alt || "إعلان روق")}"></a>` : `<div class="promo"><img src="${esc(pimg)}" alt="${esc(promo.alt || "إعلان روق")}"></div>`;
 }
-const NEW_GAMES = ["who", "tf"]; // «جديد» على لعبتين بس
-const gMax = id => id === "uno" ? 8 : id === "jak" ? 4 : 12;
+const NEW_GAMES = ["bal", "who"]; // «جديد» على لعبتين بس
+const gMax = id => id === "uno" ? 8 : id === "jak" || id === "bal" ? 4 : 12;
 // لعبة اليوم: تتغير كل يوم
 const featGame = () => { const on = CATALOG.filter(g => g.online); return on[Math.floor(Date.parse(dayKey(Date.now())) / 864e5) % on.length]; };
 VIEWS.home = () => {
@@ -4485,9 +4670,11 @@ VIEWS.room = () => {
   if (!room) { V.innerHTML = `<div class="spinner" aria-label="جاري التحميل"></div>`; return; }
   if (room.phase === "hq") { if (!subs.has("hdone")) watchHhnjDone(); } else if (subs.has("hdone")) { off("hdone"); ui.hDoneCount = 0; }
   awardXp(); entranceCheck(); trackSession();
-  if (room.phase === "uno" && isHost()) { if (!subs.has("umoves")) watchUnoMoves(); unoCleanup(); } else if (room.phase !== "jak" && subs.has("umoves")) off("umoves");
+  if (room.phase === "uno" && isHost()) { if (!subs.has("umoves")) watchUnoMoves(); unoCleanup(); } else if (room.phase !== "jak" && room.phase !== "bal" && subs.has("umoves")) off("umoves");
   if (room.phase !== "uno" && room.phase !== "unoend") { UNO.st = null; UNO.processed = {}; }
   if (room.phase === "jak" && isHost()) { if (!subs.has("umoves")) watchJakMoves(); jakCleanup(); }
+  if (room.phase === "bal" && isHost()) { if (!subs.has("umoves")) watchBalMoves(); balCleanup(); }
+  if (room.phase !== "bal" && room.phase !== "balend") { BAL.st = null; BAL.processed = {}; }
   if (room.phase !== "jak" && room.phase !== "jakend") { JAK.st = null; JAK.processed = {}; }
   const host = isHost();
   if (host) { const want = !!room.public && room.phase === "lobby"; if (!!room.listed !== want) setRoom({ listed: want, ping: Date.now(), hostName: me.username }); }
@@ -4561,9 +4748,9 @@ const ROOM_VIEWS = {
     const ps = order(), host = isHost(), n = ps.length;
     const onlineFriends = [...friends.entries()].filter(([u, f]) => isOnline(f) && !room.players[u]);
     const hasScores = ps.some(u => room.scores?.[u]);
-    const gks = Object.keys(GAMES), gOk = k => !((k === "uno" && n > 8) || (k === "jak" && n > 4));
+    const gks = Object.keys(GAMES), gOk = k => !((k === "uno" && n > 8) || (k === "jak" && n > 4) || (k === "bal" && n > 4));
     const gStep = d => { let i = gks.indexOf(room.game); for (let t = 0; t < gks.length; t++) { i = (i + d + gks.length) % gks.length; if (gOk(gks[i])) return gks[i]; } return room.game; };
-    const gDesc = room.game === "uno" ? "من ٢ إلى ٨ لاعبين" : room.game === "jak" ? "٢ أو ٤ لاعبين (الأربعة فريقين)" : CATALOG.find(c => c.id === room.game)?.desc || "";
+    const gDesc = room.game === "uno" ? "من ٢ إلى ٨ لاعبين" : room.game === "jak" ? "٢ أو ٤ لاعبين (الأربعة فريقين)" : room.game === "bal" ? "٤ لاعبين بالضبط (فريقين)" : CATALOG.find(c => c.id === room.game)?.desc || "";
     const gameSettings = room.game === "kal" ? (() => { const tm = kTeamsNow(); return `
         <div class="field"><span class="label">عدد الكلمات</span><div class="chips">${[10, 15, 20].map(v => `<button class="chip" data-kw="${v}" aria-pressed="${(room.kWords || 10) === v}">${ar(v)}</button>`).join("")}</div></div>
         <div class="field"><span class="label">وقت كل دور</span><div class="chips">${[10, 15, 20, 30].map(v => `<button class="chip" data-ks="${v}" aria-pressed="${(room.kSecs || 15) === v}">${ar(v)} ثانية</button>`).join("")}</div></div>
@@ -4614,7 +4801,7 @@ const ROOM_VIEWS = {
     onAll("[data-ks]", b => setRoom({ kSecs: Number(b.dataset.ks) }));
     onAll("[data-kt]", b => { const tm = kTeamsNow(), u = b.dataset.kt; tm[u] = tm[u] === "r" ? "b" : "r"; setRoom({ kTeams: tm }); });
     onAll("[data-imps]", b => setRoom({ imps: Number(b.dataset.imps) }));
-    on("start", "click", () => ({ most: startMost, hhnj: startHhnj, uno: startUno, jak: startJak, who: startWho, tf: startTf, draw: startDraw, kal: startKal }[room.game] || startImp)());
+    on("start", "click", () => ({ most: startMost, hhnj: startHhnj, uno: startUno, jak: startJak, bal: startBal, who: startWho, tf: startTf, draw: startDraw, kal: startKal }[room.game] || startImp)());
   },
 
   reveal() {
@@ -4918,6 +5105,75 @@ const ROOM_VIEWS = {
       send(LA[0]);
     }));
     onAll("[data-pf]", b => showProfile(b.dataset.pf));
+  },
+
+  bal() {
+    const g = balState(); if (!g) { V.innerHTML = `<div class="spinner"></div>`; return; }
+    const myHand = secret?.round === room.round && secret.role === "bal" ? balSort(g, secret.hand) : [];
+    const ord = g.order, myK = ord.indexOf(me.uid), playing = myK >= 0, base = playing ? myK : 0;
+    const turnU = ord[g.turn], myTurn = playing && g.turn === myK && g.winner == null && g.phase !== "res";
+    const waiting = ui.bWait === g.v; if (ui.bWait && ui.bWait !== g.v) ui.bWait = null;
+    if (!ui.bk || ui.bk.v !== g.v) ui.bk = { v: g.v, sel: null };
+    const look = store.get("balLook", "classic"), face = (c, a = "") => (look === "najdi" ? balFace : classicFace)(bRank(c), bSuit(c), a);
+    const backS = a => look === "najdi" ? balBack(a) : jCardSVG(null, a);
+    const ok = myTurn && g.phase === "play" && !waiting ? legal(g, myK, myHand) : [];
+    const myT = playing ? teamOf(myK) : 0, us = g.score[myT], them = g.score[1 - myT];
+    const spot = k => ["b", "r", "t", "l"][(k - base + 4) % 4];
+    const seat = k => { const u = ord[k], sp = spot(k); return `<button class="bseat ${sp} ${k === g.turn && g.winner == null && g.phase !== "res" ? "turn" : ""} ${teamOf(k) === myT ? "mate" : ""}" data-pf="${esc(u)}">${prof(u) ? avF(prof(u), 40) : avatar(pname(u), "", 40)}<b dir="ltr">${esc(pname(u))}${k === g.buyer ? " 🛒" : ""}${k === g.dealer ? " 🃏" : ""}</b>${sp !== "b" ? `<span class="bbk">${Array.from({ length: Math.min(8, g.cnt?.[u] ?? 0) }, () => backS()).join("")}</span>` : ""}</button>`; };
+    const trick = (g.trick.length ? g.trick : g.lastTrick || []).map(x => `<span class="btc ${spot(x.k)} ${g.trick.length ? "" : "old"}">${face(x.c)}</span>`).join("");
+    const modeTxt = g.mode ? (g.mode === "sun" ? "☀️ صن" : "🃏 حكم " + SUIT_IC[g.trump]) + " · @" + esc(pname(ord[g.buyer])) : g.phase === "bid2" ? "الشراء: الدور الثاني" : "الشراء";
+    const tm = balTimeLeft(g);
+    const bidding = g.phase === "bid1" || g.phase === "bid2";
+    const tip = g.winner != null ? "" : g.phase === "res" ? "انتهت التوزيعة 🎉" : !myTurn ? `ننتظر @${esc(pname(turnU))}` : waiting ? "لحظة…" : bidding ? "دورك تشتري؟" : "دورك! العب ورقة 👇";
+    const bidBtns = myTurn && bidding && !waiting ? `<div class="bbids">
+      <button class="btn small" data-bid="sun">☀️ صن</button>
+      ${g.bid ? "" : g.phase === "bid1" ? `<button class="btn small" data-bid="hokm" data-s="${bSuit(g.shown)}">🃏 حكم ${SUIT_IC[bSuit(g.shown)]}</button>` : ["s", "h", "d", "c"].filter(s => s !== bSuit(g.shown)).map(s => `<button class="btn small" data-bid="hokm" data-s="${s}">حكم ${SUIT_IC[s]}</button>`).join("")}
+      ${g.asked >= 2 && !g.bid ? `<button class="btn small ghost" data-bid="ashkal">🔁 أشكال</button>` : ""}
+      <button class="btn small ghost" data-bid="pass">بس</button></div>` : "";
+    const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres"><b>${g.res.mode === "sun" ? "صن" : "حكم"}</b><span>لنا +${ar(g.res.pts[myT])}</span><span>لهم +${ar(g.res.pts[1 - myT])}</span>${g.res.note ? `<i>${esc(g.res.note)}</i>` : ""}${isHost() && g.phase === "res" ? `<button class="btn small" id="bNext">التوزيعة الجاية</button>` : ""}</div>` : "";
+    const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(52, (HW - 70) / (hn - 1)) : 0;
+    const fan = k => { const d = k - (hn - 1) / 2, r = d * 3.2; return `--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
+    V.innerHTML = `<section class="bal">${statusBar()}
+      <div class="btop"><div class="bsc"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
+      <div class="btable">${tableSVG(myLook().t)}
+        ${ord.map((u, k) => seat(k)).join("")}
+        <div class="btrick">${bidding ? `<span class="bshown">${face(g.shown)}<i>ورقة الشراء</i></span>` : trick}</div>
+        ${g.prj?.length && g.tricks <= 2 ? `<span class="bprj">📣 ${g.prj.map(x => `${esc(pname(ord[x.k]))}: ${PRJ_AR[x.t]}`).join(" · ")}</span>` : ""}
+        ${res}
+      </div>
+      <div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
+      <p class="ulast">${esc(g.last || "")}</p>
+      ${bidBtns}
+      ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
+      <div class="chips center"><button class="chip" id="bLook" aria-pressed="${look === "najdi"}">🎴 شكل الورق: ${look === "najdi" ? "نجدي" : "كلاسيك"}</button></div>
+      <details class="jrules"><summary>قوانين البلوت باختصار</summary><ul>
+        <li><b>الشراء</b>: صن ☀️ (بدون حكم) أو حكم بشكل ورقة الشراء، أو بس. الدور الثاني تقدر تحكم بأي شكل ثاني</li>
+        <li><b>أشكال</b>: تشتري صن لخويك</li><li>لازم تلحق الشكل، وبالحكم لو ما عندك تقطع بالحكم (إلا لو خويك ماسك اللمّة)</li>
+        <li><b>المشاريع</b> تنعلن تلقائي: سرا، خمسين، مية، أربعمية، بلوت</li><li>المشتري لازم يجيب أكثر من الخصم وإلا ينقهر، وأول فريق يوصل ${ar(BAL_WIN)} يفوز 🏆</li></ul></details>
+      <div class="foot">${leaveBtn()}</div></section>`;
+    balTimerStart();
+    onAll("[data-bid]", b => { const x = b.dataset.bid; x === "pass" ? balMove("pass") : balMove("play", "", { bid: x, suit: b.dataset.s || "" }); });
+    onAll("[data-bc]", b => {
+      const c = b.dataset.bc;
+      if (!myTurn || g.phase !== "play") return toast(g.phase === "play" ? "مو دورك" : "الحين وقت الشراء");
+      if (!ok.includes(c)) return toast("لازم تلحق الشكل" + (g.mode === "hokm" ? " أو تقطع بالحكم" : ""));
+      if (ui.bk.sel === c) { ui.bk.sel = null; return balMove("play", c); }
+      ui.bk.sel = c; render(false);
+    });
+    on("bNext", "click", () => balMove("play"));
+    on("bLook", "click", () => { store.set("balLook", look === "najdi" ? "classic" : "najdi"); render(false); });
+    onAll("[data-pf]", b => showProfile(b.dataset.pf));
+  },
+
+  balend() {
+    const g = balState() || {}, w = g.winner, team = w != null ? (g.order || []).filter((u, k) => teamOf(k) === w) : [];
+    V.innerHTML = `<section>${statusBar()}
+      <div class="card safe pop uwin"><span class="eyebrow">انتهى البلوت</span>
+        ${w != null ? `<div class="jwin">${team.map(u => avatar(pname(u), prof(u)?.photo, 72)).join("")}</div><span class="big" dir="ltr">${team.map(u => at(pname(u))).join(" و ")}</span><span class="hint">فازوا بالبلوت 🏆 ${ar(g.score?.[w] || 0)} - ${ar(g.score?.[1 - w] || 0)}</span>` : `<span class="big">انتهى</span><span class="hint">${esc(g.last || "")}</span>`}</div>
+      <div class="field"><span class="label">النقاط</span>${scoreBoard(order())}</div>
+      <div class="foot">${shareBtn()}${isHost() ? `<button class="btn" id="again">صكّة جديدة</button><button class="btn ghost" id="lobby">رجوع للغرفة</button>` : `<p class="hint center">المضيف يبدأ الجولة الجاية.</p>`}${leaveBtn()}</div></section>`;
+    on("again", "click", startBal);
+    on("lobby", "click", () => setRoom({ phase: "lobby" }));
   },
 
   jakend() {
