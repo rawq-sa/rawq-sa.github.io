@@ -163,7 +163,10 @@ function jPath(s, i, r0, r1, rot) {
   else return null;
   return P;
 }
-export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, prevPos = null, turnSeat = null, dests = [], left = null } = {}) {
+export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, anim = null, turnSeat = null, dests = [], left = null } = {}) {
+  // حركة الكورة تتحسب من وقت ما بدت، فلو انعادت الشاشة تكمل من مكانها (ما تنقز)
+  if (anim) prev = anim.prev || {};
+  const prevPos = anim?.pos || null, T = anim?.t || 0;
   const seats = jSeats(g), now = {}, AR = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
   const GOLD = "#e6c06a";
   let s = `<svg class="jsvg" viewBox="0 0 440 440" direction="ltr" style="direction:ltr" role="img" aria-label="لوح الجكارو">
@@ -203,20 +206,22 @@ export function jBoard(g, { rot = 0, cand = new Set(), pick = null, prev = {}, p
     const key = k + ":" + i, r = g.pos[k][i], [x, y] = jSpot(k, i, r, rot), p = prev[key];
     now[key] = [x, y];
     const dx = p ? p[0] - x : 0, dy = p ? p[1] - y : 0;
-    let moved = Math.abs(dx) + Math.abs(dy) > .5, anim = "";
-    const path = moved && prevPos?.[k] ? jPath(k, i, prevPos[k][i], r, rot) : null;
+    const shifted = Math.abs(dx) + Math.abs(dy) > .5;
+    let moved = shifted && T < .6, an = "";
+    const path = shifted && prevPos?.[k] ? jPath(k, i, prevPos[k][i], r, rot) : null;
     if (path) {
       // نط خفيف بين كل خانة والثانية
       const V = [`${f1(dx)},${f1(dy)}`]; let px = p[0], py = p[1];
       path.forEach(([qx, qy]) => { V.push(`${f1((px + qx) / 2 - x)},${f1((py + qy) / 2 - y - 6)}`, `${f1(qx - x)},${f1(qy - y)}`); px = qx; py = qy; });
-      anim = `<animateTransform attributeName="transform" type="translate" values="${V.join(";")}" dur="${(path.length * .16).toFixed(2)}s" begin="0s" fill="freeze"/>`;
+      const dur = path.length * .22;
+      if (T < dur) an = `<animateTransform attributeName="transform" type="translate" values="${V.join(";")}" dur="${dur.toFixed(2)}s" begin="${(-T).toFixed(2)}s" fill="freeze"/>`;
       moved = false;
     }
     const cl = `jm${cand.has(key) ? " can" : ""}${pick === key ? " pick" : ""}`;
     // كم باقي للدار (لكوراتي اللي على المسار)
     const rem = k === left && r >= 0 && r < TRACK ? TRACK - r : 0;
     const badge = rem ? `<g transform="translate(0 -13.5)"><rect x="-8.5" y="-6" width="17" height="11" rx="5.5" fill="#000" fill-opacity=".82" stroke="${GOLD}" stroke-width=".8"/><text y="2.6" text-anchor="middle" font-family="Tajawal,system-ui,sans-serif" font-weight="800" font-size="8.5" fill="#ffe7a3">${AR(rem)}</text></g>` : "";
-    marbles.push({ z: cand.has(key) || pick === key ? 2 : rem ? 1 : 0, h: `<g class="${cl}" data-m="${key}" transform="translate(${f1(x)} ${f1(y)})"><g class="${moved ? "mv" : ""}" style="${moved ? `--dx:${f1(dx)}px;--dy:${f1(dy)}px` : ""}">${anim}
+    marbles.push({ z: cand.has(key) || pick === key ? 2 : rem ? 1 : 0, h: `<g class="${cl}" data-m="${key}" transform="translate(${f1(x)} ${f1(y)})"><g class="${moved ? "mv" : ""}" style="${moved ? `--dx:${f1(dx)}px;--dy:${f1(dy)}px` : ""}">${an}
       ${cand.has(key) || pick === key ? `<circle r="10.5" class="ring" fill="none" stroke="#fff" stroke-width="2"/>` : ""}
       <circle r="12" fill="transparent"/><ellipse cx="1" cy="3.2" rx="5.6" ry="2.5" fill="#000" opacity=".5"/><circle cy="-.5" r="6.6" fill="url(#jM${k})"/><ellipse cx="-2.2" cy="-3.2" rx="2.2" ry="1.4" fill="#fff" opacity=".85" transform="rotate(-30 -2.2 -3.2)"/>${badge}</g></g>` });
   }

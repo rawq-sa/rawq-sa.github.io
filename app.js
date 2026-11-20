@@ -15,7 +15,7 @@ import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } fr
 import { ICONS } from "./icons.js?v=32";
 import { DECO, fxLayer } from "./deco.js?v=1";
 import { UCOLORS, buildDeck, canPlay, cardName, cardSVG, tableSVG, TABLES, BACKS, seatSpots, isWild, cColor, cVal } from "./uno.js?v=38";
-import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=15";
+import { jDeck, jMoves, jApply, jWinner, jTeamOf, jRank, jHelp, jKey, jCtrl, jBoard, jCardSVG, jHomeCount, JCOL } from "./jakaro.js?v=16";
 
 /* ================= helpers ================= */
 const ar = n => String(n).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
@@ -875,7 +875,7 @@ async function resyncRoom(why = "") {
 function enterRoom(code, keep = false) {
   roomCode = code; if (!keep) { room = null; votes = {}; secret = null; ui.shownRound = 0;
     // كل غرفة جديدة تبدأ نظيفة: الجولات ترجع من ١، فما نخلي شي محفوظ من غرفة قبل
-    ["hAns", "hDoneRound", "hStop", "hDoneCount", "wDraft", "wSent", "tDraft", "tSent", "tAdv", "unoTrail", "unoSeen", "jk", "jPrev", "jShuf", "jDeal", "jSeen", "dReplayed", "peek", "dGuessState"].forEach(k => ui[k] = null); }
+    ["hAns", "hDoneRound", "hStop", "hDoneCount", "wDraft", "wSent", "tDraft", "tSent", "tAdv", "unoTrail", "unoSeen", "jk", "jPrev", "jShuf", "jDeal", "jAnim", "jSeen", "dReplayed", "peek", "dGuessState"].forEach(k => ui[k] = null); }
   sub("room", onSnapshot(doc(db, "rooms", code), s => {
     if (!s.exists()) { exitRoomLocal("انتهت الغرفة"); return; }
     const prevPhase = room?.phase; room = s.data();
@@ -1349,8 +1349,10 @@ function jakAdvance(g, st, from) {
   for (let i = 1; i <= n; i++) { const j = (from + i) % n; if ((st.hands[ord[j]] || []).length) { nx = j; break; } }
   if (nx < 0) {
     if (st.deck.length < 4 * n) { st.deck = shuffle([...st.deck, ...st.discard]); st.discard = []; g.shuf = (g.shuf || 0) + 1; g.dealt = "🔀 تخبّص الورق "; }
-    ord.forEach(x => st.hands[x] = st.deck.splice(0, 4));
-    g.deal = (g.deal || 1) + 1; g.dealt += "🃏 توزّع ٤ أوراق جديدة للكل";
+    // آخر توزيعة من الكومة تكون ٥ أوراق (مثل الواقع)
+    const per = st.deck.length - 4 * n < 4 * n ? Math.min(5, Math.floor(st.deck.length / n)) : 4;
+    ord.forEach(x => st.hands[x] = st.deck.splice(0, per));
+    g.deal = (g.deal || 1) + 1; g.dealt += `🃏 توزّع ${ar(per)} أوراق جديدة للكل`;
     nx = (from + 1) % n; ch = [...ord];
   }
   g.turn = nx; g.deck = st.deck.length; g.cnt = jakCounts(g, st);
@@ -4752,7 +4754,7 @@ const ROOM_VIEWS = {
     // وين بتوصل كل كورة بالورقة المختارة
     const dests = J.card && (!J.a || (!R7 && !RJ)) ? L.filter(m => m.t !== "s" && m.t !== "7" && m.t !== "x" && (!J.a || ak(m) === J.a)).map(m => { const [s0, i0] = m.a, r0 = g.pos[s0][i0]; return [s0, m.t === "o" ? 0 : m.t === "b" ? (r0 - m.k + 76) % 76 : r0 + m.k]; }) : [];
     const rot = playing ? mySeat : 0;
-    const { svg, now } = jBoard(g, { rot, cand, dests, left: playing ? jCtrl(g, mySeat) : null, pick: J.a, prev: ui.jPrev?.round === room.round ? ui.jPrev.p : {}, prevPos: ui.jPrev?.round === room.round && ui.jPrev.v !== g.v ? ui.jPrev.pos : null, top: g.top, turnSeat: g.winner == null ? g.seats[turnU] : null });
+    const { svg, now } = jBoard(g, { rot, cand, dests, left: playing ? jCtrl(g, mySeat) : null, pick: J.a, prev: ui.jPrev?.round === room.round ? ui.jPrev.p : {}, anim: (() => { const A = ui.jAnim; if (A?.round !== room.round || A.v !== g.v) { if (ui.jPrev?.round === room.round && ui.jPrev.v !== g.v) ui.jAnim = { round: room.round, v: g.v, pos: ui.jPrev.pos, prev: ui.jPrev.p, t0: performance.now() }; else return null; } return { pos: ui.jAnim.pos, prev: ui.jAnim.prev, t: (performance.now() - ui.jAnim.t0) / 1000 }; })(), top: g.top, turnSeat: g.winner == null ? g.seats[turnU] : null });
     ui.jPrev = { round: room.round, p: now, v: g.v, pos: JSON.parse(JSON.stringify(g.pos)) };
     // تخبيص وتوزيع (حركة مثل الواقع)
     const shufNow = g.shuf && ui.jShuf?.r === room.round && ui.jShuf.n !== g.shuf;
@@ -4769,8 +4771,10 @@ const ROOM_VIEWS = {
       : RJ && J.a ? "اختار كورة الخصم اللي تبي تبدّل معها"
       : RJ ? "اختار كورتك اللي تبي تبدّلها"
       : jRank(J.card) === "5" ? "اختار كورتك أو كورة خويك"
-      : "اختار الكورة اللي تبي تحركها";
+      : `${jRank(J.card)}: ${jHelp(J.card)} · اختار الكورة`;
     const teamOf = u => jTeamOf(g, g.seats[u]);
+    const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, jstep = hn > 1 ? Math.min(70, (HW - 74) / (hn - 1)) : 0, jda = Math.min(6, 30 / Math.max(hn, 1));
+    const jfan = k => { const d = k - (hn - 1) / 2, r = d * jda; return `--x:${(d * jstep).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .12).toFixed(1)}px;z-index:${k + 1}`; };
     V.innerHTML = `<section class="jak">
       ${statusBar()}
       <div class="jplayers">${ord.map(u => { const s = g.seats[u]; return `<button class="jp ${u === turnU && g.winner == null ? "turn" : ""}" style="--c:${JCOL[s].fill}" data-pf="${esc(u)}">
@@ -4780,12 +4784,13 @@ const ROOM_VIEWS = {
       ${ctrl != null && ctrl !== mySeat ? `<p class="jnote">خلّصت كوراتك 👑 الحين تلعب بكورات خويك</p>` : ""}
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="jpile"><span class="jdeck ${shufNow ? "shuf" : ""}" title="الكومة">${jCardSVG(null)}${jCardSVG(null)}<b>${ar(g.deck ?? 0)}</b></span>${g.top ? jCardSVG(g.top, 'class="jtop"') : ""}</span><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 8 ? "hot" : ""}" id="jSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
       ${g.winner != null ? "" : `<div class="utime ${myTurn ? "mine" : ""}" aria-hidden="true"><i style="--s:${(tm.left / tm.dur).toFixed(3)};--d:${tm.left.toFixed(2)}s"></i></div>`}
-      ${steps.length ? `<div class="jsteps">${steps.map(k => `<button class="chip" data-k="${k}">${ar(k)}${R7 && k === 7 ? " كلها" : ""}</button>`).join("")}<button class="chip ghost" data-k="x">إلغاء</button></div>` : ""}
       <p class="ulast">${esc(g.last || "")}</p>
       ${isHost() ? "" : `<p class="hint center uhost" id="jHost" hidden>📵 يمكن المضيف طالع من اللعبة، الدور بيمشي أول ما يرجع</p>`}
-      ${playing ? `<div class="jhand ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => { const ok = movesOf(c).length > 0; return `<button style="--i:${ci}" class="jcard ${dealNow ? "dealt" : ""} ${J.card === c ? "on" : ""} ${myTurn && !ok && anyMove ? "no" : ""}" data-card="${esc(c)}">${jCardSVG(c)}<span>${jHelp(c)}</span></button>`; }).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
+      ${playing ? `<div class="jdock">`+``:``}
+      ${steps.length ? `<div class="jsteps">${steps.map(k => `<button class="chip" data-k="${k}">${ar(k)}${R7 && k === 7 ? " كلها" : ""}</button>`).join("")}<button class="chip ghost" data-k="x">إلغاء</button></div>` : ""}
       ${myTurn && !anyMove && J.card && !waiting ? `<button class="btn" id="jBurn">احرق هالورقة 🔥</button>` : ""}
       ${live && J.card && jRank(J.card) === "10" && !J.a ? `<button class="btn" id="jTen">🔥 احرق على @${esc(pname(ord[(g.turn + 1) % ord.length]))} (يختار ورقة يحرقها ويروح دوره)</button><p class="hint center">أو اختار كورة تمشي ${ar(10)}</p>` : ""}
+      ${playing ? `<div class="uhand jfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => { const ok = movesOf(c).length > 0; return `<button style="${jfan(ci)};--i:${ci}" class="ucard jc ${dealNow ? "dealt" : ""} ${J.card === c ? "sel" : ""} ${myTurn && ok ? "ok" : myTurn && anyMove ? "no" : ""}" data-card="${esc(c)}" aria-label="${esc(jHelp(c))}">${jCardSVG(c)}</button>`; }).join("")}</div></div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules"><summary>قوانين الجكارو باختصار</summary><ul>
         <li><b>A</b>: تطلّع كورة من البيت، أو تمشي ١ أو ١١</li>
         <li><b>K</b>: تطلّع كورة من البيت، أو تمشي ١٣</li>
