@@ -1509,6 +1509,7 @@ const BAL = { st: null, processed: {}, busy: false, queue: [] };
 const balState = () => room?.bal || null;
 const BAL_T = 15, BAL_WIN = 152;
 function balDeal(g, st) {
+  g.sawa = -1;
   const deck = shuffle(bDeck());
   st.hands = {}; g.order.forEach(u => st.hands[u] = deck.splice(0, 5));
   g.shown = deck.pop(); st.deck = deck; st.prjc = null;
@@ -1631,6 +1632,7 @@ function balApply(u, mv, g, st) {
   const w = trickWinner(g, g.trick), t = teamOf(w);
   g.ab[t] += g.trick.reduce((s, x) => s + bAbnat(g, x.c), 0); g.won[t]++; g.tricks++;
   g.lastTrick = g.trick; g.trick = []; g.turn = w;
+  g.sawa = -1; if (g.tricks >= 1 && g.tricks <= 6) { try { if (sawaOk(g, ord.map(x => [...(st.hands[x] || [])]), w)) g.sawa = w; } catch (e) {} }
   g.last += ` · اللمّة لـ ${atn(pname(ord[w]))}`;
   if (g.tricks === 1) { balAnnounce(g, st); if (g.prj.length) g.last += " · 📣 " + g.prj.map(x => `${atn(pname(ord[x.k]))} ${PRJ_AR[x.t]}`).join("، "); }
   if (g.tricks === 8) { g.ab[t] += 10; balEnd(g); }
@@ -5518,7 +5520,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         <p class="ulast">${esc(g.last || "")}</p>
       </div>
 ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحين <button class="btn small" id="autoBack">ارجع العب بنفسك</button></div>` : ""}
-      ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${myTurn && !waiting && g.phase === "play" && !g.trick.length && g.tricks >= 1 && g.tricks <= 6 ? `<button class="bbid gold bsawa" id="bSawa">${ui.sawaArm === g.v ? "متأكد؟" : "سوا"}</button>` : ""}${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>`}
+      ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${myTurn && !waiting && g.phase === "play" && !g.trick.length && g.tricks >= 1 && g.tricks <= 6 && g.sawa === myK ? `<button class="bbid gold bsawa" id="bSawa">${ui.sawaArm === g.v ? "متأكد؟" : "سوا"}</button>` : ""}${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>`}
       
       ${playing && myTurn && g.phase === "play" ? (() => {
         const first = g.tricks === 0 && !g.trick.some(x => x.k === myK);
@@ -5530,7 +5532,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         const btns = [...my.map(x => `<button class="bdec ${ui.bDec?.has(x.t) ? "on" : ""}" data-dec="${x.t}">📣 ${PRJ_AR[x.t]}</button>`), balNow ? `<button class="bdec ${ui.bBal ? "on" : ""}" data-dec="baloot">📣 بلوت</button>` : ""].join("");
         if (!btns) return "";
         const n = (ui.bDec?.size || 0) + (ui.bBal ? 1 : 0);
-        return `<div class="bacts"><button class="bact ${ui.bPrjOpen ? "on" : ""}" id="bPrj">📣 المشاريع${n ? ` <b>${ar(n)}</b>` : ""}</button></div>${ui.bPrjOpen ? `<div class="bdecs">${btns}<span class="hint">اختار مشروعك قبل ما ترمي ورقتك، وإلا يروح عليك</span></div>` : ""}`;
+        return `<div class="bprjbar"><b>📣 عندك مشروع! اضغطه عشان تعلنه</b><div class="bdecs">${btns}</div><span class="hint">لازم تختاره قبل ما ترمي ورقتك، وإلا يروح عليك</span></div>`;
       })() : ""}
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"} ${dealA ? "deal" : ""}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules" hidden><summary>قوانين البلوت باختصار</summary><ul>
