@@ -4990,14 +4990,15 @@ function votedCount() {
 }
 const statusBar = () => `<div class="status"><span>الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""}</span><span>${room.game === "kal" && room.k ? `الكلمة ${ar(room.k.idx || 1)} من ${ar(room.k.n || 10)}` : `الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}`}</span></div>`;
 const BSND = { "حكم": "hokm", "صن": "sun", "بس": "pass", "ولا": "wala", "أشكال": "ashkal", "سرا": "sira", "خمسين": "50", "مية": "100", "أربعمية": "400", "بلوت": "baloot", "سوا": "sawa" };
-const sndOn = () => store.get("snd", "1") !== "0", sndA = {};
-const sndEl = n => sndA[n] ||= Object.assign(new Audio(`./snd/bal_${n}.mp3`), { preload: "auto" });
-document.addEventListener("pointerdown", () => { Object.values(BSND).forEach(n => { const a = sndEl(n); a.muted = true; a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; }); }); }, { once: true, capture: true });
+const sndOn = () => store.get("snd", "1") !== "0", sndB = {};
+const getAC = () => { AC ||= new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC; };
+const sndBuf = n => sndB[n] ||= fetch(`./snd/bal_${n}.mp3`).then(r => r.arrayBuffer()).then(b => new Promise((ok, no) => getAC().decodeAudioData(b, ok, no))).catch(() => { delete sndB[n]; return null; });
+document.addEventListener("pointerdown", () => { try { const c = getAC(), s = c.createBufferSource(); s.buffer = c.createBuffer(1, 1, 22050); s.connect(c.destination); s.start(0); } catch (e) {} }, { capture: true });
 let sayKey = null, AC = null;
 function sfx(kind) {
   if (!sndOn()) return;
   try {
-    AC ||= new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
+    getAC();
     const t = AC.currentTime, out = AC.createGain(); out.connect(AC.destination);
     if (kind === "card" || kind === "sweep") {
       const len = kind === "card" ? .07 : .22, b = AC.createBuffer(1, Math.floor(AC.sampleRate * len), AC.sampleRate), d = b.getChannelData(0);
@@ -5019,9 +5020,10 @@ function playFx(g, myT) {
 }
 function playSay(g) {
   const key = g.say ? `${g.v}|${g.say.k}|${g.say.t}` : "", first = sayKey === null; if (key === sayKey) return; sayKey = key;
+  if (first) Object.values(BSND).forEach(sndBuf);
   if (first || !g.say || !sndOn()) return;
   const ws = g.say.t.replace(/[^\u0600-\u06FF\s]/g, " ").split(/\s+/).filter(w => BSND[w]); let i = 0;
-  const next = () => { if (i >= ws.length) return; const a = sndEl(BSND[ws[i++]]); a.onended = next; a.currentTime = 0; a.play().catch(() => {}); }; next();
+  const next = () => { if (i >= ws.length) return; sndBuf(BSND[ws[i++]]).then(buf => { if (!buf) return next(); try { const c = getAC(), s = c.createBufferSource(); s.buffer = buf; s.connect(c.destination); s.onended = next; s.start(); } catch (e) {} }); }; next();
 }
 const RBACK = `<svg viewBox="0 0 34 50" aria-hidden="true"><rect x=".5" y=".5" width="33" height="49" rx="4" fill="#fff"/><rect x="2.5" y="2.5" width="29" height="45" rx="3" fill="#2a1a4f"/><rect x="2.5" y="2.5" width="29" height="22" rx="3" fill="#fff" fill-opacity=".05"/><rect x="4.5" y="4.5" width="25" height="41" rx="2" fill="none" stroke="#f2b134" stroke-opacity=".45" stroke-width=".6"/><text x="17" y="29" text-anchor="middle" font-family="RawqRuqaa, serif" font-size="11" fill="#f2b134">روق</text></svg>`;
 const gameBar = (extra = "") => `<div class="gbar"><span class="gb-info">الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""} · الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}</span><span class="gb-btns">${extra}<button class="gi gchat ${chatUnread() ? "dot" : ""}" id="gChat" aria-label="شات الغرفة">💬</button><button class="gi" id="gRx" aria-label="رياكشن">😂</button><button class="gi" id="gRules" aria-label="القوانين">؟</button><button class="gx" id="gExit">${isHost() ? "إنهاء" : "خروج"} ✕</button></span></div>`;
