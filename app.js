@@ -4359,7 +4359,7 @@ function iapShop() {
       const row = it => `<div class="srow ${it.hot ? "hot" : ""}"><div class="s-pv">${pvOf(it)}</div><div class="srow-t"><b>${esc(it.name)}</b><span class="s-desc">${esc(it.desc)}</span></div>${buyBtn(it)}</div>`;
       const card = it => `<div class="sitem">${it.tag ? `<span class="s-hot">${it.tag}</span>` : ""}<div class="s-pv">${pvOf(it)}</div><b class="s-name">${esc(it.name)}</b><span class="s-desc">${esc(it.desc)}</span>${buyBtn(it)}</div>`;
       const grid = c => { const xs = list.filter(x => catOf(x.id) === c); return xs.length ? `<div class="shop sgrid">${xs.map(card).join("")}</div>` : ""; };
-      const vipSec = `${vipCard}${list.filter(x => x.id === "king" || x.id === "starter").map(row).join("")}`;
+      const vipSec = `${list.filter(x => x.id === "king").map(row).join("")}${vipCard}${list.filter(x => x.id === "starter").map(row).join("")}`;
       const tabs = `<div class="scats" role="tablist">${CATS.filter(c => c[0] === "all" || list.some(x => catOf(x.id) === c[0])).map(([k, t]) => `<button role="tab" data-scat="${k}" aria-selected="${k === cat}">${t}</button>`).join("")}</div>`;
       const body = cat === "all" ? vipSec + CATS.slice(2).map(([k, t]) => list.some(x => catOf(x.id) === k) ? `<h3 class="s-sec">${t}</h3>${grid(k)}` : "").join("") : cat === "vip" ? vipSec : grid(cat);
       return tabs + `<div class="sbody">${body}</div>`;
