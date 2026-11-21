@@ -4335,6 +4335,24 @@ async function iapRestore() {
   } catch (e) { console.error(e); toast("ما زبط الاسترجاع، جرّب مرة ثانية"); }
   iapBusy = null; render(false);
 }
+function iapDetail(id) {
+  const it = IAP_LIST.find(x => x.id === id); if (!it) return;
+  const owned = new Set(me.owned || []), price = iapPrices?.[IAP_PID(id)] || `${it.sar} ر.س`;
+  const single = g => IAP_LIST.find(x => x.g?.length === 1 && x.g[0] === g && x.id !== "king" && x.id !== "starter");
+  let grants = (it.g || []).filter(g => g !== "king" && g !== "starter"); const extra = []; let addSum = 0;
+  if (id === "king") { grants = [...new Set(IAP_LIST.filter(x => x.g && x.id !== "king" && x.id !== "starter").flatMap(x => x.g))]; extra.push("👑 شارة الملك جنب اسمك", "⭐ VIP سنة كاملة · خبرة ×١٫٥"); addSum = 199.99; }
+  if (id === "starter") { grants = ["f_gold", "b_royal"]; extra.push("⭐ VIP أسبوع"); }
+  if (id.startsWith("vip.")) extra.push(...it.desc.split("+").map(x => "✓ " + x.trim()));
+  const parts = grants.map(single), sum = parts.every(Boolean) && grants.length > 1 ? parts.reduce((a, x) => a + +x.sar, 0) + addSum : 0;
+  const have = it.g ? it.g.every(g => owned.has(g)) : false;
+  sheet(`<div class="sd"><div class="sd-h"><div class="s-pv">${typeof it.pv === "string" ? it.pv : shopPreview(it.pv || { grants: it.g })}</div><div><b>${esc(it.name)}</b><span class="hint">${esc(it.desc)}</span></div></div>
+    ${extra.length ? `<ul class="sd-ex">${extra.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    ${grants.length > 1 || id === "starter" ? `<span class="label">وش يجيك معها (${ar(grants.length)})</span><div class="sd-grid">${grants.map(g => `<div class="sd-it">${shopPreview({ grants: [g] })}<span>${esc(single(g)?.name || "")}</span></div>`).join("")}</div>` : ""}
+    ${sum > +it.sar ? `<p class="hint center">لو تشتريها قطعة قطعة تكلّفك ${ar(sum.toFixed(2))} ر.س</p>` : ""}
+    ${have ? `<span class="s-own">✓ عندك</span>` : `<button class="btn" id="sdBuy">اشترِ · ${esc(price)}</button>`}
+    <button class="btn ghost small" data-close>إغلاق</button></div>`);
+  document.getElementById("sdBuy")?.addEventListener("click", () => { document.getElementById("gSheet")?.remove(); iapBuy(id); });
+}
 function iapShop() {
   const p = { ...(prof(me.uid) || {}), owned: me.owned || [], vipUntil: me.vipUntil || 0, username: me.username }, mine = new Set(p.owned), vip = vipOn(p);
   iapLoadPrices();
@@ -4353,11 +4371,11 @@ function iapShop() {
       const buyBtn = (it, cls = "") => haveOf(it) ? `<span class="s-own">✓ عندك</span>` : `<button class="btn small ${cls}" data-iap="${it.id}" ${iapBusy ? "disabled" : ""}>${iapBusy === it.id ? "لحظة…" : `<span class="s-price">${esc(priceOf(it))}</span>`}</button>`;
       const vips = list.filter(x => x.id.startsWith("vip.")), pick = vips.find(x => x.id === ui.vipPick) || vips.find(x => x.hot) || vips[0];
       const LBL = { "vip.month": "شهر", "vip.quarter": "٣ شهور 🔥", "vip.year": "سنة · وفّر ٤٤٪" };
-      const vipCard = pick ? `<div class="svip"><div class="svip-h"><div class="s-pv">${pvOf(pick)}</div><div><b>VIP روق</b><span class="s-desc">${esc(pick.desc)}</span></div></div>
+      const vipCard = pick ? `<div class="svip" data-sd="${pick.id}"><div class="svip-h"><div class="s-pv">${pvOf(pick)}</div><div><b>VIP روق</b><span class="s-desc">${esc(pick.desc)}</span></div></div>
         <div class="svip-opts" role="radiogroup" aria-label="مدة VIP">${vips.map(x => `<button type="button" class="svo ${x === pick ? "on" : ""}" role="radio" aria-checked="${x === pick}" data-vp="${x.id}"><span>${LBL[x.id] || esc(x.name)}</span><b>${esc(priceOf(x))}</b></button>`).join("")}</div>
         <button class="btn" data-iap="${pick.id}" ${iapBusy ? "disabled" : ""}>${iapBusy === pick.id ? "لحظة…" : `اشترك · ${esc(priceOf(pick))}`}</button></div>` : "";
-      const row = it => `<div class="srow ${it.hot ? "hot" : ""}"><div class="s-pv">${pvOf(it)}</div><div class="srow-t"><b>${esc(it.name)}</b><span class="s-desc">${esc(it.desc)}</span></div>${buyBtn(it)}</div>`;
-      const card = it => `<div class="sitem">${it.tag ? `<span class="s-hot">${it.tag}</span>` : ""}<div class="s-pv">${pvOf(it)}</div><b class="s-name">${esc(it.name)}</b><span class="s-desc">${esc(it.desc)}</span>${buyBtn(it)}</div>`;
+      const row = it => `<div class="srow ${it.hot ? "hot" : ""}" data-sd="${it.id}"><div class="s-pv">${pvOf(it)}</div><div class="srow-t"><b>${esc(it.name)}</b><span class="s-desc">${esc(it.desc)}</span></div>${buyBtn(it)}</div>`;
+      const card = it => `<div class="sitem" data-sd="${it.id}">${it.tag ? `<span class="s-hot">${it.tag}</span>` : ""}<div class="s-pv">${pvOf(it)}</div><b class="s-name">${esc(it.name)}</b><span class="s-desc">${esc(it.desc)}</span>${buyBtn(it)}</div>`;
       const grid = c => { const xs = list.filter(x => catOf(x.id) === c); return xs.length ? `<div class="shop sgrid">${xs.map(card).join("")}</div>` : ""; };
       const vipSec = `${list.filter(x => x.id === "king").map(row).join("")}${vipCard}${list.filter(x => x.id === "starter").map(row).join("")}`;
       const tabs = `<div class="scats" role="tablist">${CATS.filter(c => c[0] === "all" || list.some(x => catOf(x.id) === c[0])).map(([k, t]) => `<button role="tab" data-scat="${k}" aria-selected="${k === cat}">${t}</button>`).join("")}</div>`;
@@ -4368,6 +4386,7 @@ function iapShop() {
     <p class="hint center">الدفع عن طريق حساب آبل. اشتراكات VIP ما تتجدد لحالها، وتقدر تمددها متى ما تبي.</p>
   </section>`;
   onAll("[data-iap]", b => iapBuy(b.dataset.iap));
+  V.querySelectorAll("[data-sd]").forEach(el => el.addEventListener("click", e => { if (e.target.closest("[data-iap],[data-vp],button")) return; iapDetail(el.dataset.sd); }));
   onAll("[data-scat]", b => { ui.shopCat = b.dataset.scat; render(false); window.scrollTo(0, 0); });
   onAll("[data-vp]", b => { ui.vipPick = b.dataset.vp; render(false); });
   on("iapRestore", "click", iapRestore);
