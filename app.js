@@ -4756,7 +4756,7 @@ VIEWS.profile = () => {
       <div class="li"><span class="nm" dir="ltr">@${esc(me.username)}</span><button class="btn small ghost" id="copy">انسخ</button>${isOwner() ? "" : `<button class="btn small ghost" id="rename">غيّر</button>`}</div>
       <p class="hint">أرسله لأصحابك عشان يضيفونك.</p></div>
 
-    <div class="foot">${IN_APP ? `<a class="btn ${store.get("rateDone", false) ? "ghost" : ""}" id="rateApp" href="itms-apps://apps.apple.com/app/id6835195359?action=write-review">${store.get("rateDone", false) ? "شكرًا على تقييمك 💛" : "قيّم روق ⭐ وساعدنا ننتشر"}</a>` : `<a class="btn" href="https://apps.apple.com/app/id6835195359" target="_blank" rel="noopener">حمّل روق من الآب ستور ⭐</a>`}<button class="btn ghost" id="tour">شرح اللعبة</button><button class="btn ghost" id="switchAcc">🔄 بدّل الحساب</button><button class="btn ghost" id="out">تسجيل خروج</button>
+    <div class="foot">${IN_APP ? `<a class="btn ${store.get("rateDone", false) ? "ghost" : ""}" id="rateApp" href="itms-apps://apps.apple.com/app/id6835195359?action=write-review">${store.get("rateDone", false) ? "شكرًا على تقييمك 💛" : `<svg class="apl" viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span>قيّم روق في App Store</span><i class="stars">★★★★★</i>`}</a>` : `<a class="btn" href="https://apps.apple.com/app/id6835195359" target="_blank" rel="noopener"><svg class="apl" viewBox="0 0 384 512" aria-hidden="true"><path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span>حمّل روق من App Store</span></a>`}<button class="btn ghost" id="tour">شرح اللعبة</button><button class="btn ghost" id="switchAcc">🔄 بدّل الحساب</button><button class="btn ghost" id="out">تسجيل خروج</button>
       <div class="row legal"><a class="link" href="terms.html" target="_blank" rel="noopener">شروط الاستخدام</a><a class="link" href="privacy.html" target="_blank" rel="noopener">سياسة الخصوصية</a>${isOwner() ? "" : `<button class="link danger-link" id="delAcc">احذف حسابي</button>`}</div></div></section>`;
   on("tour", "click", () => { ui.slide = 0; go("welcome"); });
   on("delAcc", "click", openDeleteAccount);
@@ -4837,20 +4837,24 @@ function pfLayout() {
   const fLooks = F.find(f => lab(f).includes("أشكالك")), fDeco = F.find(f => lab(f).includes("زينة")), fAch = F.find(f => lab(f).includes("إنجازات")),
     fWrap = F.find(f => f.querySelector("#wrapBtn")), fUser = F.find(f => lab(f) === "يوزرك"), fBio = F.find(f => lab(f).includes("نبذة")), fPush = F.find(f => lab(f).includes("الإشعارات"));
   if (!fLooks || !fDeco) return;
+  const favs = fDeco.querySelector(":scope > .favs"), favH = favs?.previousElementSibling?.classList.contains("hint") ? favs.previousElementSibling : null;
   const L = fLooks.querySelectorAll(":scope > .looks"), take = el => el ? [el.previousElementSibling?.classList.contains("hint") ? el.previousElementSibling : null, el].filter(Boolean) : [];
   const P = { frame: take(L[2]).slice(-1), plate: [...take(fDeco.querySelector(":scope > .nps")), ...take(fDeco.querySelector(":scope > .nss"))], table: take(L[0]).slice(-1), cards: take(L[1]).slice(-1) };
   const shop = fLooks.querySelector("#toShop");
-  const subs = { ach: [fAch], wrap: [fWrap], acct: [fUser, fBio, fPush, fDeco] }, TT = { frame: "الإطار", plate: "لوحة الاسم", table: "الطاولة", cards: "الورق" };
+  const subs = { ach: [fAch], wrap: [fWrap], acct: [fUser, fPush, fDeco] }, TT = { frame: "الإطار", plate: "لوحة الاسم", table: "الطاولة", cards: "الورق" };
   const achN = (lab(fAch).match(/\(([^)]*)\)/) || [])[1] || "";
   const w = document.createElement("div"); w.className = "pfx-wrap";
   w.innerHTML = `<div class="pfx-tabs" role="tablist">${Object.entries(TT).map(([k, t]) => `<button role="tab" data-pt="${k}">${t}</button>`).join("")}</div><div class="pfx-panel"></div>
-    <div class="pfx-list"><button class="pfx-row" data-ps="ach"><i>🎖️</i><span>إنجازاتي</span><small>${esc(achN)}</small><b>‹</b></button><button class="pfx-row" data-ps="wrap"><i>📊</i><span>ملخصي</span><small>${monName(monKey())}</small><b>‹</b></button><button class="pfx-row" data-ps="acct"><i>⚙️</i><span>حسابي</span><small>اليوزر · النبذة · الإشعارات</small><b>‹</b></button></div>`;
+    <div class="pfx-list"><button class="pfx-row" data-ps="ach"><i>🎖️</i><span>إنجازاتي</span><small>${esc(achN)}</small><b>‹</b></button><button class="pfx-row" data-ps="wrap"><i>📊</i><span>ملخصي</span><small>${monName(monKey())}</small><b>‹</b></button><button class="pfx-row" data-ps="acct"><i>⚙️</i><span>حسابي</span><small>اليوزر · الإشعارات · الزينة</small><b>‹</b></button></div>`;
   if (shop) { shop.classList.add("pfx-shop"); w.appendChild(shop); }
   const back = document.createElement("button"); back.className = "btn ghost small pfx-back"; back.textContent = "‹ رجوع";
-  S.querySelector(".pf-head").after(w, back);
+  const top = [];
+  if (fBio) { fBio.classList.add("pfx-bio"); top.push(fBio); }
+  if (favs) { const fv = document.createElement("div"); fv.className = "pfx-fav"; fv.innerHTML = `<b>🎮 لعبتي المفضلة</b>`; if (favH) { favH.classList.add("pfx-favh"); fv.appendChild(favH); } fv.appendChild(favs); top.push(fv); }
+  S.querySelector(".pf-head").after(...top, w, back);
   const pn = w.querySelector(".pfx-panel");
   const tab = t => { ui.pfTab = t; pn.replaceChildren(...P[t]); w.querySelectorAll("[data-pt]").forEach(b => b.setAttribute("aria-selected", b.dataset.pt === t)); };
-  const sub = s => { ui.pfSub = s; w.hidden = !!s; back.hidden = !s; F.forEach(f => f.hidden = !s || !subs[s].includes(f)); if (s) window.scrollTo(0, 0); };
+  const sub = s => { ui.pfSub = s; w.hidden = !!s; back.hidden = !s; top.forEach(x => x.hidden = !!s); F.forEach(f => { if (f !== fBio) f.hidden = !s || !subs[s].includes(f); }); if (s) window.scrollTo(0, 0); };
   w.querySelectorAll("[data-pt]").forEach(b => b.onclick = () => tab(b.dataset.pt));
   w.querySelectorAll("[data-ps]").forEach(b => b.onclick = () => sub(b.dataset.ps));
   back.onclick = () => sub(null);
