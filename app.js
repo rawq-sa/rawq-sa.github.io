@@ -5450,7 +5450,12 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       if (!myTurn) return toast(g.winner != null ? "انتهت اللعبة" : "مو دورك، ننتظر @" + pname(turnU));
       if (waiting) return;
       if (anyMove && !movesOf(c).length) return toast("هالورقة ما لها حركة الحين");
-      J.card = J.card === c ? null : c; J.a = null; J.k = null; render(false);
+      if (J.card === c) {
+        if (!anyMove) { ui.jk.card = null; return jakMove("pass", c); }
+        const ms = movesOf(c); if (ms.length === 1) return send(ms[0]);
+        return toast("اختار الكورة اللي تبي تحركها 👆");
+      }
+      J.card = c; J.a = null; J.k = null; render(false);
     });
     on("jBurn", "click", () => { const c = J.card; ui.jk.card = null; jakMove("pass", c); });
     on("jTen", "click", () => { const m = L.find(m => m.t === "x"); if (m) send(m); });
