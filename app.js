@@ -908,7 +908,7 @@ function enterRoom(code, keep = false) {
   roomCode = code; if (!keep) { room = null; votes = {}; secret = null; ui.shownRound = 0;
     // كل غرفة جديدة تبدأ نظيفة: الجولات ترجع من ١، فما نخلي شي محفوظ من غرفة قبل
     ["hAns", "hDoneRound", "hStop", "hDoneCount", "wDraft", "wSent", "tDraft", "tSent", "tAdv", "unoTrail", "unoSeen", "jk", "jPrev", "jShuf", "jDeal", "jAnim", "jSeen", "dReplayed", "peek", "dGuessState"].forEach(k => ui[k] = null); }
-  sub("room", onSnapshot(doc(db, "rooms", code), s => {
+  sub("room", onSnapshot(doc(db, "rooms", code), { includeMetadataChanges: true }, s => {
     if (s.metadata.fromCache) return; // الغرفة لازم تكون من السيرفر دايماً
     if (!s.exists()) { exitRoomLocal("انتهت الغرفة"); return; }
     const prevPhase = room?.phase; room = s.data();
