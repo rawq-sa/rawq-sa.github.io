@@ -4829,7 +4829,33 @@ VIEWS.profile = () => {
   on("copy", "click", () => copyText("@" + me.username, "انسخ اليوزر"));
   on("rename", "click", () => go("rename"));
   on("out", "click", async e => { if (!confirmTap(e.currentTarget)) return; await leaveRoom(true); signOut(accAuth(me.uid)).catch(() => {}); signOut(auth); });
+  try { pfLayout(); } catch (e) { console.error(e); }
 };
+function pfLayout() {
+  const S = V.querySelector("section"); if (!S?.querySelector(".pf-head")) return;
+  const F = [...S.querySelectorAll(":scope > .field")], lab = f => f.querySelector(".label")?.textContent.trim() || "";
+  const fLooks = F.find(f => lab(f).includes("أشكالك")), fDeco = F.find(f => lab(f).includes("زينة")), fAch = F.find(f => lab(f).includes("إنجازات")),
+    fWrap = F.find(f => f.querySelector("#wrapBtn")), fUser = F.find(f => lab(f) === "يوزرك"), fBio = F.find(f => lab(f).includes("نبذة")), fPush = F.find(f => lab(f).includes("الإشعارات"));
+  if (!fLooks || !fDeco) return;
+  const L = fLooks.querySelectorAll(":scope > .looks"), take = el => el ? [el.previousElementSibling?.classList.contains("hint") ? el.previousElementSibling : null, el].filter(Boolean) : [];
+  const P = { frame: take(L[2]).slice(-1), plate: [...take(fDeco.querySelector(":scope > .nps")), ...take(fDeco.querySelector(":scope > .nss"))], table: take(L[0]).slice(-1), cards: take(L[1]).slice(-1) };
+  const shop = fLooks.querySelector("#toShop");
+  const subs = { ach: [fAch], wrap: [fWrap], acct: [fUser, fBio, fPush, fDeco] }, TT = { frame: "الإطار", plate: "لوحة الاسم", table: "الطاولة", cards: "الورق" };
+  const achN = (lab(fAch).match(/\(([^)]*)\)/) || [])[1] || "";
+  const w = document.createElement("div"); w.className = "pfx-wrap";
+  w.innerHTML = `<div class="pfx-tabs" role="tablist">${Object.entries(TT).map(([k, t]) => `<button role="tab" data-pt="${k}">${t}</button>`).join("")}</div><div class="pfx-panel"></div>
+    <div class="pfx-list"><button class="pfx-row" data-ps="ach"><i>🎖️</i><span>إنجازاتي</span><small>${esc(achN)}</small><b>‹</b></button><button class="pfx-row" data-ps="wrap"><i>📊</i><span>ملخصي</span><small>${monName(monKey())}</small><b>‹</b></button><button class="pfx-row" data-ps="acct"><i>⚙️</i><span>حسابي</span><small>اليوزر · النبذة · الإشعارات</small><b>‹</b></button></div>`;
+  if (shop) { shop.classList.add("pfx-shop"); w.appendChild(shop); }
+  const back = document.createElement("button"); back.className = "btn ghost small pfx-back"; back.textContent = "‹ رجوع";
+  S.querySelector(".pf-head").after(w, back);
+  const pn = w.querySelector(".pfx-panel");
+  const tab = t => { ui.pfTab = t; pn.replaceChildren(...P[t]); w.querySelectorAll("[data-pt]").forEach(b => b.setAttribute("aria-selected", b.dataset.pt === t)); };
+  const sub = s => { ui.pfSub = s; w.hidden = !!s; back.hidden = !s; F.forEach(f => f.hidden = !s || !subs[s].includes(f)); if (s) window.scrollTo(0, 0); };
+  w.querySelectorAll("[data-pt]").forEach(b => b.onclick = () => tab(b.dataset.pt));
+  w.querySelectorAll("[data-ps]").forEach(b => b.onclick = () => sub(b.dataset.ps));
+  back.onclick = () => sub(null);
+  tab(P[ui.pfTab] ? ui.pfTab : "frame"); sub(subs[ui.pfSub] ? ui.pfSub : null);
+}
 
 /* ================= حذف الحساب ================= */
 function openDeleteAccount() {

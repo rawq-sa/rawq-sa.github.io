@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=175">
+<link rel="modulepreload" href="./app.js?v=176">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=33">
 <link rel="modulepreload" href="./uno.js?v=41">
@@ -1370,6 +1370,19 @@ video.share-img{background:#000}
 .bhist{max-height:55vh;overflow:auto;margin:10px 0}.bhist table{width:100%;border-collapse:collapse;font-size:14px;text-align:center}
 .bhist th{font-size:12px;opacity:.7;font-weight:700;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.12)}
 .bhist td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+.pfx-wrap{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.pfx-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.pfx-tabs button{height:38px;border:0;border-radius:12px;background:none;color:inherit;opacity:.6;font:inherit;font-weight:700;font-size:13.5px;cursor:pointer}
+.pfx-tabs button[aria-selected="true"]{opacity:1;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06));box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 4px 10px #0006}
+.pfx-panel{padding:12px;border-radius:20px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);overflow-x:auto;display:flex;flex-direction:column;gap:8px}
+.pfx-panel .looks,.pfx-panel .nps,.pfx-panel .nss{margin:0}
+.pfx-list{border-radius:20px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);overflow:hidden}
+.pfx-row{display:flex;align-items:center;gap:12px;width:100%;padding:15px 16px;background:none;border:0;color:inherit;font:inherit;font-size:15.5px;font-weight:700;text-align:start;cursor:pointer}
+.pfx-row+.pfx-row{border-top:1px solid rgba(255,255,255,.07)}
+.pfx-row i{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-style:normal;font-size:17px;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.12)}
+.pfx-row span{flex:1}.pfx-row small{opacity:.55;font-weight:600;font-size:13px}.pfx-row b{opacity:.4;font-size:20px}
+.pfx-shop{align-self:center}.pfx-back{align-self:flex-start;margin-top:8px}
+.pfx-wrap[hidden],.pfx-back[hidden],section>.field[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -1383,6 +1396,6 @@ video.share-img{background:#000}
   <main id="view"><div class="boot" role="status" aria-label="جاري التحميل"><div class="bt-fan"><i class="bt-c a"><img src="img/gi/imp.webp" alt=""></i><i class="bt-c c"><img src="img/gi/draw.webp" alt=""></i><i class="bt-c b"><img src="img/gi/uno.webp" alt=""></i></div><b class="bt-logo">روق</b><span class="bt-sadu"></span><span class="bt-tip">نجهّز الجلسة…</span></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=175"></script>
+<script type="module" src="./app.js?v=176"></script>
 </body>
 </html>
