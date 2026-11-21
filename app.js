@@ -1480,7 +1480,8 @@ function botTick() {
       await balLoadHost(); if (!BAL.st) return;
       const gg = room.bal, k = gg.order.indexOf(u), hand = BAL.st.hands[u] || [];
       let mv;
-      if (gg.phase === "bid1" || gg.phase === "bid2") { const b = botBalBid(gg, hand); mv = b ? { type: "play", card: "", color: JSON.stringify(b) } : { type: "pass", card: "", color: "" }; }
+      if (gg.phase === "dbl") mv = { type: "pass", card: "", color: "" };
+      else if (gg.phase === "bid1" || gg.phase === "bid2") { const b = botBalBid(gg, hand); mv = b ? { type: "play", card: "", color: JSON.stringify(b) } : { type: "pass", card: "", color: "" }; }
       else mv = { type: "play", card: botBalPlay(gg, k, hand), color: "" };
       balProcess([{ u, mv: { round: room.round, seq: (BAL.processed[u] || 0) + 1, auto: 1, ...mv } }]);
     }, 1200 + Math.random() * 900);
@@ -1535,6 +1536,8 @@ function balFinalizeBid(g, st) {
   const ord = g.order;
   ord.forEach((u, k) => { const add = k === b.k ? [g.shown, ...st.deck.splice(0, 2)] : st.deck.splice(0, 3); st.hands[u] = [...st.hands[u], ...add]; });
   g.phase = "play"; g.turn = (g.dealer + 1) % 4; g.trick = []; g.ann = []; g.cnt = Object.fromEntries(ord.map(u => [u, 8]));
+  g.mult = 1; const bt = teamOf(b.k);
+  if (b.mode === "hokm" || (g.score[bt] > 100 && g.score[1 - bt] < 100)) { g.dbl = { s: 0, t0: g.turn }; g.phase = "dbl"; g.turn = (b.k + 1) % 4; } else delete g.dbl;
   // المشاريع تنحسب من الثمان أوراق وتنعلن بعد أول لمّة
   st.prjc = ord.map((u, k) => ({ k, list: projects(g, st.hands[u]), baloot: g.mode === "hokm" && st.hands[u].includes("K" + g.trump) && st.hands[u].includes("Q" + g.trump) }));
   return [...ord];
@@ -1555,6 +1558,16 @@ function balApply(u, mv, g, st) {
     g.dealer = (g.dealer + 1) % 4; g.hand++; balDeal(g, st); g.last = `🃏 توزيعة جديدة · الشراء من ${atn(pname(ord[g.turn]))}`; g.v++; return [...ord];
   }
   if (k !== g.turn) return null;
+  if (g.phase === "dbl") {
+    const D = g.dbl || { s: 0, t0: (g.dealer + 1) % 4 }, NM = ["دبل", "ثري", "فور", "قهوة"];
+    let b = null; try { b = mv.color ? JSON.parse(mv.color) : null; } catch (e) { b = null; }
+    if (mv.type === "play" && b?.dbl && D.s < 4) {
+      D.s++; g.mult = D.s === 4 ? 5 : D.s + 1; g.dbl = D; g.say = { k, t: NM[D.s - 1] };
+      g.last = `${who} قال ${NM[D.s - 1]} ${D.s === 4 ? "☕ اللي يكسب التوزيعة ياخذ الصكة" : "✖️" + ar(g.mult)}`;
+      if (D.s < 4) { g.turn = D.s % 2 ? g.buyer : (g.buyer + 1) % 4; g.v++; return [u]; }
+    } else { g.last = `${who} قال بس${mv.type === "kick" ? " ⏰" : ""}`; g.say = { k, t: "بس" }; }
+    g.phase = "play"; g.turn = D.t0; g.v++; return [u];
+  }
   if (g.phase === "bid1" || g.phase === "bid2") {
     let b = null; try { b = mv.color ? JSON.parse(mv.color) : null; } catch (e) { return null; }
     const act = mv.type === "pass" || mv.type === "kick" ? "pass" : b?.bid;
@@ -1621,8 +1634,10 @@ function balApply(u, mv, g, st) {
 }
 function balEnd(g) {
   {
-    const { pts, note } = scoreHand(g);
+    let { pts, note } = scoreHand(g); const m = g.mult || 1;
+    if (m > 1 && m < 5) { pts = pts.map(p => p * m); note = (note ? note + " · " : "") + "✖️" + ar(m); }
     g.score = [g.score[0] + pts[0], g.score[1] + pts[1]];
+    if (m === 5) { const w = pts[0] === pts[1] ? teamOf(g.buyer) : pts[0] > pts[1] ? 0 : 1; g.score[w] = Math.max(g.score[w], BAL_WIN); note = (note ? note + " · " : "") + "☕ قهوة"; }
     g.res = { pts, note, ab: [...g.ab], mode: g.mode, buyer: g.buyer };
     g.last = `انتهت التوزيعة: لنا/لهم +${ar(pts[0])} / +${ar(pts[1])}${note ? " · " + note : ""}`;
     if (g.score[0] >= BAL_WIN || g.score[1] >= BAL_WIN) g.winner = g.score[0] === g.score[1] ? teamOf(g.buyer) : g.score[0] > g.score[1] ? 0 : 1;
@@ -5428,7 +5443,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       <button class="bbid gold" data-bid="sun">صن</button>
       ${g.bid ? "" : g.phase === "bid1" ? `<button class="bbid gold" data-bid="hokm" data-s="${bSuit(g.shown)}">حكم ${SUIT_IC[bSuit(g.shown)]}</button>` : ["s", "h", "d", "c"].filter(s => s !== bSuit(g.shown)).map(s => `<button class="bbid gold" data-bid="hokm" data-s="${s}">حكم ${SUIT_IC[s]}</button>`).join("")}
       ${g.asked >= 2 && !g.bid ? `<button class="bbid" data-bid="ashkal">أشكال</button>` : ""}
-</div>` : "";
+</div>` : g.phase === "dbl" && myTurn && !waiting ? `<div class="bbids"><button class="bbid" data-dbl="0">بس</button><button class="bbid gold" data-dbl="1">${["دبل", "ثري", "فور", "قهوة ☕"][g.dbl?.s || 0]}</button></div>` : "";
     const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres"><b>${g.res.mode === "sun" ? "صن" : "حكم"}</b><span>لنا +${ar(g.res.pts[myT])}</span><span>لهم +${ar(g.res.pts[1 - myT])}</span>${g.res.note ? `<i>${esc(g.res.note)}</i>` : ""}${isHost() && g.phase === "res" ? `<button class="btn small" id="bNext">التوزيعة الجاية</button>` : ""}</div>` : "";
     const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(60, (HW + 8 - 96) / (hn - 1)) : 0;
     const fan = k => { const d = k - (hn - 1) / 2, r = 0; return `--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
@@ -5463,6 +5478,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         <li><b>المشاريع</b> تنعلن تلقائي: سرا، خمسين، مية، أربعمية، بلوت</li><li>المشتري لازم يجيب أكثر من الخصم وإلا ينقهر، وأول فريق يوصل ${ar(BAL_WIN)} يفوز 🏆</li></ul></details>
       </section>`;
     balTimerStart(); requestAnimationFrame(fitGame);
+    onAll("[data-dbl]", b => b.dataset.dbl === "1" ? balMove("play", "", { dbl: 1 }) : balMove("pass"));
     onAll("[data-bid]", b => { const x = b.dataset.bid; x === "pass" ? balMove("pass") : balMove("play", "", { bid: x, suit: b.dataset.s || "" }); });
     onAll("[data-bc]", b => {
       const c = b.dataset.bc;
