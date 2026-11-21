@@ -1581,6 +1581,14 @@ function balApply(u, mv, g, st) {
   }
   // اللعب
   const hand = st.hands[u] || [], ok = legal(g, k, hand);
+  if (mv.type === "play" && /"sawa"/.test(mv.color || "")) {
+    if (g.trick.length || g.tricks < 1 || g.tricks > 6 || isBot(u)) return null;
+    const H = ord.map(x => [...(st.hands[x] || [])]), good = sawaOk(g, H, k), T = teamOf(k), w = good ? T : 1 - T;
+    g.ab[w] += H.flat().reduce((s, c) => s + bAbnat(g, c), 0) + 10; g.won[w] += 8 - g.tricks; g.tricks = 8;
+    ord.forEach(x => { st.hands[x] = []; g.cnt[x] = 0; }); g.trick = []; g.lastTrick = [];
+    g.say = { k, t: "سوا" }; g.last = `${who} قال سوا ${good ? "✅ صح، اللمات الباقية لفريقه" : "❌ غلط، اللمات الباقية للخصم"}`;
+    const l0 = g.last; balEnd(g); g.last = l0 + " · " + g.last; g.v++; return [...ord];
+  }
   let card = mv.card;
   if (mv.type === "kick") card = ok[Math.floor(Math.random() * ok.length)];
   else if (mv.type !== "play" || !ok.includes(card)) return null;
@@ -1608,8 +1616,11 @@ function balApply(u, mv, g, st) {
   g.lastTrick = g.trick; g.trick = []; g.turn = w;
   g.last += ` · اللمّة لـ ${atn(pname(ord[w]))}`;
   if (g.tricks === 1) { balAnnounce(g, st); if (g.prj.length) g.last += " · 📣 " + g.prj.map(x => `${atn(pname(ord[x.k]))} ${PRJ_AR[x.t]}`).join("، "); }
-  if (g.tricks === 8) {
-    g.ab[t] += 10;
+  if (g.tricks === 8) { g.ab[t] += 10; balEnd(g); }
+  g.v++; return [u];
+}
+function balEnd(g) {
+  {
     const { pts, note } = scoreHand(g);
     g.score = [g.score[0] + pts[0], g.score[1] + pts[1]];
     g.res = { pts, note, ab: [...g.ab], mode: g.mode, buyer: g.buyer };
@@ -1617,7 +1628,20 @@ function balApply(u, mv, g, st) {
     if (g.score[0] >= BAL_WIN || g.score[1] >= BAL_WIN) g.winner = g.score[0] === g.score[1] ? teamOf(g.buyer) : g.score[0] > g.score[1] ? 0 : 1;
     else g.phase = "res";
   }
-  g.v++; return [u];
+}
+function sawaOk(g, H, k0) {
+  const T = teamOf(k0); let n = 0;
+  const rec = (turn, trick) => {
+    if (++n > 300000) throw 0;
+    if (trick.length === 4) { const w = trickWinner(g, trick); if (teamOf(w) !== T) return false; return H.every(h => !h.length) || rec(w, []); }
+    const hand = H[turn], mine = teamOf(turn) === T;
+    for (const c of legal({ ...g, trick }, turn, hand)) {
+      const i = hand.indexOf(c); hand.splice(i, 1); let r; try { r = rec((turn + 1) % 4, [...trick, { k: turn, c }]); } finally { hand.splice(i, 0, c); }
+      if (mine && r) return true; if (!mine && !r) return false;
+    }
+    return !mine;
+  };
+  try { return rec(k0, []); } catch (e) { return false; }
 }
 async function balProcess(list) {
   if (!isHost() || room?.phase !== "bal") return;
@@ -4913,7 +4937,7 @@ function votedCount() {
   return Object.entries(votes).filter(([u, v]) => v.round === room.round && ps.includes(u)).length;
 }
 const statusBar = () => `<div class="status"><span>الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""}</span><span>${room.game === "kal" && room.k ? `الكلمة ${ar(room.k.idx || 1)} من ${ar(room.k.n || 10)}` : `الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}`}</span></div>`;
-const BSND = { "حكم": "hokm", "صن": "sun", "بس": "pass", "ولا": "wala", "أشكال": "ashkal", "سرا": "sira", "خمسين": "50", "مية": "100", "أربعمية": "400", "بلوت": "baloot" };
+const BSND = { "حكم": "hokm", "صن": "sun", "بس": "pass", "ولا": "wala", "أشكال": "ashkal", "سرا": "sira", "خمسين": "50", "مية": "100", "أربعمية": "400", "بلوت": "baloot", "سوا": "sawa" };
 const sndOn = () => store.get("snd", "1") !== "0", sndA = {};
 const sndEl = n => sndA[n] ||= Object.assign(new Audio(`./snd/bal_${n}.mp3`), { preload: "auto" });
 document.addEventListener("pointerdown", () => { Object.values(BSND).forEach(n => { const a = sndEl(n); a.muted = true; a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; }); }); }, { once: true, capture: true });
@@ -5418,7 +5442,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         <p class="ulast">${esc(g.last || "")}</p>
       </div>
 ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحين <button class="btn small" id="autoBack">ارجع العب بنفسك</button></div>` : ""}
-      ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>`}
+      ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${myTurn && !waiting && g.phase === "play" && !g.trick.length && g.tricks >= 1 && g.tricks <= 6 ? `<button class="bbid gold bsawa" id="bSawa">${ui.sawaArm === g.v ? "متأكد؟" : "سوا"}</button>` : ""}${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>`}
       
       ${playing && myTurn && g.phase === "play" ? (() => {
         const first = g.tricks === 0 && !g.trick.some(x => x.k === myK);
@@ -5451,6 +5475,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
     onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
     on("bNext", "click", () => balMove("play"));
     playSay(g);
+    on("bSawa", "click", () => { if (ui.sawaArm !== g.v) { ui.sawaArm = g.v; return render(false); } ui.sawaArm = null; balMove("play", "", { sawa: 1 }); });
     on("bSnd", "click", () => { store.set("snd", sndOn() ? "0" : "1"); render(false); });
     on("bLook", "click", () => { if (!najdiOk) { toast("الورق النجدي من متجر روق 🛍️"); return IN_APP && !IAP_ON ? null : go("shop"); } store.set("balLook", look === "najdi" ? "classic" : "najdi"); render(false); });
     onAll("[data-pf]", b => showProfile(b.dataset.pf));
