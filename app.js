@@ -5520,19 +5520,19 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         <p class="ulast">${esc(g.last || "")}</p>
       </div>
 ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحين <button class="btn small" id="autoBack">ارجع العب بنفسك</button></div>` : ""}
-      ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${myTurn && !waiting && g.phase === "play" && !g.trick.length && g.tricks >= 1 && g.tricks <= 6 && g.sawa === myK ? `<button class="bbid gold bsawa" id="bSawa">${ui.sawaArm === g.v ? "متأكد؟" : "سوا"}</button>` : ""}${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>`}
+      ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>`}
       
-      ${playing && myTurn && g.phase === "play" ? (() => {
-        const first = g.tricks === 0 && !g.trick.some(x => x.k === myK);
+      ${playing && (g.phase === "play" || g.phase === "dbl") && g.winner == null ? (() => {
+        const first = g.phase === "play" && g.tricks === 0 && !g.trick.some(x => x.k === myK);
         const my = first ? projects(g, myHand) : [];
         if (first && (!ui.bDec || ui.bDecH !== g.hand + ":" + room.round)) { ui.bDec = new Set(); ui.bDecH = g.hand + ":" + room.round; }
         if (g.tricks === 0 && myHand.length === 8 && ui.bKQh !== g.hand + ":" + room.round) { ui.bKQh = g.hand + ":" + room.round; ui.bBal = false; }
         if (g.tricks === 0 && myHand.length === 8) ui.bKQ = g.mode === "hokm" && myHand.includes("K" + g.trump) && myHand.includes("Q" + g.trump) ? g.hand + ":" + room.round : null;
-        const balNow = g.mode === "hokm" && ui.bKQ === g.hand + ":" + room.round && (myHand.includes("K" + g.trump) !== myHand.includes("Q" + g.trump));
-        const btns = [...my.map(x => `<button class="bdec ${ui.bDec?.has(x.t) ? "on" : ""}" data-dec="${x.t}">📣 ${PRJ_AR[x.t]}</button>`), balNow ? `<button class="bdec ${ui.bBal ? "on" : ""}" data-dec="baloot">📣 بلوت</button>` : ""].join("");
-        if (!btns) return "";
-        const n = (ui.bDec?.size || 0) + (ui.bBal ? 1 : 0);
-        return `<div class="bprjbar"><b>📣 عندك مشروع! اضغطه عشان تعلنه</b><div class="bdecs">${btns}</div><span class="hint">لازم تختاره قبل ما ترمي ورقتك، وإلا يروح عليك</span></div>`;
+        const balNow = g.phase === "play" && g.mode === "hokm" && ui.bKQ === g.hand + ":" + room.round && (myHand.includes("K" + g.trump) !== myHand.includes("Q" + g.trump));
+        const cnt = t => my.filter(x => x.t === t).length;
+        const chips = [["sira", "سرا"], ["50", "خمسين"], ["100", "مية"], ["400", "٤٠٠"]].map(([t, nm]) => { const has = cnt(t) > 0, on = has && ui.bDec?.has(t); return `<button class="bpc ${has ? "has" : "dim"} ${on ? "on" : ""}" ${has ? `data-dec="${t}"` : "disabled"}>${nm}<i>${on ? ar(cnt(t)) : "0"}</i></button>`; }).join("") + (balNow ? `<button class="bpc has ${ui.bBal ? "on" : ""}" data-dec="baloot">بلوت<i>${ui.bBal ? "✓" : "0"}</i></button>` : "");
+        const prjOk = my.length > 0 || balNow, sawaOn = myTurn && !waiting && g.phase === "play" && !g.trick.length && g.tricks >= 1 && g.tricks <= 6 && g.sawa === myK;
+        return `<div class="bactbar"><div class="bpcs">${chips}</div><div class="bab2"><button class="bab ${prjOk ? "gold" : "dim"}" id="bPrjAll" ${prjOk ? "" : "disabled"}>المشاريع</button><button class="bab ${sawaOn ? "gold" : "dim"}" id="bSawa" ${sawaOn ? "" : "disabled"}>${sawaOn && ui.sawaArm === g.v ? "متأكد؟" : "سوا"}</button></div></div>`;
       })() : ""}
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"} ${dealA ? "deal" : ""}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules" hidden><summary>قوانين البلوت باختصار</summary><ul>
@@ -5550,7 +5550,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       if (ui.bk.sel === c) { ui.bk.sel = null; const dx = {}; if (ui.bDec?.size) dx.dec = [...ui.bDec]; if (ui.bBal && g.mode === "hokm" && bSuit(c) === g.trump && "KQ".includes(bRank(c))) dx.bal = 1; ui.bDec = null; return balMove("play", c, Object.keys(dx).length ? dx : undefined); }
       ui.bk.sel = c; render(false);
     });
-    on("bPrj", "click", () => { ui.bPrjOpen = !ui.bPrjOpen; render(false); });
+    on("bPrjAll", "click", () => { const first = g.tricks === 0; if (!first) return; const my = projects(g, myHand); ui.bDec = ui.bDec || new Set(); const all = my.every(x => ui.bDec.has(x.t)); my.forEach(x => all ? ui.bDec.delete(x.t) : ui.bDec.add(x.t)); if (V.querySelector('[data-dec="baloot"]')) ui.bBal = !all; render(false); });
     onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
     on("bNext", "click", () => balMove("play"));
     playSay(g); playFx(g, myT);
