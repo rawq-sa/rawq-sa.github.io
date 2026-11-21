@@ -1534,7 +1534,7 @@ function balFinalizeBid(g, st) {
   const b = g.bid; g.mode = b.mode; g.trump = b.mode === "hokm" ? b.suit : null; g.buyer = b.k;
   const ord = g.order;
   ord.forEach((u, k) => { const add = k === b.k ? [g.shown, ...st.deck.splice(0, 2)] : st.deck.splice(0, 3); st.hands[u] = [...st.hands[u], ...add]; });
-  g.phase = "play"; g.turn = (g.dealer + 1) % 4; g.trick = []; g.cnt = Object.fromEntries(ord.map(u => [u, 8]));
+  g.phase = "play"; g.turn = (g.dealer + 1) % 4; g.trick = []; g.ann = []; g.cnt = Object.fromEntries(ord.map(u => [u, 8]));
   // المشاريع تنحسب من الثمان أوراق وتنعلن بعد أول لمّة
   st.prjc = ord.map((u, k) => ({ k, list: projects(g, st.hands[u]), baloot: g.mode === "hokm" && st.hands[u].includes("K" + g.trump) && st.hands[u].includes("Q" + g.trump) }));
   return [...ord];
@@ -1584,13 +1584,23 @@ function balApply(u, mv, g, st) {
   let card = mv.card;
   if (mv.type === "kick") card = ok[Math.floor(Math.random() * ok.length)];
   else if (mv.type !== "play" || !ok.includes(card)) return null;
+  let dec = {}; try { dec = mv.color ? JSON.parse(mv.color) || {} : {}; } catch (e) { dec = {}; }
+  const autoDec = isBot(u) || !!mv.auto;
+  // المشاريع: لازم اللاعب يعلنها بنفسه مع أول ورقة له، وإلا تروح عليه
+  if (g.tricks === 0 && st.prjc?.[k] && !st.prjc[k].done) {
+    const p = st.prjc[k]; p.done = true;
+    if (!autoDec) p.list = (p.list || []).filter(x => (dec.dec || []).includes(x.t));
+    if (p.list.length) g.ann = [...(g.ann || []), `${who}: ${p.list.map(x => PRJ_AR[x.t]).join(" و ")}`];
+  }
   hand.splice(hand.indexOf(card), 1); st.hands[u] = hand; g.cnt[u] = hand.length;
   g.trick = [...g.trick, { k, c: card }];
   g.last = `${who} لعب ${card.slice(0, -1)}${SUIT_IC[bSuit(card)]}${mv.type === "kick" ? " ⏰" : ""}`;
+  if (g.tricks === 0 && st.prjc?.[k]?.list?.length && !autoDec) g.last += ` · 📣 ${st.prjc[k].list.map(x => PRJ_AR[x.t]).join(" و ")}`;
   // البلوت: الشايب والبنت حق الحكم عند نفس اللاعب، ينعلن لما يلعب الثانية منهم
   const pb = st.prjc?.[k];
   if (pb?.baloot && g.mode === "hokm" && bSuit(card) === g.trump && (bRank(card) === "K" || bRank(card) === "Q") && !hand.includes("K" + g.trump) && !hand.includes("Q" + g.trump)) {
-    pb.baloot = false; g.prj = [...(g.prj || []), { team: teamOf(k), k, t: "baloot" }]; g.ab[teamOf(k)] += 20; g.last += " · 📣 بلوت!";
+    pb.baloot = false;
+    if (!autoDec && !dec.bal) { g.last += " · نسي يقول بلوت 🤦"; } else { g.prj = [...(g.prj || []), { team: teamOf(k), k, t: "baloot" }]; g.ab[teamOf(k)] += 20; g.last += " · 📣 بلوت!"; }
   }
   if (g.trick.length < 4) { g.turn = (k + 1) % 4; g.v++; return [u]; }
   const w = trickWinner(g, g.trick), t = teamOf(w);
@@ -5377,13 +5387,14 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
     const bidding = g.phase === "bid1" || g.phase === "bid2";
     const tip = g.winner != null ? "" : g.phase === "res" ? "انتهت التوزيعة 🎉" : !myTurn ? `ننتظر ${esc(atn(pname(turnU)))}` : waiting ? "لحظة…" : bidding ? "دورك تشتري؟" : "دورك! العب ورقة 👇";
     const bidBtns = myTurn && bidding && !waiting ? `<div class="bbids">
+      <button class="btn small ghost" data-bid="pass">بس</button>
       <button class="btn small" data-bid="sun">☀️ صن</button>
       ${g.bid ? "" : g.phase === "bid1" ? `<button class="btn small" data-bid="hokm" data-s="${bSuit(g.shown)}">🃏 حكم ${SUIT_IC[bSuit(g.shown)]}</button>` : ["s", "h", "d", "c"].filter(s => s !== bSuit(g.shown)).map(s => `<button class="btn small" data-bid="hokm" data-s="${s}">حكم ${SUIT_IC[s]}</button>`).join("")}
       ${g.asked >= 2 && !g.bid ? `<button class="btn small ghost" data-bid="ashkal">🔁 أشكال</button>` : ""}
-      <button class="btn small ghost" data-bid="pass">بس</button></div>` : "";
+</div>` : "";
     const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres"><b>${g.res.mode === "sun" ? "صن" : "حكم"}</b><span>لنا +${ar(g.res.pts[myT])}</span><span>لهم +${ar(g.res.pts[1 - myT])}</span>${g.res.note ? `<i>${esc(g.res.note)}</i>` : ""}${isHost() && g.phase === "res" ? `<button class="btn small" id="bNext">التوزيعة الجاية</button>` : ""}</div>` : "";
-    const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(52, (HW - 70) / (hn - 1)) : 0;
-    const fan = k => { const d = k - (hn - 1) / 2, r = d * 3.2; return `--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
+    const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(56, (HW - 84) / (hn - 1)) : 0;
+    const fan = k => { const d = k - (hn - 1) / 2, r = d * 3; return `--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
     V.innerHTML = `<section class="bal gscreen">${gameBar(`<button class="gi" id="bLook" aria-label="شكل الورق">🎴</button>`)}
       <div class="btable">${tableSVG(myLook().t)}
         <div class="btop"><div class="bsc"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
@@ -5396,6 +5407,16 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
 ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحين <button class="btn small" id="autoBack">ارجع العب بنفسك</button></div>` : ""}
       <div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
       
+      ${playing && myTurn && g.phase === "play" ? (() => {
+        const first = g.tricks === 0 && !g.trick.some(x => x.k === myK);
+        const my = first ? projects(g, myHand) : [];
+        if (first && (!ui.bDec || ui.bDecH !== g.hand + ":" + room.round)) { ui.bDec = new Set(); ui.bDecH = g.hand + ":" + room.round; }
+        if (g.tricks === 0 && myHand.length === 8 && ui.bKQh !== g.hand + ":" + room.round) { ui.bKQh = g.hand + ":" + room.round; ui.bBal = false; }
+        if (g.tricks === 0 && myHand.length === 8) ui.bKQ = g.mode === "hokm" && myHand.includes("K" + g.trump) && myHand.includes("Q" + g.trump) ? g.hand + ":" + room.round : null;
+        const balNow = g.mode === "hokm" && ui.bKQ === g.hand + ":" + room.round && (myHand.includes("K" + g.trump) !== myHand.includes("Q" + g.trump));
+        const btns = [...my.map(x => `<button class="bdec ${ui.bDec?.has(x.t) ? "on" : ""}" data-dec="${x.t}">📣 ${PRJ_AR[x.t]}</button>`), balNow ? `<button class="bdec ${ui.bBal ? "on" : ""}" data-dec="baloot">📣 بلوت</button>` : ""].join("");
+        return btns ? `<div class="bdecs">${btns}<span class="hint">اضغطه قبل ما ترمي ورقتك، وإلا يروح عليك</span></div>` : "";
+      })() : ""}
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules" hidden><summary>قوانين البلوت باختصار</summary><ul>
         <li><b>الشراء</b>: صن ☀️ (بدون حكم) أو حكم بشكل ورقة الشراء، أو بس. الدور الثاني تقدر تحكم بأي شكل ثاني</li>
@@ -5408,9 +5429,10 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       const c = b.dataset.bc;
       if (!myTurn || g.phase !== "play") return toast(g.phase === "play" ? "مو دورك" : "الحين وقت الشراء");
       if (!ok.includes(c)) return toast("لازم تلحق الشكل" + (g.mode === "hokm" ? " أو تقطع بالحكم" : ""));
-      if (ui.bk.sel === c) { ui.bk.sel = null; return balMove("play", c); }
+      if (ui.bk.sel === c) { ui.bk.sel = null; const dx = {}; if (ui.bDec?.size) dx.dec = [...ui.bDec]; if (ui.bBal && g.mode === "hokm" && bSuit(c) === g.trump && "KQ".includes(bRank(c))) dx.bal = 1; ui.bDec = null; return balMove("play", c, Object.keys(dx).length ? dx : undefined); }
       ui.bk.sel = c; render(false);
     });
+    onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
     on("bNext", "click", () => balMove("play"));
     on("bLook", "click", () => { if (!najdiOk) { toast("الورق النجدي من متجر روق 🛍️"); return IN_APP && !IAP_ON ? null : go("shop"); } store.set("balLook", look === "najdi" ? "classic" : "najdi"); render(false); });
     onAll("[data-pf]", b => showProfile(b.dataset.pf));
