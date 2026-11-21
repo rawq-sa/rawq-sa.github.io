@@ -4343,24 +4343,37 @@ function iapShop() {
     <div><h2>متجر روق 🛍️</h2><p class="lead">تميّز قدام أصحابك. تدفع بحساب آبل، وينفتح لك على طول.</p></div>
     ${isKing(p) ? `<div class="vipbox">👑 أنت من الملوك، وكل الحصريات لك للأبد${vip ? `. و VIP لين <b>${new Date(p.vipUntil).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" })}</b>` : ""}.</div>`
       : vip ? `<div class="vipbox">⭐ أنت VIP لين <b>${new Date(p.vipUntil).toLocaleDateString("ar-SA", { day: "numeric", month: "long", year: "numeric" })}</b>. أي VIP تشتريه ينضاف على مدتك.</div>` : ""}
-    <div class="shop">${list.map(it => {
-      const have = it.g ? it.g.every(g => mine.has(g)) : false;
-      const pv = typeof it.pv === "string" ? it.pv : shopPreview(it.pv || { grants: it.g });
-      const price = iapPrices?.[IAP_PID(it.id)] || `${it.sar} ر.س`;
-      return `<div class="sitem ${it.hot ? "hot" : ""}">
-        ${it.tag ? `<span class="s-hot">${it.tag}</span>` : ""}
-        <div class="s-pv">${pv}</div>
-        <b class="s-name">${it.name}</b><span class="s-desc">${it.desc}</span>
-        ${have ? `<span class="s-own">✓ عندك للأبد</span>` : `<button class="btn small" data-iap="${it.id}" ${iapBusy ? "disabled" : ""}>${iapBusy === it.id ? "لحظة…" : `<span class="s-price">${esc(price)}</span>`}</button>`}
-      </div>`; }).join("")}</div>
+    ${(() => {
+      const CATS = [["all", "الكل"], ["vip", "VIP"], ["fr", "الإطارات"], ["pl", "لوحات الاسم"], ["tb", "الطاولات"], ["cd", "الورق"], ["ot", "ثانية"]];
+      const catOf = id => /^(vip\.|king|starter)/.test(id) ? "vip" : /^(frame|frames3|fr_|col_)/.test(id) ? "fr" : /^pl_/.test(id) ? "pl" : /^table/.test(id) ? "tb" : /^(back|bk_)/.test(id) ? "cd" : "ot";
+      const cat = CATS.some(c => c[0] === ui.shopCat) ? ui.shopCat : "all";
+      const priceOf = it => iapPrices?.[IAP_PID(it.id)] || `${it.sar} ر.س`;
+      const pvOf = it => typeof it.pv === "string" ? it.pv : shopPreview(it.pv || { grants: it.g });
+      const haveOf = it => it.g ? it.g.every(g => mine.has(g)) : false;
+      const buyBtn = (it, cls = "") => haveOf(it) ? `<span class="s-own">✓ عندك</span>` : `<button class="btn small ${cls}" data-iap="${it.id}" ${iapBusy ? "disabled" : ""}>${iapBusy === it.id ? "لحظة…" : `<span class="s-price">${esc(priceOf(it))}</span>`}</button>`;
+      const vips = list.filter(x => x.id.startsWith("vip.")), pick = vips.find(x => x.id === ui.vipPick) || vips.find(x => x.hot) || vips[0];
+      const LBL = { "vip.month": "شهر", "vip.quarter": "٣ شهور 🔥", "vip.year": "سنة · وفّر ٤٤٪" };
+      const vipCard = pick ? `<div class="svip"><div class="svip-h"><div class="s-pv">${pvOf(pick)}</div><div><b>VIP روق</b><span class="s-desc">${esc(pick.desc)}</span></div></div>
+        <div class="svip-opts" role="radiogroup" aria-label="مدة VIP">${vips.map(x => `<button type="button" class="svo ${x === pick ? "on" : ""}" role="radio" aria-checked="${x === pick}" data-vp="${x.id}"><span>${LBL[x.id] || esc(x.name)}</span><b>${esc(priceOf(x))}</b></button>`).join("")}</div>
+        <button class="btn" data-iap="${pick.id}" ${iapBusy ? "disabled" : ""}>${iapBusy === pick.id ? "لحظة…" : `اشترك · ${esc(priceOf(pick))}`}</button></div>` : "";
+      const row = it => `<div class="srow ${it.hot ? "hot" : ""}"><div class="s-pv">${pvOf(it)}</div><div class="srow-t"><b>${esc(it.name)}</b><span class="s-desc">${esc(it.desc)}</span></div>${buyBtn(it)}</div>`;
+      const card = it => `<div class="sitem">${it.tag ? `<span class="s-hot">${it.tag}</span>` : ""}<div class="s-pv">${pvOf(it)}</div><b class="s-name">${esc(it.name)}</b><span class="s-desc">${esc(it.desc)}</span>${buyBtn(it)}</div>`;
+      const grid = c => { const xs = list.filter(x => catOf(x.id) === c); return xs.length ? `<div class="shop sgrid">${xs.map(card).join("")}</div>` : ""; };
+      const vipSec = `${vipCard}${list.filter(x => x.id === "king" || x.id === "starter").map(row).join("")}`;
+      const tabs = `<div class="scats" role="tablist">${CATS.filter(c => c[0] === "all" || list.some(x => catOf(x.id) === c[0])).map(([k, t]) => `<button role="tab" data-scat="${k}" aria-selected="${k === cat}">${t}</button>`).join("")}</div>`;
+      const body = cat === "all" ? vipSec + CATS.slice(2).map(([k, t]) => list.some(x => catOf(x.id) === k) ? `<h3 class="s-sec">${t}</h3>${grid(k)}` : "").join("") : cat === "vip" ? vipSec : grid(cat);
+      return tabs + `<div class="sbody">${body}</div>`;
+    })()}
     <button class="btn ghost" id="iapRestore" ${iapBusy ? "disabled" : ""}>${iapBusy === "restore" ? "لحظة…" : "استرجع مشترياتي"}</button>
     <p class="hint center">الدفع عن طريق حساب آبل. اشتراكات VIP ما تتجدد لحالها، وتقدر تمددها متى ما تبي.</p>
   </section>`;
   onAll("[data-iap]", b => iapBuy(b.dataset.iap));
+  onAll("[data-scat]", b => { ui.shopCat = b.dataset.scat; render(false); window.scrollTo(0, 0); });
+  onAll("[data-vp]", b => { ui.vipPick = b.dataset.vp; render(false); });
   on("iapRestore", "click", iapRestore);
 }
 VIEWS.shop = () => {
-  if (IN_APP) { if (IAP_ON) iapShop(); return; }
+  if (IN_APP || /shopv2/.test(location.search)) { if (IAP_ON || !IN_APP) iapShop(); return; }
   const p = prof(me.uid), vip = vipOn(p);
   V.innerHTML = `<section>
     <div><h2>متجر روق 🛍️</h2><p class="lead">تميّز قدام أصحابك. تشتري من متجر روق، ويوصلك كود تكتبه هنا.</p></div>
