@@ -1518,7 +1518,8 @@ function balDeal(g, st) {
 async function startBal() {
   const ps = order();
   if (ps.length !== 4) return toast("البلوت تنلعب ٤ لاعبين (فريقين)");
-  const ord = shuffle(ps), round = (room.round || 0) + 1, names = {}; ps.forEach(u => names[u] = pname(u));
+  let ord = shuffle(ps); const round = (room.round || 0) + 1, names = {}; ps.forEach(u => names[u] = pname(u));
+  if (ps.includes(room.balMate) && room.balMate !== room.host && ps.includes(room.host)) { const o = ps.filter(u => u !== room.host && u !== room.balMate); const r = [room.host, o[0], room.balMate, o[1]], s0 = Math.floor(Math.random() * 4); ord = r.map((_, i) => r[(i + s0) % 4]); }
   const g = { order: ord, dealer: 3, hand: 1, score: [0, 0], v: 1, winner: null, end: "" }, st = {};
   balDeal(g, st); g.last = "بدأ البلوت! الشراء يبدأ من @" + names[ord[g.turn]];
   BAL.st = st; BAL.processed = {};
@@ -5107,6 +5108,7 @@ const ROOM_VIEWS = {
       ${onlineFriends.length ? `<div class="lob-fr">${onlineFriends.map(([u, f]) => `<button class="chip" data-inv="${esc(u)}"><i class="dot on"></i> اعزم ${esc(f.username)}</button>`).join("")}</div>` : ""}
       <div class="lob-game">${host ? `<button class="lob-arr" data-gs="${esc(gStep(1))}" aria-label="اللعبة الثانية">‹</button>` : ""}<b>${GAMES[room.game]}</b>${host ? `<button class="lob-arr" data-gs="${esc(gStep(-1))}" aria-label="اللعبة اللي قبل">›</button>` : ""}</div>
       ${gDesc ? `<p class="lob-desc">${esc(gDesc)}</p>` : ""}
+      ${room.game === "bal" && n === 4 ? `<div class="field lob-mate"><span class="label">${host ? "خويك في البلوت 🤝" : "خوي المضيف في البلوت 🤝"}</span><div class="chips">${ps.filter(u => u !== room.host).map(u => `<button class="chip" data-mate="${esc(u)}" aria-pressed="${room.balMate === u}" ${host ? "" : "disabled"}>${esc(pname(u))}</button>`).join("")}<button class="chip" data-mate="" aria-pressed="${!ps.includes(room.balMate)}" ${host ? "" : "disabled"}>عشوائي 🎲</button></div></div>` : ""}
       ${host ? `<details class="lob-set"><summary>⚙️ الإعدادات${room.public ? " · عامة 🌍" : ""}</summary>
         <div class="field"><span class="label">نوع الغرفة</span><div class="chips">
           <button class="chip" data-pub="0" aria-pressed="${!room.public}">خاصة 🔒</button>
@@ -5133,6 +5135,7 @@ const ROOM_VIEWS = {
     onAll("[data-game]", b => setRoom({ game: b.dataset.game }));
     onAll("[data-kick]", b => { if (!confirmTap(b, "متأكد؟")) return; kickPlayer(b.dataset.kick); });
     on("addBot", "click", addBot);
+    onAll("[data-mate]", b => setRoom({ balMate: b.dataset.mate }));
     onAll("[data-pub]", b => { const pub = b.dataset.pub === "1"; setRoom({ public: pub, listed: pub, ping: Date.now(), hostName: me.username }); if (pub) toast("صارت غرفتك عامة 🌍"); });
     onAll("[data-cat]", b => setRoom({ cat: b.dataset.cat }));
     onAll("[data-kw]", b => setRoom({ kWords: Number(b.dataset.kw) }));
