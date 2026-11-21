@@ -4913,6 +4913,17 @@ function votedCount() {
   return Object.entries(votes).filter(([u, v]) => v.round === room.round && ps.includes(u)).length;
 }
 const statusBar = () => `<div class="status"><span>الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""}</span><span>${room.game === "kal" && room.k ? `الكلمة ${ar(room.k.idx || 1)} من ${ar(room.k.n || 10)}` : `الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}`}</span></div>`;
+const BSND = { "حكم": "hokm", "صن": "sun", "بس": "pass", "ولا": "wala", "أشكال": "ashkal", "سرا": "sira", "خمسين": "50", "مية": "100", "أربعمية": "400", "بلوت": "baloot" };
+const sndOn = () => store.get("snd", "1") !== "0", sndA = {};
+const sndEl = n => sndA[n] ||= Object.assign(new Audio(`./snd/bal_${n}.mp3`), { preload: "auto" });
+document.addEventListener("pointerdown", () => { Object.values(BSND).forEach(n => { const a = sndEl(n); a.muted = true; a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; }); }); }, { once: true, capture: true });
+let sayKey = null;
+function playSay(g) {
+  const key = g.say ? `${g.v}|${g.say.k}|${g.say.t}` : "", first = sayKey === null; if (key === sayKey) return; sayKey = key;
+  if (first || !g.say || !sndOn()) return;
+  const ws = g.say.t.replace(/[^\u0600-\u06FF\s]/g, " ").split(/\s+/).filter(w => BSND[w]); let i = 0;
+  const next = () => { if (i >= ws.length) return; const a = sndEl(BSND[ws[i++]]); a.onended = next; a.currentTime = 0; a.play().catch(() => {}); }; next();
+}
 const gameBar = (extra = "") => `<div class="gbar"><span class="gb-info">الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""} · الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}</span><span class="gb-btns">${extra}<button class="gi gchat ${chatUnread() ? "dot" : ""}" id="gChat" aria-label="شات الغرفة">💬</button><button class="gi" id="gRx" aria-label="رياكشن">😂</button><button class="gi" id="gRules" aria-label="القوانين">؟</button><button class="gx" id="gExit">${isHost() ? "إنهاء" : "خروج"} ✕</button></span></div>`;
 document.addEventListener("click", e => {
   if (e.target.closest?.("#autoBack")) { e.target.disabled = true; setDoc(doc(db, "rooms", roomCode, "moves", me.uid), { round: room.round, seq: Date.now(), type: "back", card: "", color: "" }).catch(() => {}); return; }
@@ -5396,7 +5407,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
     const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres"><b>${g.res.mode === "sun" ? "صن" : "حكم"}</b><span>لنا +${ar(g.res.pts[myT])}</span><span>لهم +${ar(g.res.pts[1 - myT])}</span>${g.res.note ? `<i>${esc(g.res.note)}</i>` : ""}${isHost() && g.phase === "res" ? `<button class="btn small" id="bNext">التوزيعة الجاية</button>` : ""}</div>` : "";
     const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(60, (HW + 8 - 96) / (hn - 1)) : 0;
     const fan = k => { const d = k - (hn - 1) / 2, r = 0; return `--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
-    V.innerHTML = `<section class="bal gscreen">${gameBar(`<button class="gi" id="bLook" aria-label="شكل الورق">🎴</button>`)}
+    V.innerHTML = `<section class="bal gscreen">${gameBar(`<button class="gi" id="bSnd" aria-label="الصوت">${sndOn() ? "🔊" : "🔇"}</button><button class="gi" id="bLook" aria-label="شكل الورق">🎴</button>`)}
       <div class="btable">${tableSVG(myLook().t)}
         <div class="btop"><div class="bsc"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
         ${ord.map((u, k) => seat(k)).join("")}
@@ -5438,6 +5449,8 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
     on("bPrj", "click", () => { ui.bPrjOpen = !ui.bPrjOpen; render(false); });
     onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
     on("bNext", "click", () => balMove("play"));
+    playSay(g);
+    on("bSnd", "click", () => { store.set("snd", sndOn() ? "0" : "1"); render(false); });
     on("bLook", "click", () => { if (!najdiOk) { toast("الورق النجدي من متجر روق 🛍️"); return IN_APP && !IAP_ON ? null : go("shop"); } store.set("balLook", look === "najdi" ? "classic" : "najdi"); render(false); });
     onAll("[data-pf]", b => showProfile(b.dataset.pf));
   },
