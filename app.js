@@ -1417,6 +1417,9 @@ async function addBot() {
   catch (e) { console.error(e); toast("ما قدرنا نضيف البوت"); }
 }
 // بلوت: قوة اليد للشراء
+function botDblV(g, hand) {
+  return hand.reduce((s, c) => { const r = bRank(c), t = g.mode === "hokm" && bSuit(c) === g.trump; return s + (t ? ({ J: 5, "9": 4, A: 3, "10": 3 }[r] || 2) : ({ A: 3, "10": 2, K: 1 }[r] || 0)); }, 0);
+}
 function botBalBid(g, hand) {
   const sunPts = hand.reduce((s, c) => s + ({ A: 4, "10": 3, K: 1 }[bRank(c)] || 0), 0);
   const suits = ["s", "h", "d", "c"], best = suits.map(s => {
@@ -1480,7 +1483,7 @@ function botTick() {
       await balLoadHost(); if (!BAL.st) return;
       const gg = room.bal, k = gg.order.indexOf(u), hand = BAL.st.hands[u] || [];
       let mv;
-      if (gg.phase === "dbl") mv = { type: "pass", card: "", color: "" };
+      if (gg.phase === "dbl") { const sv = botDblV(gg, hand), need = [12, 15, 17, 19][gg.dbl?.s || 0]; mv = sv >= need && Math.random() < .7 ? { type: "play", card: "", color: JSON.stringify({ dbl: 1 }) } : { type: "pass", card: "", color: "" }; }
       else if (gg.phase === "bid1" || gg.phase === "bid2") { const b = botBalBid(gg, hand); mv = b ? { type: "play", card: "", color: JSON.stringify(b) } : { type: "pass", card: "", color: "" }; }
       else mv = { type: "play", card: botBalPlay(gg, k, hand), color: "" };
       balProcess([{ u, mv: { round: room.round, seq: (BAL.processed[u] || 0) + 1, auto: 1, ...mv } }]);
@@ -1639,6 +1642,7 @@ function balEnd(g) {
     g.score = [g.score[0] + pts[0], g.score[1] + pts[1]];
     if (m === 5) { const w = pts[0] === pts[1] ? teamOf(g.buyer) : pts[0] > pts[1] ? 0 : 1; g.score[w] = Math.max(g.score[w], BAL_WIN); note = (note ? note + " · " : "") + "☕ قهوة"; }
     g.res = { pts, note, ab: [...g.ab], mode: g.mode, buyer: g.buyer };
+    g.hist = [...(g.hist || []), { p: pts, m: g.mode, x: m, n: note || "" }].slice(-40);
     g.last = `انتهت التوزيعة: لنا/لهم +${ar(pts[0])} / +${ar(pts[1])}${note ? " · " + note : ""}`;
     if (g.score[0] >= BAL_WIN || g.score[1] >= BAL_WIN) g.winner = g.score[0] === g.score[1] ? teamOf(g.buyer) : g.score[0] > g.score[1] ? 0 : 1;
     else g.phase = "res";
@@ -4956,7 +4960,30 @@ const BSND = { "حكم": "hokm", "صن": "sun", "بس": "pass", "ولا": "wala"
 const sndOn = () => store.get("snd", "1") !== "0", sndA = {};
 const sndEl = n => sndA[n] ||= Object.assign(new Audio(`./snd/bal_${n}.mp3`), { preload: "auto" });
 document.addEventListener("pointerdown", () => { Object.values(BSND).forEach(n => { const a = sndEl(n); a.muted = true; a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; }); }); }, { once: true, capture: true });
-let sayKey = null;
+let sayKey = null, AC = null;
+function sfx(kind) {
+  if (!sndOn()) return;
+  try {
+    AC ||= new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume();
+    const t = AC.currentTime, out = AC.createGain(); out.connect(AC.destination);
+    if (kind === "card" || kind === "sweep") {
+      const len = kind === "card" ? .07 : .22, b = AC.createBuffer(1, Math.floor(AC.sampleRate * len), AC.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, kind === "card" ? 3 : 1.5);
+      const src = AC.createBufferSource(), f = AC.createBiquadFilter(); src.buffer = b; f.type = "bandpass"; f.frequency.value = kind === "card" ? 2200 : 1200; f.Q.value = .8;
+      out.gain.value = kind === "card" ? .55 : .35; src.connect(f); f.connect(out); src.start(t);
+    } else {
+      [523.25, 659.25, 783.99, 1046.5].forEach((fq, i) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = "triangle"; o.frequency.value = fq; g.gain.setValueAtTime(0, t + i * .09); g.gain.linearRampToValueAtTime(.18, t + i * .09 + .02); g.gain.exponentialRampToValueAtTime(.001, t + i * .09 + .5); o.connect(g); g.connect(out); o.start(t + i * .09); o.stop(t + i * .09 + .55); });
+    }
+  } catch (e) {}
+}
+let fxS = null;
+function playFx(g, myT) {
+  const now = { v: g.v, n: g.trick.length, k: g.tricks, h: g.hand, r: !!g.res && g.phase === "res" };
+  const p = fxS; fxS = now; if (!p || p.v === now.v || p.h !== now.h) return;
+  if (now.k > p.k) { sfx("card"); setTimeout(() => sfx("sweep"), 380); }
+  else if (now.n > p.n) sfx("card");
+  if (now.r && !p.r && g.res?.pts && g.res.pts[myT] > g.res.pts[1 - myT]) setTimeout(() => sfx("win"), 500);
+}
 function playSay(g) {
   const key = g.say ? `${g.v}|${g.say.k}|${g.say.t}` : "", first = sayKey === null; if (key === sayKey) return; sayKey = key;
   if (first || !g.say || !sndOn()) return;
@@ -5434,7 +5461,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
     const spot = k => ["b", "r", "t", "l"][(k - base + 4) % 4];
     const seat = k => { const u = ord[k], sp = spot(k); return `<button class="bseat ${sp} ${k === g.turn && g.winner == null && g.phase !== "res" ? "turn" : ""} ${teamOf(k) === myT ? "mate" : ""}" data-pf="${esc(u)}" style="--c:${teamOf(k) === myT ? "#3ecf8e" : "#e0565b"}"><span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}${k === g.turn && g.winner == null && g.phase !== "res" ? `<svg class="btmr" viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="28" style="animation-duration:${BAL_T}s;animation-delay:-${(BAL_T - tm.left).toFixed(1)}s"/></svg>` : ""}</span>${g.say?.k === k ? `<span class="bsay">${esc(g.say.t)}</span>` : ""}<b class="btag">${g.auto?.[u] ? "🤖 " : ""}${u === me.uid ? "أنت" : esc(pname(u))}${k === g.buyer ? " 🛒" : ""}${k === g.dealer ? " 🃏" : ""}</b>${sp !== "b" ? `<span class="bbk">${((n) => Array.from({ length: n }, (_, i) => `<i style="--r:${((i - (n - 1) / 2) * 14).toFixed(1)}deg">${backS()}</i>`).join(""))(Math.min(8, g.cnt?.[u] ?? 0))}</span>` : ""}</button>`; };
     const trick = (g.trick.length ? g.trick : g.lastTrick || []).map(x => `<span class="btc ${spot(x.k)} ${g.trick.length ? "" : "old"}">${face(x.c)}</span>`).join("");
-    const modeTxt = g.mode ? (g.mode === "sun" ? "☀️ صن" : "🃏 حكم " + SUIT_IC[g.trump]) + " · " + esc(atn(pname(ord[g.buyer]))) : g.phase === "bid2" ? "الشراء: الدور الثاني" : "الشراء";
+    const modeTxt = g.mode ? (g.mode === "sun" ? "☀️ صن" : "🃏 حكم " + SUIT_IC[g.trump]) + (g.mult === 5 ? " · ☕" : g.mult > 1 ? " · ✖️" + ar(g.mult) : "") + " · " + esc(atn(pname(ord[g.buyer]))) : g.phase === "bid2" ? "الشراء: الدور الثاني" : "الشراء";
     const tm = balTimeLeft(g);
     const bidding = g.phase === "bid1" || g.phase === "bid2";
     const tip = g.winner != null ? "" : g.phase === "res" ? "انتهت التوزيعة 🎉" : !myTurn ? `ننتظر ${esc(atn(pname(turnU)))}` : waiting ? "لحظة…" : bidding ? "دورك تشتري؟" : "دورك! العب ورقة 👇";
@@ -5445,11 +5472,12 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       ${g.asked >= 2 && !g.bid ? `<button class="bbid" data-bid="ashkal">أشكال</button>` : ""}
 </div>` : g.phase === "dbl" && myTurn && !waiting ? `<div class="bbids"><button class="bbid" data-dbl="0">بس</button><button class="bbid gold" data-dbl="1">${["دبل", "ثري", "فور", "قهوة ☕"][g.dbl?.s || 0]}</button></div>` : "";
     const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres"><b>${g.res.mode === "sun" ? "صن" : "حكم"}</b><span>لنا +${ar(g.res.pts[myT])}</span><span>لهم +${ar(g.res.pts[1 - myT])}</span>${g.res.note ? `<i>${esc(g.res.note)}</i>` : ""}${isHost() && g.phase === "res" ? `<button class="btn small" id="bNext">التوزيعة الجاية</button>` : ""}</div>` : "";
+    const dealA = ui.bDealK !== g.hand + "|" + myHand.length && (myHand.length === 5 || (myHand.length === 8 && g.tricks === 0 && !g.trick.length)); ui.bDealK = g.hand + "|" + myHand.length;
     const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(60, (HW + 8 - 96) / (hn - 1)) : 0;
-    const fan = k => { const d = k - (hn - 1) / 2, r = 0; return `--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
+    const fan = k => { const d = k - (hn - 1) / 2, r = 0; return `--i:${k};--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
     V.innerHTML = `<section class="bal gscreen">${gameBar(`<button class="gi" id="bSnd" aria-label="الصوت">${sndOn() ? "🔊" : "🔇"}</button><button class="gi" id="bLook" aria-label="شكل الورق">🎴</button>`)}
       <div class="btable">${tableSVG(myLook().t)}
-        <div class="btop"><div class="bsc"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
+        <div class="btop"><div class="bsc" id="bHist" role="button" aria-label="سجل الصكة"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
         ${ord.map((u, k) => seat(k)).join("")}
         <div class="btrick">${bidding ? `<span class="bshown">${face(g.shown)}<i>ورقة الشراء</i></span>` : trick}</div>
         ${g.prj?.length && (g.tricks <= 2 || g.last?.includes("بلوت!")) ? `<span class="bprj">📣 ${g.prj.map(x => `${esc(pname(ord[x.k]))}: ${PRJ_AR[x.t]}`).join(" · ")}</span>` : ""}
@@ -5471,7 +5499,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         const n = (ui.bDec?.size || 0) + (ui.bBal ? 1 : 0);
         return `<div class="bacts"><button class="bact ${ui.bPrjOpen ? "on" : ""}" id="bPrj">📣 المشاريع${n ? ` <b>${ar(n)}</b>` : ""}</button></div>${ui.bPrjOpen ? `<div class="bdecs">${btns}<span class="hint">اختار مشروعك قبل ما ترمي ورقتك، وإلا يروح عليك</span></div>` : ""}`;
       })() : ""}
-      ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
+      ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"} ${dealA ? "deal" : ""}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules" hidden><summary>قوانين البلوت باختصار</summary><ul>
         <li><b>الشراء</b>: صن ☀️ (بدون حكم) أو حكم بشكل ورقة الشراء، أو بس. الدور الثاني تقدر تحكم بأي شكل ثاني</li>
         <li><b>أشكال</b>: تشتري صن لخويك</li><li>لازم تلحق الشكل، وبالحكم لو ما عندك تقطع بالحكم (إلا لو خويك ماسك اللمّة)</li>
@@ -5490,8 +5518,9 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
     on("bPrj", "click", () => { ui.bPrjOpen = !ui.bPrjOpen; render(false); });
     onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
     on("bNext", "click", () => balMove("play"));
-    playSay(g);
+    playSay(g); playFx(g, myT);
     on("bSawa", "click", () => { if (ui.sawaArm !== g.v) { ui.sawaArm = g.v; return render(false); } ui.sawaArm = null; balMove("play", "", { sawa: 1 }); });
+    on("bHist", "click", () => { const h = g.hist || []; let a = 0, b = 0; const rows = h.map((x, i) => { a += x.p[myT]; b += x.p[1 - myT]; return `<tr><td>${ar(i + 1)}</td><td>${x.m === "sun" ? "صن" : "حكم"}${x.x === 5 ? " ☕" : x.x > 1 ? " ✖️" + ar(x.x) : ""}</td><td>${ar(x.p[myT])}</td><td>${ar(x.p[1 - myT])}</td><td class="hint">${ar(a)} / ${ar(b)}</td></tr>`; }).join(""); sheet(`<b class="pf-name">سجل الصكة 📋</b>${h.length ? `<div class="bhist"><table><tr><th>#</th><th>النوع</th><th>لنا</th><th>لهم</th><th>المجموع</th></tr>${rows}</table></div>` : `<p class="hint">ما خلصت ولا توزيعة للحين</p>`}<button class="btn" data-close>تمام</button>`); });
     on("bSnd", "click", () => { store.set("snd", sndOn() ? "0" : "1"); render(false); });
     on("bLook", "click", () => { if (!najdiOk) { toast("الورق النجدي من متجر روق 🛍️"); return IN_APP && !IAP_ON ? null : go("shop"); } store.set("balLook", look === "najdi" ? "classic" : "najdi"); render(false); });
     onAll("[data-pf]", b => showProfile(b.dataset.pf));
