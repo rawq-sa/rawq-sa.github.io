@@ -6,7 +6,7 @@ import {
   reauthenticateWithCredential, EmailAuthProvider, updateCurrentUser, OAuthProvider, signInWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot,
+  getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot,
   collection, query, where, runTransaction, writeBatch, serverTimestamp, deleteField,
   getCountFromServer, getDocFromServer, Timestamp, orderBy, limit, addDoc, getAggregateFromServer, sum, arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -215,7 +215,9 @@ if (configured) {
   const fb = initializeApp(firebaseConfig);
   auth = getAuth(fb);
   auth.languageCode = "ar"; // إيميلات فايربيس (نسيت كلمة السر) تجي بالعربي
-  db = getFirestore(fb);
+  // كاش محلي: يرجّع البيانات اللي ما تغيرت من الجوال بدل ما تنقرى من جديد (أسرع وأقل استهلاك)
+  try { db = initializeFirestore(fb, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
+  catch (e) { console.warn(e); db = getFirestore(fb); }
 }
 
 /* ================= state ================= */
@@ -907,6 +909,7 @@ function enterRoom(code, keep = false) {
     // كل غرفة جديدة تبدأ نظيفة: الجولات ترجع من ١، فما نخلي شي محفوظ من غرفة قبل
     ["hAns", "hDoneRound", "hStop", "hDoneCount", "wDraft", "wSent", "tDraft", "tSent", "tAdv", "unoTrail", "unoSeen", "jk", "jPrev", "jShuf", "jDeal", "jAnim", "jSeen", "dReplayed", "peek", "dGuessState"].forEach(k => ui[k] = null); }
   sub("room", onSnapshot(doc(db, "rooms", code), s => {
+    if (s.metadata.fromCache) return; // الغرفة لازم تكون من السيرفر دايماً
     if (!s.exists()) { exitRoomLocal("انتهت الغرفة"); return; }
     const prevPhase = room?.phase; room = s.data();
     if (prevPhase === "lobby" && room.phase !== "lobby" && room.players?.[me.uid]) bumpStreaks();
@@ -1607,7 +1610,7 @@ async function balProcess(list) {
       const b = writeBatch(db);
       changed.forEach(x => b.set(doc(db, "rooms", roomCode, "secrets", x), { round: room.round, role: "bal", hand: BAL.st.hands[x] || [] }));
       b.set(doc(db, "rooms", roomCode, "hidden", "bal"), { round: room.round, ...BAL.st, processed: BAL.processed });
-      const upd = { bal: g };
+      const upd = { bal: g, hb: serverTimestamp() }; ui.hbAt = Date.now();
       if (g.winner != null) {
         const scores = { ...(room.scores || {}) };
         g.order.filter((x, k) => teamOf(k) === g.winner).forEach(x => scores[x] = (scores[x] || 0) + 1);
@@ -1782,7 +1785,7 @@ async function jakProcess(list) {
       const b = writeBatch(db);
       changed.forEach(x => b.set(doc(db, "rooms", roomCode, "secrets", x), { round: room.round, role: "jak", hand: JAK.st.hands[x] }));
       b.set(doc(db, "rooms", roomCode, "hidden", "jak"), { round: room.round, ...JAK.st, processed: JAK.processed });
-      const upd = { jak: g };
+      const upd = { jak: g, hb: serverTimestamp() }; ui.hbAt = Date.now();
       if (g.winner != null) {
         const scores = { ...(room.scores || {}) };
         g.order.filter(x => jTeamOf(g, g.seats[x]) === g.winner).forEach(x => scores[x] = (scores[x] || 0) + 1);
