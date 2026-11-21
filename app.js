@@ -4924,6 +4924,7 @@ function playSay(g) {
   const ws = g.say.t.replace(/[^\u0600-\u06FF\s]/g, " ").split(/\s+/).filter(w => BSND[w]); let i = 0;
   const next = () => { if (i >= ws.length) return; const a = sndEl(BSND[ws[i++]]); a.onended = next; a.currentTime = 0; a.play().catch(() => {}); }; next();
 }
+const RBACK = `<svg viewBox="0 0 34 50" aria-hidden="true"><rect x=".5" y=".5" width="33" height="49" rx="4" fill="#fff"/><rect x="2.5" y="2.5" width="29" height="45" rx="3" fill="#2a1a4f"/><rect x="2.5" y="2.5" width="29" height="22" rx="3" fill="#fff" fill-opacity=".05"/><rect x="4.5" y="4.5" width="25" height="41" rx="2" fill="none" stroke="#f2b134" stroke-opacity=".45" stroke-width=".6"/><text x="17" y="29" text-anchor="middle" font-family="RawqRuqaa, serif" font-size="11" fill="#f2b134">روق</text></svg>`;
 const gameBar = (extra = "") => `<div class="gbar"><span class="gb-info">الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""} · الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}</span><span class="gb-btns">${extra}<button class="gi gchat ${chatUnread() ? "dot" : ""}" id="gChat" aria-label="شات الغرفة">💬</button><button class="gi" id="gRx" aria-label="رياكشن">😂</button><button class="gi" id="gRules" aria-label="القوانين">؟</button><button class="gx" id="gExit">${isHost() ? "إنهاء" : "خروج"} ✕</button></span></div>`;
 document.addEventListener("click", e => {
   if (e.target.closest?.("#autoBack")) { e.target.disabled = true; setDoc(doc(db, "rooms", roomCode, "moves", me.uid), { round: room.round, seq: Date.now(), type: "back", card: "", color: "" }).catch(() => {}); return; }
@@ -5388,21 +5389,21 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
     const waiting = ui.bWait === g.v; if (ui.bWait && ui.bWait !== g.v) ui.bWait = null;
     if (!ui.bk || ui.bk.v !== g.v) ui.bk = { v: g.v, sel: null };
     const najdiOk = owns(prof(me.uid), "bk_najdi"), look = najdiOk ? store.get("balLook", "classic") : "classic", face = (c, a = "") => (look === "najdi" ? balFace : classicFace)(bRank(c), bSuit(c), a);
-    const backS = a => look === "najdi" ? balBack(a) : jCardSVG(null, a);
+    const backS = a => look === "najdi" ? balBack(a) : RBACK;
     const ok = myTurn && g.phase === "play" && !waiting ? legal(g, myK, myHand) : [];
     const myT = playing ? teamOf(myK) : 0, us = g.score[myT], them = g.score[1 - myT];
     const spot = k => ["b", "r", "t", "l"][(k - base + 4) % 4];
-    const seat = k => { const u = ord[k], sp = spot(k); return `<button class="bseat ${sp} ${k === g.turn && g.winner == null && g.phase !== "res" ? "turn" : ""} ${teamOf(k) === myT ? "mate" : ""}" data-pf="${esc(u)}" style="--c:${teamOf(k) === myT ? "#3ecf8e" : "#e0565b"}"><span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}${k === g.turn && g.winner == null && g.phase !== "res" ? `<svg class="btmr" viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="28" style="animation-duration:${BAL_T}s;animation-delay:-${(BAL_T - tm.left).toFixed(1)}s"/></svg>` : ""}</span>${g.say?.k === k ? `<span class="bsay">${esc(g.say.t)}</span>` : ""}<b class="btag">${g.auto?.[u] ? "🤖 " : ""}${u === me.uid ? "أنت" : esc(pname(u))}${k === g.buyer ? " 🛒" : ""}${k === g.dealer ? " 🃏" : ""}</b>${sp !== "b" ? `<span class="bbk">${Array.from({ length: Math.min(8, g.cnt?.[u] ?? 0) }, () => backS()).join("")}</span>` : ""}</button>`; };
+    const seat = k => { const u = ord[k], sp = spot(k); return `<button class="bseat ${sp} ${k === g.turn && g.winner == null && g.phase !== "res" ? "turn" : ""} ${teamOf(k) === myT ? "mate" : ""}" data-pf="${esc(u)}" style="--c:${teamOf(k) === myT ? "#3ecf8e" : "#e0565b"}"><span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}${k === g.turn && g.winner == null && g.phase !== "res" ? `<svg class="btmr" viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="28" style="animation-duration:${BAL_T}s;animation-delay:-${(BAL_T - tm.left).toFixed(1)}s"/></svg>` : ""}</span>${g.say?.k === k ? `<span class="bsay">${esc(g.say.t)}</span>` : ""}<b class="btag">${g.auto?.[u] ? "🤖 " : ""}${u === me.uid ? "أنت" : esc(pname(u))}${k === g.buyer ? " 🛒" : ""}${k === g.dealer ? " 🃏" : ""}</b>${sp !== "b" ? `<span class="bbk">${((n) => Array.from({ length: n }, (_, i) => `<i style="--r:${((i - (n - 1) / 2) * 14).toFixed(1)}deg">${backS()}</i>`).join(""))(Math.min(8, g.cnt?.[u] ?? 0))}</span>` : ""}</button>`; };
     const trick = (g.trick.length ? g.trick : g.lastTrick || []).map(x => `<span class="btc ${spot(x.k)} ${g.trick.length ? "" : "old"}">${face(x.c)}</span>`).join("");
     const modeTxt = g.mode ? (g.mode === "sun" ? "☀️ صن" : "🃏 حكم " + SUIT_IC[g.trump]) + " · " + esc(atn(pname(ord[g.buyer]))) : g.phase === "bid2" ? "الشراء: الدور الثاني" : "الشراء";
     const tm = balTimeLeft(g);
     const bidding = g.phase === "bid1" || g.phase === "bid2";
     const tip = g.winner != null ? "" : g.phase === "res" ? "انتهت التوزيعة 🎉" : !myTurn ? `ننتظر ${esc(atn(pname(turnU)))}` : waiting ? "لحظة…" : bidding ? "دورك تشتري؟" : "دورك! العب ورقة 👇";
     const bidBtns = myTurn && bidding && !waiting ? `<div class="bbids">
-      <button class="btn small ghost" data-bid="pass">بس</button>
-      <button class="btn small" data-bid="sun">☀️ صن</button>
-      ${g.bid ? "" : g.phase === "bid1" ? `<button class="btn small" data-bid="hokm" data-s="${bSuit(g.shown)}">🃏 حكم ${SUIT_IC[bSuit(g.shown)]}</button>` : ["s", "h", "d", "c"].filter(s => s !== bSuit(g.shown)).map(s => `<button class="btn small" data-bid="hokm" data-s="${s}">حكم ${SUIT_IC[s]}</button>`).join("")}
-      ${g.asked >= 2 && !g.bid ? `<button class="btn small ghost" data-bid="ashkal">🔁 أشكال</button>` : ""}
+      <button class="bbid" data-bid="pass">${g.phase === "bid2" ? "ولا" : "بس"}</button>
+      <button class="bbid gold" data-bid="sun">صن</button>
+      ${g.bid ? "" : g.phase === "bid1" ? `<button class="bbid gold" data-bid="hokm" data-s="${bSuit(g.shown)}">حكم ${SUIT_IC[bSuit(g.shown)]}</button>` : ["s", "h", "d", "c"].filter(s => s !== bSuit(g.shown)).map(s => `<button class="bbid gold" data-bid="hokm" data-s="${s}">حكم ${SUIT_IC[s]}</button>`).join("")}
+      ${g.asked >= 2 && !g.bid ? `<button class="bbid" data-bid="ashkal">أشكال</button>` : ""}
 </div>` : "";
     const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres"><b>${g.res.mode === "sun" ? "صن" : "حكم"}</b><span>لنا +${ar(g.res.pts[myT])}</span><span>لهم +${ar(g.res.pts[1 - myT])}</span>${g.res.note ? `<i>${esc(g.res.note)}</i>` : ""}${isHost() && g.phase === "res" ? `<button class="btn small" id="bNext">التوزيعة الجاية</button>` : ""}</div>` : "";
     const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(60, (HW + 8 - 96) / (hn - 1)) : 0;
@@ -5414,10 +5415,10 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         <div class="btrick">${bidding ? `<span class="bshown">${face(g.shown)}<i>ورقة الشراء</i></span>` : trick}</div>
         ${g.prj?.length && (g.tricks <= 2 || g.last?.includes("بلوت!")) ? `<span class="bprj">📣 ${g.prj.map(x => `${esc(pname(ord[x.k]))}: ${PRJ_AR[x.t]}`).join(" · ")}</span>` : ""}
         ${res}
-        <p class="ulast">${esc(g.last || "")}</p>${bidBtns}
+        <p class="ulast">${esc(g.last || "")}</p>
       </div>
 ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحين <button class="btn small" id="autoBack">ارجع العب بنفسك</button></div>` : ""}
-      <div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>
+      ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : \`<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>\`}</div>`}
       
       ${playing && myTurn && g.phase === "play" ? (() => {
         const first = g.tricks === 0 && !g.trick.some(x => x.k === myK);
