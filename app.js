@@ -360,6 +360,26 @@ const BACK = {
   "l-most": "local", "l-five": "local", "l-scores": "local",
   gjoin: "auth", daily: () => me?.username && !me.guest ? "home" : "auth", "l-kal": "local", "l-kq": "l-kal", "l-draw": "local", "l-tf": "local", "l-who": "local"
 };
+/* ================= الشريط السفلي (زجاجي) ================= */
+const NAV_SCREENS = new Set(["home", "friends", "rank", "shop", "profile"]);
+const NAV_DEFS = `<defs><linearGradient id="nvF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity=".08"/></linearGradient><linearGradient id="nvS" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/></linearGradient></defs>`;
+const NAV_IC = {
+  home: '<path d="M3.5 10.5 12 3.5l8.5 7V20a.8.8 0 0 1-.8.8H15v-5.3h-6v5.3H4.3a.8.8 0 0 1-.8-.8z"/>',
+  friends: '<circle cx="9" cy="8" r="3.4"/><path d="M2.8 20.2c0-3.5 2.8-6.3 6.2-6.3s6.2 2.8 6.2 6.3z"/><circle cx="17.2" cy="9" r="2.7"/><path d="M15.8 14.3c3 0 5.4 2.4 5.4 5.4h-4.3"/>',
+  rank: '<path d="M7.5 3.8h9v5.4a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 5.8H4.8a3.2 3.2 0 0 0 3.4 4.3M16.5 5.8h2.7a3.2 3.2 0 0 1-3.4 4.3" fill="none"/><path d="M10.5 13.6h3v3.6h-3z"/><rect x="7.8" y="17.2" width="8.4" height="3.2" rx="1"/>',
+  shop: '<path d="M4.8 8h14.4l-1.1 12.2a.9.9 0 0 1-.9.8H6.8a.9.9 0 0 1-.9-.8z"/><path d="M9 8V6.4a3 3 0 0 1 6 0V8" fill="none"/>',
+  profile: '<circle cx="12" cy="8" r="4.2"/><path d="M3.8 20.6c0-4.5 3.7-8.1 8.2-8.1s8.2 3.6 8.2 8.1z"/>'
+};
+let NAV = null;
+function renderNav() {
+  const show = !!(me?.username && !me.guest && NAV_SCREENS.has(screen));
+  document.body.classList.toggle("has-nav", show);
+  if (!show) { if (NAV) NAV.hidden = true; return; }
+  if (!NAV) { NAV = document.createElement("nav"); NAV.className = "bnav"; NAV.setAttribute("aria-label", "التنقل"); document.body.appendChild(NAV); NAV.addEventListener("click", e => { const b = e.target.closest("[data-nv]"); if (b && b.dataset.nv !== screen) go(b.dataset.nv); }); }
+  NAV.hidden = false;
+  const items = [["home", "الرئيسية"], ["friends", "أصحابي"], ["rank", "الترتيب"], ...(!IN_APP || IAP_ON ? [["shop", "المتجر"]] : []), ["profile", "أنا"]];
+  NAV.innerHTML = items.map(([k, t]) => `<button data-nv="${k}" class="${screen === k ? "on" : ""} ${k === "friends" && reqIn.length ? "dot" : ""}" ${screen === k ? 'aria-current="page"' : ""}><svg viewBox="0 0 24 24" width="26" height="26" fill="url(#nvF)" stroke="url(#nvS)" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${NAV_DEFS}${NAV_IC[k]}</svg><span>${t}</span></button>`).join("");
+}
 function renderHeader() {
   let h = "";
   if (roomCode && screen !== "room") h += `<button class="pill hot" id="hRoom">الغرفة ${esc(roomCode)}</button>`;
@@ -367,13 +387,11 @@ function renderHeader() {
   if (back) h += `<button class="pill" id="hBack">رجوع</button>`;
   if (me?.username && !me.guest && !back && screen !== "room" && screen !== "welcome") {
     if (isOwner()) h += `<button class="pill hot" id="hAdmin" aria-label="لوحة المالك">👑</button>`;
-    h += `<button class="pill add" id="hFriends"><span aria-hidden="true">+</span> أضف صديق${reqIn.length ? `<span class="badge">${ar(reqIn.length)}</span>` : ""}</button>`;
-    if (!IN_APP || IAP_ON) h += `<button class="pill shop ${isOwner() ? "mini" : ""}" id="hShop" aria-label="متجر روق"><span class="ps-ic" aria-hidden="true">${ICONS.shop}</span><span class="ps-t">المتجر</span></button>`;
     const un = unreadCount();
     h += `<button class="pill icon" id="hChat" aria-label="الرسائل">💬${un ? `<span class="badge">${ar(un)}</span>` : ""}</button>`;
-    h += `<button class="me-btn" id="hMe" aria-label="بروفايلي">${avatar(me.username, me.photo, 38)}</button>`;
   }
   HDR.innerHTML = h;
+  renderNav();
   HDR.querySelector("#hRoom")?.addEventListener("click", () => go("room"));
   HDR.querySelector("#hBack")?.addEventListener("click", () => go(typeof back === "function" ? back() : back));
   HDR.querySelector("#hFriends")?.addEventListener("click", () => go("friends"));
