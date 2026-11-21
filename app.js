@@ -5418,7 +5418,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         <p class="ulast">${esc(g.last || "")}</p>
       </div>
 ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحين <button class="btn small" id="autoBack">ارجع العب بنفسك</button></div>` : ""}
-      ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : \`<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>\`}</div>`}
+      ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>`}
       
       ${playing && myTurn && g.phase === "play" ? (() => {
         const first = g.tricks === 0 && !g.trick.some(x => x.k === myK);
