@@ -1383,6 +1383,15 @@ video.share-img{background:#000}
 .pfx-row span{flex:1}.pfx-row small{opacity:.55;font-weight:600;font-size:13px}.pfx-row b{opacity:.4;font-size:20px}
 .pfx-shop{align-self:center}.pfx-back{align-self:flex-start;margin-top:8px}
 .pfx-wrap[hidden],.pfx-back[hidden],section>.field[hidden]{display:none!important}
+.pfx-panel{overflow:visible}
+.pfx-panel .looks{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;overflow:visible;padding:2px}
+.pfx-panel .looks:has(.frm){grid-template-columns:repeat(3,1fr)}
+.pfx-panel .look{width:auto;min-width:0;padding:12px 8px}
+.pfx-panel .look .look-pv{width:min(100%,130px);height:auto;aspect-ratio:1}
+.pfx-panel .look.back .look-pv{width:min(70%,86px);aspect-ratio:2/3}
+.pfx-panel .look.frm .look-pv{width:min(100%,84px);aspect-ratio:1}
+.pfx-panel .look b{font-size:14px}
+.pfx-panel .look:not(.frm) .look-pv>svg{width:100%;height:100%;display:block}
 </style>
 </head>
 <body>
