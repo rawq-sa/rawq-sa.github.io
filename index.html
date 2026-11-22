@@ -1436,6 +1436,11 @@ video.share-img{background:#000}
 .sd-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .sd-it{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);text-align:center;font-size:11.5px;overflow:hidden}
 .sd-it .sp-pl{transform:scale(.55);margin:-14px -40px}.sd-it img.sp-ic{max-width:64px;height:auto}
+.jring:has(.frx){box-shadow:none!important;background:none}
+.jring .frx{margin:0}
+.jpod.turn .jring:has(.frx),.bseat.turn .jring:has(.frx){box-shadow:none!important;animation:frxTurn 1.1s ease-in-out infinite alternate}
+@keyframes frxTurn{from{filter:drop-shadow(0 0 4px #f2b134)}to{filter:drop-shadow(0 0 14px #f2b134)}}
+
 </style>
 </head>
 <body>
