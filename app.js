@@ -10,7 +10,8 @@ import {
   collection, query, where, runTransaction, writeBatch, serverTimestamp, deleteField,
   getCountFromServer, getDocFromServer, Timestamp, orderBy, limit, addDoc, getAggregateFromServer, sum, arrayUnion, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, authUrl } from "./firebase-config.js?v=27";
+import { firebaseConfig, authUrl, appCheckKey } from "./firebase-config.js?v=28";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } from "./content.js?v=31";
 import { ICONS } from "./icons.js?v=33";
 import { DECO, fxLayer } from "./deco.js?v=1";
@@ -213,6 +214,8 @@ const configured = !String(firebaseConfig.apiKey || "").startsWith("PASTE");
 let auth = null, db = null;
 if (configured) {
   const fb = initializeApp(firebaseConfig);
+  // App Check: يثبت إن الطلبات جاية من موقع روق الحقيقي (يوقف السبام). يشتغل بس إذا فيه مفتاح
+  if (appCheckKey) { try { initializeAppCheck(fb, { provider: new ReCaptchaV3Provider(appCheckKey), isTokenAutoRefreshEnabled: true }); } catch (e) { console.error(e); } }
   auth = getAuth(fb);
   auth.languageCode = "ar"; // إيميلات فايربيس (نسيت كلمة السر) تجي بالعربي
   // كاش محلي: يرجّع البيانات اللي ما تغيرت من الجوال بدل ما تنقرى من جديد (أسرع وأقل استهلاك)

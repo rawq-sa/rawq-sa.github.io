@@ -8,5 +8,8 @@ export const firebaseConfig = {
   appId: "1:472714427664:web:0b9109e904be16168fb995"
 };
 
+// مفتاح reCAPTCHA v3 لـ App Check. فاضي = مقفول (ما يأثر على شي)
+export const appCheckKey = "";
+
 // رابط دالة الدخول باليوزر (Cloud Function). فاضي = الدخول بالإيميل بس
 export const authUrl = "";
