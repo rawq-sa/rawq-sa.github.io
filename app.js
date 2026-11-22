@@ -8,7 +8,7 @@ import {
 import {
   getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot,
   collection, query, where, runTransaction, writeBatch, serverTimestamp, deleteField,
-  getCountFromServer, getDocFromServer, Timestamp, orderBy, limit, addDoc, getAggregateFromServer, sum, arrayUnion
+  getCountFromServer, getDocFromServer, Timestamp, orderBy, limit, addDoc, getAggregateFromServer, sum, arrayUnion, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, authUrl } from "./firebase-config.js?v=27";
 import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } from "./content.js?v=31";
@@ -3348,7 +3348,7 @@ VIEWS.admin = () => {
         ${r.text ? `<p class="rep-t" dir="auto">${esc(r.text)}</p>` : ""}
         ${r.msgs ? `<p class="rep-m" dir="auto">رسايله: ${esc(r.msgs)}</p>` : ""}
         <span class="hint">بلّغ: <span dir="ltr">@${esc(r.byName || "")}</span> · ${esc(r.at?.toDate?.().toLocaleString("ar-SA", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) || "")}</span>
-        <div class="row"><button class="btn small danger" data-repban="${esc(r.id)}">احظره</button><button class="btn small ghost" data-repdel="${esc(r.id)}">تجاهل</button></div></div>`).join("")}</div>`
+        <div class="row"><button class="btn small danger" data-repban="${esc(r.id)}">احظره</button><button class="btn small ghost" data-repmute="${esc(r.id)}">كتم يوم</button><button class="btn small ghost" data-repwarn="${esc(r.id)}">إنذار</button><button class="btn small ghost" data-repdel="${esc(r.id)}">تجاهل</button></div></div>`).join("")}</div>`
         : `<p class="hint">${adm.repLoaded ? "ما فيه بلاغات 👌" : "…"}</p>`}
     </div>
 
@@ -3403,6 +3403,15 @@ VIEWS.admin = () => {
   if (!adm.repLoaded && !adm.repLoading) loadReports();
   on("repLoad", "click", loadReports);
   onAll("[data-repdel]", b => delReport(b.dataset.repdel));
+  onAll("[data-repwarn]", async b => {
+    const r = adm.reports.find(x => x.id === b.dataset.repwarn); if (!r?.target) return;
+    try { await updateDoc(doc(db, "users", r.target), { warns: increment(1) }); toast("أُرسل الإنذار"); } catch (err) { console.error(err); toast("ما انحفظ الإنذار"); }
+  });
+  onAll("[data-repmute]", async b => {
+    if (!confirmTap(b, "متأكد؟")) return;
+    const r = adm.reports.find(x => x.id === b.dataset.repmute); if (!r?.target) return;
+    try { await updateDoc(doc(db, "users", r.target), { mutedUntil: Date.now() + 24 * 3600 * 1000 }); toast("انكتم يوم"); } catch (err) { console.error(err); toast("ما انحفظ الكتم"); }
+  });
   onAll("[data-repban]", async b => {
     if (!confirmTap(b, "متأكد؟")) return;
     const r = adm.reports.find(x => x.id === b.dataset.repban); if (!r) return;
@@ -3965,11 +3974,11 @@ function openReport(uid, name) {
   }));
   el.querySelector("#repGo").addEventListener("click", async e => {
     const btn = e.currentTarget; btn.disabled = true; btn.textContent = "لحظة…";
-    const recent = roomChat.filter(m => m.uid === uid).slice(-3).map(m => m.text).join(" | ").slice(0, 300);
+    const recent = roomChat.filter(m => m.uid === uid).slice(-10).map(m => m.text).join(" | ").slice(0, 800);
     try {
       await addDoc(collection(db, "reports"), { by: me.uid, byName: me.username, target: uid, targetName: name, why,
         text: cleanMsg(document.getElementById("repTxt").value).slice(0, 200), msgs: recent, room: roomCode || "", at: serverTimestamp() });
-      close(); toast("وصل البلاغ، شكرًا 🙏");
+      close(); toast("✅ وصلنا بلاغك، شكراً");
     } catch (err) { console.error(err); btn.disabled = false; btn.textContent = "أرسل البلاغ"; toast("ما انرسل البلاغ"); }
   });
 }
