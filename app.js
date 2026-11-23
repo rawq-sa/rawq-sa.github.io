@@ -5559,7 +5559,21 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       ${g.bid ? "" : g.phase === "bid1" ? `<button class="bbid gold" data-bid="hokm" data-s="${bSuit(g.shown)}">حكم ${SUIT_IC[bSuit(g.shown)]}</button>` : ["s", "h", "d", "c"].filter(s => s !== bSuit(g.shown)).map(s => `<button class="bbid gold" data-bid="hokm" data-s="${s}">حكم ${SUIT_IC[s]}</button>`).join("")}
       ${g.asked >= 2 && !g.bid ? `<button class="bbid" data-bid="ashkal">أشكال</button>` : ""}
 </div>` : g.phase === "dbl" && myTurn && !waiting ? `<div class="bbids"><button class="bbid" data-dbl="0">بس</button><button class="bbid gold" data-dbl="1">${["دبل", "ثري", "فور", "قهوة ☕"][g.dbl?.s || 0]}</button></div>` : "";
-    const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres"><b>${g.res.mode === "sun" ? "صن" : "حكم"}</b><span>لنا +${ar(g.res.pts[myT])}</span><span>لهم +${ar(g.res.pts[1 - myT])}</span>${g.res.note ? `<i>${esc(g.res.note)}</i>` : ""}${isHost() && g.phase === "res" ? `<button class="btn small" id="bNext">التوزيعة الجاية</button>` : ""}</div>` : "";
+    const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres bres2" dir="rtl" style="background:#0f0b1f;color:#f5ecd7;border-radius:18px;padding:14px;margin:8px auto;max-width:340px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;opacity:.7;margin-bottom:10px"><span>${g.res.mode === "sun" ? "صن" : "حكم"}</span><span>${g.res.buyer != null && teamOf(g.res.buyer) === myT ? "فريقنا اشترى" : "الخصم اشترى"}</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1px 1fr;align-items:center;padding:2px 4px 12px">
+        <div style="text-align:center"><div style="font-size:12px;opacity:.6">لنا</div><div style="font-size:40px;font-weight:500;color:#f2b134;line-height:1">${ar(g.res.pts[myT])}</div></div>
+        <div style="height:50px;background:#f5ecd726"></div>
+        <div style="text-align:center"><div style="font-size:12px;opacity:.6">لهم</div><div style="font-size:40px;font-weight:500;line-height:1">${ar(g.res.pts[1 - myT])}</div></div>
+      </div>
+      <div style="background:#2a1a4f;border-radius:12px;overflow:hidden;font-size:14px">
+        <div style="display:grid;grid-template-columns:1.2fr 1px 1fr 1px 1fr;align-items:center;padding:8px 12px;opacity:.6"><span>الفئة</span><span></span><span style="text-align:center">لنا</span><span></span><span style="text-align:center">لهم</span></div>
+        <div style="display:grid;grid-template-columns:1.2fr 1px 1fr 1px 1fr;align-items:center;padding:10px 12px;border-top:1px solid #f5ecd714"><span>الأكلات</span><span style="height:18px;background:#f5ecd726"></span><b style="text-align:center;color:#f2b134">${ar(g.res.ab?.[myT] ?? 0)}</b><span style="height:18px;background:#f5ecd726"></span><b style="text-align:center">${ar(g.res.ab?.[1 - myT] ?? 0)}</b></div>
+        <div style="display:grid;grid-template-columns:1.2fr 1px 1fr 1px 1fr;align-items:center;padding:11px 12px;background:#f5ecd714;border-top:1px solid #f5ecd726"><span style="color:#f2b134">المجموع</span><span style="height:18px;background:#f5ecd726"></span><b style="text-align:center;color:#f2b134">${ar(g.res.pts[myT])}</b><span style="height:18px;background:#f5ecd726"></span><b style="text-align:center">${ar(g.res.pts[1 - myT])}</b></div>
+      </div>
+      ${g.res.note ? `<i style="display:block;font-size:12px;opacity:.7;margin-top:8px;text-align:center">${esc(g.res.note)}</i>` : ""}
+      ${isHost() && g.phase === "res" ? `<button class="btn" id="bNext" style="width:100%;margin-top:12px;background:#f2b134;color:#2a1a4f;border-radius:14px">التوزيعة الجاية</button>` : ""}
+    </div>` : "";
     const dealA = ui.bDealK !== g.hand + "|" + myHand.length && (myHand.length === 5 || (myHand.length === 8 && g.tricks === 0 && !g.trick.length)); ui.bDealK = g.hand + "|" + myHand.length;
     const hn = myHand.length, HW = Math.min(V.clientWidth || 360, 460) - 24, st = hn > 1 ? Math.min(60, (HW + 8 - 96) / (hn - 1)) : 0;
     const fan = k => { const d = k - (hn - 1) / 2, r = 0; return `--i:${k};--x:${(d * st).toFixed(1)}px;--r:${r.toFixed(2)}deg;--y:${(r * r * .14).toFixed(1)}px;z-index:${k + 1}`; };
