@@ -3977,7 +3977,7 @@ function openReport(uid, name) {
   }));
   el.querySelector("#repGo").addEventListener("click", async e => {
     const btn = e.currentTarget; btn.disabled = true; btn.textContent = "لحظة…";
-    const recent = roomChat.filter(m => m.uid === uid).slice(-10).map(m => m.text).join(" | ").slice(0, 800);
+    const recent = roomChat.slice(-10).map(m => (m.uid === uid ? "[المبلّغ عنه] " : "") + m.text).join(" | ").slice(0, 1200);
     try {
       await addDoc(collection(db, "reports"), { by: me.uid, byName: me.username, target: uid, targetName: name, why,
         text: cleanMsg(document.getElementById("repTxt").value).slice(0, 200), msgs: recent, room: roomCode || "", at: serverTimestamp() });
