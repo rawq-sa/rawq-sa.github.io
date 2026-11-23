@@ -5041,6 +5041,8 @@ document.addEventListener("pointerdown", () => { try { const c = getAC(), s = c.
 let sayKey = null, AC = null;
 function sfx(kind) {
   if (!sndOn()) return;
+  if (kind === "sweep") return; // سحب اللمة صامت، والفايز يبان بالشاشة
+  if (kind === "card") { sndBuf("card").then(buf => { if (!buf || !sndOn()) return; try { const c = getAC(), s = c.createBufferSource(), g = c.createGain(); s.buffer = buf; g.gain.value = .9; s.connect(g); g.connect(c.destination); s.start(); } catch (e) {} }); return; }
   try {
     getAC();
     const t = AC.currentTime, out = AC.createGain(); out.connect(AC.destination);
