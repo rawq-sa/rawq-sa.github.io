@@ -5624,8 +5624,8 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       };
       let y0 = null, dragPlayed = false;
       b.addEventListener("pointerdown", e => { y0 = e.clientY; dragPlayed = false; });
-      b.addEventListener("pointermove", e => { if (y0 == null) return; const up = y0 - e.clientY; b.style.translate = up > 12 ? "0 -" + Math.min(70, up * 0.6).toFixed(0) + "px" : ""; });
-      b.addEventListener("pointerup", e => { if (y0 == null) return; const up = y0 - e.clientY; y0 = null; b.style.translate = ""; if (up >= 90) { dragPlayed = true; ui.bk.sel = b.dataset.bc; tap(b.dataset.bc); } });
+      b.addEventListener("pointermove", e => { if (y0 == null) return; const up = y0 - e.clientY; b.style.translate = up > 3 ? "0 -" + Math.min(70, up).toFixed(0) + "px" : ""; });
+      b.addEventListener("pointerup", e => { if (y0 == null) return; const up = y0 - e.clientY; y0 = null; b.style.translate = ""; if (up >= 50) { dragPlayed = true; ui.bk.sel = b.dataset.bc; tap(b.dataset.bc); } });
       b.addEventListener("pointercancel", () => { y0 = null; b.style.translate = ""; });
       b.addEventListener("click", () => { if (dragPlayed) { dragPlayed = false; return; } tap(b.dataset.bc); });
     });
