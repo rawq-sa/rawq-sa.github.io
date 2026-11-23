@@ -5580,8 +5580,8 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       ${isHost() && g.phase === "res" ? `<button class="btn" id="bNext" style="width:100%;margin-top:12px;background:#f2b134;color:#2a1a4f;border-radius:14px">التوزيعة الجاية</button>` : ""}
     </div>` : "";
     const dealA = ui.bDealK !== g.hand + "|" + myHand.length && (myHand.length === 5 || (myHand.length === 8 && g.tricks === 0 && !g.trick.length)); ui.bDealK = g.hand + "|" + myHand.length;
-    const hn = myHand.length, CWd = (V.clientWidth || 360) + 20, HSTEP = 40, htot = 80 + HSTEP * (hn - 1), hoff = Math.max(0, (CWd - htot) / 2);
-    const fan = k => `--i:${k};--x:${(hoff + k * HSTEP - (CWd / 2 - 40)).toFixed(1)}px;--r:0deg;--y:0px;z-index:${k + 1}`;
+    const hn = myHand.length, CWd = (V.clientWidth || 360) + 20, HSTEP = 38, htot = 68 + HSTEP * (hn - 1), hoff = Math.max(0, (CWd - htot) / 2);
+    const fan = k => `--i:${k};--x:${(hoff + k * HSTEP - (CWd / 2 - 34)).toFixed(1)}px;--r:0deg;--y:0px;z-index:${k + 1}`;
     V.innerHTML = `<section class="bal gscreen">${gameBar(`<button class="gi" id="bSnd" aria-label="الصوت">${sndOn() ? "🔊" : "🔇"}</button><button class="gi" id="bLook" aria-label="شكل الورق">🎴</button>`)}
       <div class="btable">${tableSVG(myLook().t)}
         <div class="btop"><div class="bsc" id="bHist" role="button" aria-label="سجل الصكة"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
