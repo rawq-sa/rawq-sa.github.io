@@ -5632,23 +5632,20 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       b.addEventListener("click", () => { if (ui.bDragged) return; tap(b.dataset.bc); });
       b.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
       b.addEventListener("dragstart", e => e.preventDefault());
-      b.addEventListener("pointerdown", e => {
-        if (e.button > 0) return;
-        const sx = e.clientX, sy = e.clientY, r0 = b.getBoundingClientRect(); let gh = null;
-        const move = ev => {
-          const dx = ev.clientX - sx, dy = ev.clientY - sy;
-          if (!gh) { if (Math.hypot(dx, dy) < 10) return; gh = document.createElement("div"); gh.className = "ughost"; gh.innerHTML = b.innerHTML; gh.style.cssText = `left:${r0.left}px;top:${r0.top}px;width:${r0.width}px;height:${r0.height}px`; document.body.appendChild(gh); }
-          ev.preventDefault(); gh.style.transform = `translate(${dx}px,${dy}px) scale(1.1)`;
-        };
-        const up = ev => {
-          window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
-          if (!gh) return;
-          gh.remove(); ui.bDragged = true; setTimeout(() => ui.bDragged = false, 80);
-          const t = V.querySelector(".btable")?.getBoundingClientRect();
-          if (t && ev.clientX > t.left && ev.clientX < t.right && ev.clientY > t.top && ev.clientY < t.bottom) { ui.bk.sel = b.dataset.bc; tap(b.dataset.bc); }
-        };
-        window.addEventListener("pointermove", move, { passive: false }); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+      let tsx = 0, tsy = 0, tr0 = null, tgh = null;
+      b.addEventListener("touchstart", e => { const t = e.touches[0]; tsx = t.clientX; tsy = t.clientY; tr0 = b.getBoundingClientRect(); tgh = null; }, { passive: true });
+      b.addEventListener("touchmove", e => {
+        const t = e.touches[0], dx = t.clientX - tsx, dy = t.clientY - tsy;
+        if (!tgh) { if (Math.hypot(dx, dy) < 10) return; tgh = document.createElement("div"); tgh.className = "ughost"; tgh.innerHTML = b.innerHTML; tgh.style.cssText = `left:${tr0.left}px;top:${tr0.top}px;width:${tr0.width}px;height:${tr0.height}px`; document.body.appendChild(tgh); }
+        e.preventDefault(); tgh.style.transform = `translate(${dx}px,${dy}px) scale(1.1)`;
+      }, { passive: false });
+      b.addEventListener("touchend", e => {
+        if (!tgh) return;
+        const t = e.changedTouches[0]; tgh.remove(); tgh = null; ui.bDragged = true; setTimeout(() => ui.bDragged = false, 300);
+        const tb = V.querySelector(".btable")?.getBoundingClientRect();
+        if (tb && t.clientX > tb.left && t.clientX < tb.right && t.clientY > tb.top && t.clientY < tb.bottom) { ui.bk.sel = b.dataset.bc; tap(b.dataset.bc); }
       });
+      b.addEventListener("touchcancel", () => { if (tgh) { tgh.remove(); tgh = null; } });
     });
     on("bPrjAll", "click", () => { const first = g.tricks === 0; if (!first) return; const my = projects(g, myHand); ui.bDec = ui.bDec || new Set(); const all = my.every(x => ui.bDec.has(x.t)); my.forEach(x => all ? ui.bDec.delete(x.t) : ui.bDec.add(x.t)); if (V.querySelector('[data-dec="baloot"]')) ui.bBal = !all; render(false); });
     onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
