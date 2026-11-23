@@ -5627,9 +5627,11 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         if (!myTurn || g.phase !== "play") return toast(g.phase === "play" ? "مو دورك" : "الحين وقت الشراء");
         if (!ok.includes(c)) return toast("لازم تلحق الشكل" + (g.mode === "hokm" ? " أو تقطع بالحكم" : ""));
         if (ui.bk.sel === c) { ui.bk.sel = null; const dx = {}; if (ui.bDec?.size) dx.dec = [...ui.bDec]; if (ui.bBal && g.mode === "hokm" && bSuit(c) === g.trump && "KQ".includes(bRank(c))) dx.bal = 1; ui.bDec = null; return balMove("play", c, Object.keys(dx).length ? dx : undefined); }
-        ui.bk.sel = c; render(false);
+        ui.bk.sel = c; V.querySelectorAll("[data-bc]").forEach(x => x.classList.toggle("sel", x.dataset.bc === c));
       };
       b.addEventListener("click", () => tap(b.dataset.bc));
+      b.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
+      b.addEventListener("dragstart", e => e.preventDefault());
     });
     on("bPrjAll", "click", () => { const first = g.tricks === 0; if (!first) return; const my = projects(g, myHand); ui.bDec = ui.bDec || new Set(); const all = my.every(x => ui.bDec.has(x.t)); my.forEach(x => all ? ui.bDec.delete(x.t) : ui.bDec.add(x.t)); if (V.querySelector('[data-dec="baloot"]')) ui.bBal = !all; render(false); });
     onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
