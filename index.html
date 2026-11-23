@@ -37,7 +37,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js">
-<link rel="modulepreload" href="./app.js?v=194">
+<link rel="modulepreload" href="./app.js?v=195">
 <link rel="modulepreload" href="./content.js?v=31">
 <link rel="modulepreload" href="./icons.js?v=33">
 <link rel="modulepreload" href="./uno.js?v=41">
@@ -835,7 +835,7 @@ body.ingame .rx-bar:not(.open){display:none}
 section.gscreen{gap:8px}
 section.gscreen .uhand.jfan{height:122px;margin-top:4px}
 section.gscreen .ulast{font-size:12.5px}
-.btable{margin:46px -8px 40px!important}
+.btable{margin:46px -8px 14px!important}
 .jstage{margin:26px -8px 24px!important}
 /* صفحة التحميل */
 .boot{margin:auto;min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}
@@ -934,7 +934,7 @@ section.gscreen .uhand.jfan.bfan{height:150px;margin-inline:-10px}
 .bseat.turn .jring{box-shadow:0 0 0 3px var(--c),0 0 0 6px #f2b134,0 0 22px #f2b134;animation:jpulse 1.1s ease-in-out infinite alternate}
 
 .bbk{display:flex;margin-top:3px;direction:ltr}.bbk svg{width:20px;height:30px;margin-left:-12px;filter:drop-shadow(0 2px 3px #0008);border-radius:3px}.bbk svg:first-child{margin-left:0}
-.btrick{position:absolute;inset:18% 18%;z-index:2}.btc{position:absolute;width:28%;max-width:74px;transition:.3s}.btc svg,.bshown svg{width:100%;height:auto;display:block;filter:drop-shadow(0 4px 6px #0007)}
+.btrick{position:absolute;inset:18% 18%;z-index:2}.btc{position:absolute;width:min(96px,27vw);max-width:none;transition:.3s}.btc svg,.bshown svg{width:100%;height:auto;display:block;filter:drop-shadow(0 4px 6px #0007)}
 .btc.b{bottom:4%;left:50%;transform:translateX(-50%)}.btc.t{top:4%;left:50%;transform:translateX(-50%) rotate(180deg)}.btc.r{right:4%;top:50%;transform:translateY(-50%) rotate(-90deg)}.btc.l{left:4%;top:50%;transform:translateY(-50%) rotate(90deg)}
 .btc.old{opacity:.45}
 .btc.b{--fx:0px;--fy:160px}.btc.t{--fx:0px;--fy:-160px}.btc.l{--fx:-160px;--fy:0px}.btc.r{--fx:160px;--fy:0px}
@@ -947,6 +947,7 @@ section.gscreen .uhand.jfan.bfan{height:150px;margin-inline:-10px}
 .bres{position:absolute;z-index:5;inset:30% 14% auto;background:#1c1530ee;border:1px solid var(--saffron);border-radius:16px;padding:12px;display:grid;gap:4px;justify-items:center;text-align:center}.bres b{color:var(--saffron);font-family:var(--display);font-size:20px}.bres i{font-style:normal;color:#ffb3b3}
 .bbids{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:6px 0}
 .uhand.jfan.bfan .ucard{width:96px}
+section.gscreen .uhand.jfan.bfan{height:190px;margin-top:-40px;margin-inline:-10px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x}
 /* الإطارات المرسومة */
 .frx{position:relative;display:inline-grid;place-items:center;width:var(--s);height:var(--s);flex:none;isolation:isolate;margin:calc(var(--s) * .12)}
 .frx>.av{position:relative;z-index:0}
@@ -1459,6 +1460,6 @@ video.share-img{background:#000}
   <main id="view"><div class="boot" role="status" aria-label="جاري التحميل"><div class="bt-fan"><i class="bt-c a"><img src="img/gi/imp.webp" alt=""></i><i class="bt-c c"><img src="img/gi/draw.webp" alt=""></i><i class="bt-c b"><img src="img/gi/uno.webp" alt=""></i></div><b class="bt-logo">روق</b><span class="bt-sadu"></span><span class="bt-tip">نجهّز الجلسة…</span></div></main>
 </div>
 <noscript><section style="padding:24px"><h1>روق: ألعاب الجلسات مع أصحابك</h1><p>ألعاب الجلسات مع الشلة من جوالك: ارسم وخمّن، الدخيل، أونو، مين قالها، صح ولا خطأ، ومين أكثر واحد. أونلاين أو بجوال واحد، ومجانية.</p><p>شغّل الجافاسكربت عشان تلعب.</p></section></noscript>
-<script type="module" src="./app.js?v=194"></script>
+<script type="module" src="./app.js?v=195"></script>
 </body>
 </html>
