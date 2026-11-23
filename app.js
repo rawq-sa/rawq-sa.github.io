@@ -5614,7 +5614,14 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       </section>`;
     balTimerStart(); requestAnimationFrame(fitGame);
     onAll("[data-dbl]", b => b.dataset.dbl === "1" ? balMove("play", "", { dbl: 1 }) : balMove("pass"));
-    onAll("[data-bid]", b => { const x = b.dataset.bid; x === "pass" ? balMove("pass") : balMove("play", "", { bid: x, suit: b.dataset.s || "" }); });
+    onAll("[data-bid]", b => {
+      const x = b.dataset.bid;
+      if (x === "pass") { ui.bPend = null; return balMove("pass"); }
+      const key = x + "|" + (b.dataset.s || "") + "|" + g.v;
+      if ((x === "hokm" || x === "sun") && ui.bPend !== key) { ui.bPend = key; return toast("اضغط مرة ثانية لتأكيد " + (x === "sun" ? "الصن" : "الحكم")); }
+      ui.bPend = null;
+      balMove("play", "", { bid: x, suit: b.dataset.s || "" });
+    });
     onAll("[data-bc]", b => {
       const tap = c => {
         if (!myTurn || g.phase !== "play") return toast(g.phase === "play" ? "مو دورك" : "الحين وقت الشراء");
