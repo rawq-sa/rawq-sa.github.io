@@ -5604,7 +5604,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         const cnt = t => my.filter(x => x.t === t).length;
         const chips = [["sira", "سرا"], ["50", "خمسين"], ["100", "مية"], ["400", "أربعمية"]].map(([t, nm]) => { const has = cnt(t) > 0, on = has && ui.bDec?.has(t); return `<button class="bpc ${has ? "has" : "dim"} ${on ? "on" : ""}" ${has ? `data-dec="${t}"` : "disabled"}>${nm}<i>${on ? ar(cnt(t)) : "0"}</i></button>`; }).join("") + (balNow ? `<button class="bpc has ${ui.bBal ? "on" : ""}" data-dec="baloot">بلوت<i>${ui.bBal ? "✓" : "0"}</i></button>` : "");
         const prjOk = my.length > 0 || balNow, sawaOn = myTurn && !waiting && g.phase === "play" && !g.trick.length && g.tricks >= 1 && g.tricks <= 6 && g.sawa === myK;
-        return `<div class="bactbar"><div class="bpcs">${chips}</div><div class="bab2"><button class="bab ${prjOk ? "gold" : "dim"}" id="bPrjAll" ${prjOk ? "" : "disabled"}>المشاريع</button><button class="bab ${sawaOn ? "gold" : "dim"}" id="bSawa" ${sawaOn ? "" : "disabled"}>${sawaOn && ui.sawaArm === g.v ? "متأكد؟" : "سوا"}</button></div></div>`;
+        return `<div class="bactbar">${ui.prjOpenKey === g.hand + ":" + room.round ? `<div class="bpcs">${chips}</div>` : ""}<div class="bab2"><button class="bab ${sawaOn ? "gold" : "dim"}" id="bSawa" ${sawaOn ? "" : "disabled"}>${sawaOn && ui.sawaArm === g.v ? "متأكد؟" : "سوا"}</button><button class="bab ${prjOk ? "hint" : "dim"}" id="bPrjAll">المشاريع</button><button class="bab dim" id="bQayd">قيد</button></div></div>`;
       })() : ""}
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"} ${dealA ? "deal" : ""}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules" hidden><summary>قوانين البلوت باختصار</summary><ul>
@@ -5646,7 +5646,8 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       });
       b.addEventListener("touchcancel", () => { if (tgh) { tgh.remove(); tgh = null; } });
     });
-    on("bPrjAll", "click", () => { const first = g.tricks === 0; if (!first) return; const my = projects(g, myHand); ui.bDec = ui.bDec || new Set(); const all = my.every(x => ui.bDec.has(x.t)); my.forEach(x => all ? ui.bDec.delete(x.t) : ui.bDec.add(x.t)); if (V.querySelector('[data-dec="baloot"]')) ui.bBal = !all; render(false); });
+    on("bQayd", "click", () => toast("القيد جاي قريب"));
+    on("bPrjAll", "click", () => { const pk = g.hand + ":" + room.round; ui.prjOpenKey = ui.prjOpenKey === pk ? null : pk; const first = g.tricks === 0; if (!first) return render(false); const my = projects(g, myHand); ui.bDec = ui.bDec || new Set(); const all = my.every(x => ui.bDec.has(x.t)); my.forEach(x => all ? ui.bDec.delete(x.t) : ui.bDec.add(x.t)); if (V.querySelector('[data-dec="baloot"]')) ui.bBal = !all; render(false); });
     onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
     on("bNext", "click", () => balMove("play"));
     playSay(g); playFx(g, myT);
