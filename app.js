@@ -5626,8 +5626,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       const tap = c => {
         if (!myTurn || g.phase !== "play") return toast(g.phase === "play" ? "مو دورك" : "الحين وقت الشراء");
         if (!ok.includes(c)) return toast("لازم تلحق الشكل" + (g.mode === "hokm" ? " أو تقطع بالحكم" : ""));
-        if (ui.bk.sel === c) { ui.bk.sel = null; const dx = {}; if (ui.bDec?.size) dx.dec = [...ui.bDec]; if (ui.bBal && g.mode === "hokm" && bSuit(c) === g.trump && "KQ".includes(bRank(c))) dx.bal = 1; ui.bDec = null; return balMove("play", c, Object.keys(dx).length ? dx : undefined); }
-        ui.bk.sel = c; V.querySelectorAll("[data-bc]").forEach(x => x.classList.toggle("sel", x.dataset.bc === c));
+        ui.bk.sel = null; const dx = {}; if (ui.bDec?.size) dx.dec = [...ui.bDec]; if (ui.bBal && g.mode === "hokm" && bSuit(c) === g.trump && "KQ".includes(bRank(c))) dx.bal = 1; ui.bDec = null; return balMove("play", c, Object.keys(dx).length ? dx : undefined);
       };
       b.addEventListener("click", () => { if (ui.bDragged) return; tap(b.dataset.bc); });
       b.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
