@@ -1634,7 +1634,7 @@ function balApply(u, mv, g, st) {
   if (g.trick.length < 4) { g.turn = (k + 1) % 4; g.v++; return [u]; }
   const w = trickWinner(g, g.trick), t = teamOf(w);
   g.ab[t] += g.trick.reduce((s, x) => s + bAbnat(g, x.c), 0); g.won[t]++; g.tricks++;
-  g.lastTrick = g.trick; g.trick = []; g.turn = w;
+  g.lastTrick = g.trick; g.lastWin = w; g.trick = []; g.turn = w;
   g.sawa = -1; if (g.tricks >= 1 && g.tricks <= 6) { try { if (sawaOk(g, ord.map(x => [...(st.hands[x] || [])]), w)) g.sawa = w; } catch (e) {} }
   g.last += ` · اللمّة لـ ${atn(pname(ord[w]))}`;
   if (g.tricks === 1) { balAnnounce(g, st); if (g.prj.length) g.last += " · 📣 " + g.prj.map(x => `${atn(pname(ord[x.k]))} ${PRJ_AR[x.t]}`).join("، "); }
@@ -5550,7 +5550,10 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
     const seat = k => { const u = ord[k], sp = spot(k); return `<button class="bseat ${sp} ${k === g.turn && g.winner == null && g.phase !== "res" ? "turn" : ""} ${teamOf(k) === myT ? "mate" : ""}" data-pf="${esc(u)}" style="--c:${teamOf(k) === myT ? "#3ecf8e" : "#e0565b"}"><span class="jring">${prof(u) ? avF(prof(u), 50) : avatar(pname(u), "", 50)}${k === g.turn && g.winner == null && g.phase !== "res" ? `<svg class="btmr" viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="28" style="animation-duration:${BAL_T}s;animation-delay:-${(BAL_T - tm.left).toFixed(1)}s"/></svg>` : ""}</span>${g.say?.k === k ? `<span class="bsay">${esc(g.say.t)}</span>` : ""}<b class="btag">${g.auto?.[u] ? "🤖 " : ""}${u === me.uid ? "أنت" : esc(pname(u))}${k === g.buyer ? " 🛒" : ""}${k === g.dealer ? " 🃏" : ""}</b>${sp !== "b" ? `<span class="bbk">${((n) => Array.from({ length: n }, (_, i) => `<i style="--r:${((i - (n - 1) / 2) * 14).toFixed(1)}deg">${backS()}</i>`).join(""))(Math.min(8, g.cnt?.[u] ?? 0))}</span>` : ""}</button>`; };
     const btKey = g.hand + "|" + g.tricks, flyNow = g.trick.length > 0 && (ui.btKey !== btKey || g.trick.length > (ui.btLen || 0));
     ui.btKey = btKey; ui.btLen = g.trick.length;
-    const trick = (g.trick.length ? g.trick : g.lastTrick || []).map((x, i, arr) => `<span class="btc ${spot(x.k)} ${g.trick.length ? "" : "old"}${flyNow && g.trick.length && i === arr.length - 1 ? " fly" : ""}">${face(x.c)}</span>`).join("");
+    const swKey = g.hand + "|" + g.tricks, swIdle = !g.trick.length && g.lastTrick && g.lastWin != null && ui.swDone !== swKey;
+    if (swIdle) { ui.swDone = swKey; ui.swGo = null; setTimeout(() => { ui.swGo = swKey; document.querySelectorAll(".btc.old").forEach((el, i) => setTimeout(() => el.classList.add("go"), i * 70)); }, 650); }
+    const swOn = !g.trick.length && g.lastWin != null && ui.swDone === swKey;
+    const trick = (g.trick.length ? g.trick : g.lastTrick || []).map((x, i, arr) => `<span class="btc ${spot(x.k)} ${g.trick.length ? "" : "old"}${flyNow && g.trick.length && i === arr.length - 1 ? " fly" : ""}${swOn ? " sw-" + spot(g.lastWin) : ""}${swOn && ui.swGo === swKey ? " go" : ""}">${face(x.c)}</span>`).join("");
     const modeTxt = g.mode ? (g.mode === "sun" ? "☀️ صن" : "🃏 حكم " + SUIT_IC[g.trump]) + (g.mult === 5 ? " · ☕" : g.mult > 1 ? " · ✖️" + ar(g.mult) : "") + " · " + esc(atn(pname(ord[g.buyer]))) : g.phase === "bid2" ? "الشراء: الدور الثاني" : "الشراء";
     const tm = balTimeLeft(g);
     const bidding = g.phase === "bid1" || g.phase === "bid2";
