@@ -5629,12 +5629,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         if (ui.bk.sel === c) { ui.bk.sel = null; const dx = {}; if (ui.bDec?.size) dx.dec = [...ui.bDec]; if (ui.bBal && g.mode === "hokm" && bSuit(c) === g.trump && "KQ".includes(bRank(c))) dx.bal = 1; ui.bDec = null; return balMove("play", c, Object.keys(dx).length ? dx : undefined); }
         ui.bk.sel = c; render(false);
       };
-      let y0 = null, dragPlayed = false;
-      b.addEventListener("pointerdown", e => { y0 = e.clientY; dragPlayed = false; });
-      b.addEventListener("pointermove", e => { if (y0 == null) return; const up = y0 - e.clientY; b.style.translate = up > 3 ? "0 -" + Math.min(70, up).toFixed(0) + "px" : ""; });
-      b.addEventListener("pointerup", e => { if (y0 == null) return; const up = y0 - e.clientY; y0 = null; b.style.translate = ""; if (up >= 50) { dragPlayed = true; ui.bk.sel = b.dataset.bc; tap(b.dataset.bc); } });
-      b.addEventListener("pointercancel", () => { y0 = null; b.style.translate = ""; });
-      b.addEventListener("click", () => { if (dragPlayed) { dragPlayed = false; return; } tap(b.dataset.bc); });
+      b.addEventListener("click", () => tap(b.dataset.bc));
     });
     on("bPrjAll", "click", () => { const first = g.tricks === 0; if (!first) return; const my = projects(g, myHand); ui.bDec = ui.bDec || new Set(); const all = my.every(x => ui.bDec.has(x.t)); my.forEach(x => all ? ui.bDec.delete(x.t) : ui.bDec.add(x.t)); if (V.querySelector('[data-dec="baloot"]')) ui.bBal = !all; render(false); });
     onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
