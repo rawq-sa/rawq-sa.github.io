@@ -5503,6 +5503,31 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       }
       J.card = c; J.a = null; J.k = null; render(false);
     });
+    V.querySelectorAll("[data-card]").forEach(b => {
+      let sx = 0, sy = 0, r0 = null, gh = null;
+      b.addEventListener("dragstart", e => e.preventDefault());
+      b.addEventListener("touchstart", e => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; r0 = b.getBoundingClientRect(); gh = null; }, { passive: true });
+      b.addEventListener("touchmove", e => {
+        e.preventDefault();
+        const t = e.touches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+        if (!gh) { if (Math.hypot(dx, dy) < 10) return; gh = document.createElement("div"); gh.className = "ughost"; gh.innerHTML = b.innerHTML; gh.style.cssText = `left:${r0.left}px;top:${r0.top}px;width:${r0.width}px;height:${r0.height}px`; document.body.appendChild(gh); }
+        gh.style.transform = `translate(${dx}px,${dy}px) scale(1.1)`;
+      }, { passive: false });
+      b.addEventListener("touchend", e => {
+        if (!gh) return;
+        e.preventDefault(); gh.remove(); gh = null;
+        const t = e.changedTouches[0], bd = V.querySelector(".jsvg")?.getBoundingClientRect();
+        if (!bd || t.clientX < bd.left || t.clientX > bd.right || t.clientY < bd.top || t.clientY > bd.bottom) return;
+        const c = b.dataset.card;
+        if (!myTurn || waiting) return toast("مو دورك");
+        if (anyMove && !movesOf(c).length) return toast("هالورقة ما لها حركة الحين");
+        if (!anyMove) { ui.jk.card = null; return jakMove("pass", c); }
+        J.card = c; J.a = null; J.k = null;
+        const ms = movesOf(c); if (ms.length === 1) return send(ms[0]);
+        render(false); toast("اختار الكورة اللي تبي تحركها 👆");
+      });
+      b.addEventListener("touchcancel", () => { if (gh) { gh.remove(); gh = null; } });
+    });
     on("jBurn", "click", () => { const c = J.card; ui.jk.card = null; jakMove("pass", c); });
     on("jTen", "click", () => { const m = L.find(m => m.t === "x"); if (m) send(m); });
     onAll("[data-k]", b => {
