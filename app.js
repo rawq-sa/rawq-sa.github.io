@@ -1670,7 +1670,7 @@ function balEnd(g) {
     (g.prj || []).forEach(x => prjAb[x.team] += PA[x.t] || 0); if (g.gnd != null) land[g.gnd] = 10;
     g.res = { pts, note, ab: [0, 1].map(t => Math.max(0, g.ab[t] - prjAb[t] - land[t])), land, prj: prjAb, ebn: [...g.ab], mode: g.mode, buyer: g.buyer };
     g.hist = [...(g.hist || []), { p: pts, m: g.mode, x: m, n: note || "" }].slice(-40);
-    g.last = `انتهت التوزيعة: لنا/لهم +${ar(pts[0])} / +${ar(pts[1])}${note ? " · " + note : ""}`;
+    g.last = `انتهت التوزيعة: ⟦${pts[0]}|${pts[1]}⟧${note ? " · " + note : ""}`;
     if (g.score[0] >= BAL_WIN || g.score[1] >= BAL_WIN) g.winner = g.score[0] === g.score[1] ? teamOf(g.buyer) : g.score[0] > g.score[1] ? 0 : 1;
     else g.phase = "res";
   }
@@ -5635,7 +5635,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         <div class="btrick">${bidding ? `<span class="bshown">${face(g.shown)}<i>ورقة الشراء</i></span>` : trick}</div>
         ${g.prj?.length && ui.prjOpenKey === g.hand + ":" + room.round && (g.tricks <= 2 || g.last?.includes("بلوت!")) ? `<span class="bprj">📣 ${g.prj.map(x => `${esc(pname(ord[x.k]))}: ${PRJ_AR[x.t]}`).join(" · ")}</span>` : ""}
         ${res}
-        <p class="ulast">${esc(g.last || "")}</p>
+        <p class="ulast">${esc((g.last || "").replace(/⟦(\d+)\|(\d+)⟧/g, (m, a, b) => { const [u, t] = myT ? [b, a] : [a, b]; return `لنا +${ar(+u)} / لهم +${ar(+t)}`; }))}</p>
       </div>
 ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحين <button class="btn small" id="autoBack">ارجع العب بنفسك</button></div>` : ""}
       ${bidBtns || `<div class="ubar ${myTurn ? "mine" : ""}"><span class="ub-t">${tip}</span>${g.winner != null ? "" : `<b class="usec ${tm.left <= 5 ? "hot" : ""}" id="bSec">⏱ ${ar(Math.ceil(tm.left))}</b>`}</div>`}
