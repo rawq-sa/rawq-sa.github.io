@@ -1537,7 +1537,7 @@ async function startBal() {
 async function balLoadHost() {
   if (BAL.st || !isHost()) return;
   const h = await getDoc(doc(db, "rooms", roomCode, "hidden", "bal")).catch(() => null);
-  if (h?.exists() && h.data().round === room.round) { const d = h.data(); BAL.st = { hands: d.hands, deck: d.deck, prjc: d.prjc || null }; BAL.processed = d.processed || {}; }
+  if (h?.exists() && h.data().round === room.round) { const d = h.data(); BAL.st = { hands: d.hands, deck: d.deck, prjc: d.prjc || null, viol: d.viol || [] }; BAL.processed = d.processed || {}; }
 }
 const balSort = (g, h) => [...h].sort((a, b) => "shdc".indexOf(bSuit(a)) - "shdc".indexOf(bSuit(b)) || bAbnat({ mode: "sun" }, b) - bAbnat({ mode: "sun" }, a) || ["7", "8", "9", "10", "J", "Q", "K", "A"].indexOf(bRank(b)) - ["7", "8", "9", "10", "J", "Q", "K", "A"].indexOf(bRank(a)));
 function balFinalizeBid(g, st) {
@@ -1548,6 +1548,7 @@ function balFinalizeBid(g, st) {
   g.mult = 1; const bt = teamOf(b.k);
   if (b.mode === "hokm" || (g.score[bt] > 100 && g.score[1 - bt] < 100)) { g.dbl = { s: 0, t0: g.turn }; g.phase = "dbl"; g.turn = (b.k + 1) % 4; } else delete g.dbl;
   // المشاريع تنحسب من الثمان أوراق وتنعلن بعد أول لمّة
+  st.viol = [];
   st.prjc = ord.map((u, k) => ({ k, list: projects(g, st.hands[u]), baloot: g.mode === "hokm" && st.hands[u].includes("K" + g.trump) && st.hands[u].includes("Q" + g.trump) }));
   return [...ord];
 }
@@ -1611,9 +1612,26 @@ function balApply(u, mv, g, st) {
     g.say = { k, t: "سوا" }; g.last = `${who} قال سوا ${good ? "✅ صح، اللمات الباقية لفريقه" : "❌ غلط، اللمات الباقية للخصم"}`;
     const l0 = g.last; balEnd(g); g.last = l0 + " · " + g.last; g.v++; return [...ord];
   }
+  let qd = null; try { qd = mv.color ? JSON.parse(mv.color).qayd : null; } catch (e) { qd = null; }
+  if (mv.type === "play" && qd) {
+    const tk = +qd.k;
+    if (g.phase !== "play" || isBot(u) || !(tk >= 0 && tk < 4) || teamOf(tk) === teamOf(k)) return null;
+    const hit = (st.viol || []).some(x => x.k === tk && x.t === qd.t), w = hit ? teamOf(k) : 1 - teamOf(k);
+    const H = ord.map(x => [...(st.hands[x] || [])]);
+    const all = g.ab[0] + g.ab[1] + H.flat().reduce((s2, c) => s2 + bAbnat(g, c), 0) + g.trick.reduce((s2, x) => s2 + bAbnat(g, x.c), 0) + 10;
+    g.ab = [0, 0]; g.ab[w] = all; g.gnd = w; (g.prj || []).forEach(x => x.team = w); g.tricks = 8;
+    ord.forEach(x => { st.hands[x] = []; g.cnt[x] = 0; }); g.trick = []; g.lastTrick = [];
+    g.say = { k, t: "قيد" }; g.last = `${who} قيّد على ${atn(pname(ord[tk]))} ${hit ? "✅ صح، الجولة لفريقه" : "❌ غلط، الجولة للخصم"}`;
+    const l0 = g.last; balEnd(g); g.last = l0 + " · " + g.last; g.v++; return [...ord];
+  }
   let card = mv.card;
   if (mv.type === "kick") card = ok[Math.floor(Math.random() * ok.length)];
-  else if (mv.type !== "play" || !ok.includes(card)) return null;
+  else if (mv.type !== "play" || !hand.includes(card) || (isBot(u) && !ok.includes(card))) return null;
+  if (!ok.includes(card)) {
+    const led = g.trick[0] ? bSuit(g.trick[0].c) : null;
+    const t = led && bSuit(card) !== led && hand.some(c => bSuit(c) === led) ? "cut" : g.mode === "hokm" && bSuit(card) === g.trump ? "kbr" : g.mode === "hokm" ? "dq" : "cut";
+    st.viol = [...(st.viol || []), { k, t, n: g.tricks }];
+  }
   let dec = {}; try { dec = mv.color ? JSON.parse(mv.color) || {} : {}; } catch (e) { dec = {}; }
   const autoDec = isBot(u) || !!mv.auto;
   // المشاريع: لازم اللاعب يعلنها بنفسه مع أول ورقة له، وإلا تروح عليه
@@ -5632,7 +5650,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         const cnt = t => my.filter(x => x.t === t).length;
         const chips = [["sira", "سرا"], ["50", "خمسين"], ["100", "مية"], ["400", "أربعمية"]].map(([t, nm]) => { const has = cnt(t) > 0, on = has && ui.bDec?.has(t); return `<button class="bpc ${has ? "has" : "dim"} ${on ? "on" : ""}" ${has ? `data-dec="${t}"` : "disabled"}>${nm}<i>${on ? ar(cnt(t)) : "0"}</i></button>`; }).join("") + (balNow ? `<button class="bpc has ${ui.bBal ? "on" : ""}" data-dec="baloot">بلوت<i>${ui.bBal ? "✓" : "0"}</i></button>` : "");
         const prjOk = my.length > 0 || balNow, sawaOn = myTurn && !waiting && g.phase === "play" && !g.trick.length && g.tricks >= 1 && g.tricks <= 6 && g.sawa === myK;
-        return `<div class="bactbar">${ui.prjOpenKey === g.hand + ":" + room.round ? `<div class="bpcs">${chips}</div>` : ""}<div class="bab2"><button class="bab ${sawaOn ? "gold" : "dim"}" id="bSawa" ${sawaOn ? "" : "disabled"}>${sawaOn && ui.sawaArm === g.v ? "متأكد؟" : "سوا"}</button><button class="bab ${prjOk ? "hint" : "dim"}" id="bPrjAll">المشاريع</button><button class="bab dim" id="bQayd">قيد</button></div></div>`;
+        return `<div class="bactbar">${ui.prjOpenKey === g.hand + ":" + room.round ? `<div class="bpcs">${chips}</div>` : ""}<div class="bab2"><button class="bab ${sawaOn ? "gold" : "dim"}" id="bSawa" ${sawaOn ? "" : "disabled"}>${sawaOn && ui.sawaArm === g.v ? "متأكد؟" : "سوا"}</button><button class="bab ${prjOk ? "hint" : "dim"}" id="bPrjAll">المشاريع</button><button class="bab ${g.phase === "play" && playing ? "" : "dim"}" id="bQayd">قيد</button></div></div>`;
       })() : ""}
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"} ${dealA ? "deal" : ""}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules" hidden><summary>قوانين البلوت باختصار</summary><ul>
@@ -5653,7 +5671,6 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
     V.querySelectorAll("[data-bc]").forEach(b => {
       const tap = c => {
         if (!myTurn || g.phase !== "play") return toast(g.phase === "play" ? "مو دورك" : "الحين وقت الشراء");
-        if (!ok.includes(c)) return toast("لازم تلحق الشكل" + (g.mode === "hokm" ? " أو تقطع بالحكم" : ""));
         ui.bk.sel = null; const dx = {}; if (ui.bDec?.size) dx.dec = [...ui.bDec]; if (ui.bBal && g.mode === "hokm" && bSuit(c) === g.trump && "KQ".includes(bRank(c))) dx.bal = 1; ui.bDec = null; return balMove("play", c, Object.keys(dx).length ? dx : undefined);
       };
       b.addEventListener("click", () => { if (ui.bDragged) return; tap(b.dataset.bc); });
@@ -5674,7 +5691,26 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       });
       b.addEventListener("touchcancel", () => { if (tgh) { tgh.remove(); tgh = null; } });
     });
-    on("bQayd", "click", () => toast("القيد جاي قريب"));
+    on("bQayd", "click", () => {
+      if (g.phase !== "play" || !playing) return toast("القيد وقت اللعب بس");
+      const opp = [(myK + 1) % 4, (myK + 3) % 4], types = g.mode === "hokm" ? [["cut", "قاطع: قطع الشكل وعنده منه"], ["kbr", "ما كبّر بالحكم وعنده أكبر"], ["dq", "ما دق بالحكم وعنده حكم"]] : [["cut", "قاطع: قطع الشكل وعنده منه"]];
+      const q = { k: null, t: types.length === 1 ? types[0][0] : null };
+      document.querySelector(".qsheet")?.remove();
+      const el = document.createElement("div"); el.className = "qsheet";
+      const draw = () => {
+        el.innerHTML = `<div class="qbox" role="dialog" aria-label="سجّل قيد"><div class="qhd"><b>سجّل قيد</b><button class="qx" aria-label="إغلاق">✕</button></div>
+          <div class="qlb">على مين؟</div><div class="qrow">${opp.map(k => `<button class="qopt ${q.k === k ? "on" : ""}" data-qk="${k}">${esc(atn(pname(ord[k])))}</button>`).join("")}</div>
+          <div class="qlb">وش المخالفة؟</div><div class="qcol">${types.map(([t, n]) => `<button class="qopt ${q.t === t ? "on" : ""}" data-qt="${t}">${n}</button>`).join("")}</div>
+          <button class="qgo" ${q.k != null && q.t ? "" : "disabled"}>تأكيد القيد</button>
+          <div class="qnote">اللعبة تتحقق من الأوراق: صحيح ← الجولة كلها لفريقك · غلط ← الجولة كلها للخصم</div></div>`;
+        el.querySelector(".qx").onclick = () => el.remove();
+        el.querySelectorAll("[data-qk]").forEach(b => b.onclick = () => { q.k = +b.dataset.qk; draw(); });
+        el.querySelectorAll("[data-qt]").forEach(b => b.onclick = () => { q.t = b.dataset.qt; draw(); });
+        el.querySelector(".qgo").onclick = () => { if (q.k == null || !q.t) return; el.remove(); balMove("play", "", { qayd: { k: q.k, t: q.t } }); };
+      };
+      el.addEventListener("click", e => { if (e.target === el) el.remove(); });
+      draw(); document.body.appendChild(el);
+    });
     on("bPrjAll", "click", () => { const pk = g.hand + ":" + room.round; ui.prjOpenKey = ui.prjOpenKey === pk ? null : pk; const first = g.tricks === 0; if (!first) return render(false); const my = projects(g, myHand); ui.bDec = ui.bDec || new Set(); const all = my.every(x => ui.bDec.has(x.t)); my.forEach(x => all ? ui.bDec.delete(x.t) : ui.bDec.add(x.t)); if (V.querySelector('[data-dec="baloot"]')) ui.bBal = !all; render(false); });
     onAll("[data-dec]", b => { const t = b.dataset.dec; if (t === "baloot") ui.bBal = !ui.bBal; else { ui.bDec = ui.bDec || new Set(); ui.bDec.has(t) ? ui.bDec.delete(t) : ui.bDec.add(t); } render(false); });
     on("bNext", "click", () => balMove("play"));
