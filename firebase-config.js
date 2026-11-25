@@ -9,7 +9,7 @@ export const firebaseConfig = {
 };
 
 // مفتاح reCAPTCHA v3 لـ App Check. فاضي = مقفول (ما يأثر على شي)
-export const appCheckKey = "";
+export const appCheckKey = "6LdLmzIuAAAAAFbQBWOEfFUpjQ7N1BxT9tFe7iU8";
 
 // رابط دالة الدخول باليوزر (Cloud Function). فاضي = الدخول بالإيميل بس
 export const authUrl = "";

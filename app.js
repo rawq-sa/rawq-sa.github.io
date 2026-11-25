@@ -10,7 +10,7 @@ import {
   collection, query, where, runTransaction, writeBatch, serverTimestamp, deleteField,
   getCountFromServer, getDocFromServer, Timestamp, orderBy, limit, addDoc, getAggregateFromServer, sum, arrayUnion, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, authUrl, appCheckKey } from "./firebase-config.js?v=28";
+import { firebaseConfig, authUrl, appCheckKey } from "./firebase-config.js?v=29";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 import { WORDS, MOST, FIVE, LETTERS, HCATS, WHO, DRAW, KALIMA, DAILY, HDICT } from "./content.js?v=31";
 import { ICONS } from "./icons.js?v=33";
