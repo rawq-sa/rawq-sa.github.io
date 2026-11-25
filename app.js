@@ -1583,7 +1583,7 @@ function balApply(u, mv, g, st) {
     if (act === "sun" || act === "ashkal") {
       if (act === "ashkal" && g.bid?.mode === "sun") return null;
       g.bid = { k: act === "ashkal" ? (k + 2) % 4 : k, mode: "sun" };
-      g.last = act === "ashkal" ? `${who} قال أشكال 🔁 · صن لخويه ${atn(pname(ord[(k + 2) % 4]))}` : `${who} اشترى صن ☀️`; g.say = { k, t: act === "ashkal" ? "أشكال 🔁" : "صن ☀️" };
+      g.last = act === "ashkal" ? `${who} قال اشكل 🔁 · صن لخويه ${atn(pname(ord[(k + 2) % 4]))}` : `${who} اشترى صن ☀️`; g.say = { k, t: act === "ashkal" ? "اشكل 🔁" : "صن ☀️" };
       const ch = balFinalizeBid(g, st); g.v++; return ch;
     }
     if (act === "hokm") {
@@ -5036,7 +5036,7 @@ function votedCount() {
   return Object.entries(votes).filter(([u, v]) => v.round === room.round && ps.includes(u)).length;
 }
 const statusBar = () => `<div class="status"><span>الغرفة <b dir="ltr">${esc(roomCode)}</b> · ${GAMES[room.game] || ""}</span><span>${room.game === "kal" && room.k ? `الكلمة ${ar(room.k.idx || 1)} من ${ar(room.k.n || 10)}` : `الجولة ${ar(Math.max(1, (room.round || 0) - (room.kx || 0)))}`}</span></div>`;
-const BSND = { "حكم": "hokm", "صن": "sun", "بس": "pass", "ولا": "wala", "أشكال": "ashkal", "سرا": "sira", "خمسين": "50", "مية": "100", "أربعمية": "400", "بلوت": "baloot", "سوا": "sawa" };
+const BSND = { "حكم": "hokm", "صن": "sun", "بس": "pass", "ولا": "wala", "أشكال": "ashkal", "اشكل": "ashkal", "سرا": "sira", "خمسين": "50", "مية": "100", "أربعمية": "400", "بلوت": "baloot", "سوا": "sawa" };
 const sndOn = () => store.get("snd", "1") !== "0", sndB = {};
 const getAC = () => { AC ||= new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC; };
 const sndBuf = n => sndB[n] ||= fetch(`./snd/bal_${n}.mp3`).then(r => r.arrayBuffer()).then(b => new Promise((ok, no) => getAC().decodeAudioData(b, ok, no))).catch(() => { delete sndB[n]; return null; });
@@ -5590,7 +5590,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       <button class="bbid" data-bid="pass">${g.phase === "bid2" ? "ولا" : "بس"}</button>
       <button class="bbid gold" data-bid="sun">صن</button>
       ${g.bid ? "" : g.phase === "bid1" ? `<button class="bbid gold" data-bid="hokm" data-s="${bSuit(g.shown)}">حكم ${SUIT_IC[bSuit(g.shown)]}</button>` : ["s", "h", "d", "c"].filter(s => s !== bSuit(g.shown)).map(s => `<button class="bbid gold" data-bid="hokm" data-s="${s}">حكم ${SUIT_IC[s]}</button>`).join("")}
-      ${g.asked >= 2 && !g.bid ? `<button class="bbid" data-bid="ashkal">أشكال</button>` : ""}
+      ${g.asked >= 2 && !g.bid ? `<button class="bbid" data-bid="ashkal">اشكل</button>` : ""}
 </div>` : g.phase === "dbl" && myTurn && !waiting ? `<div class="bbids"><button class="bbid" data-dbl="0">بس</button><button class="bbid gold" data-dbl="1">${["دبل", "ثري", "فور", "قهوة ☕"][g.dbl?.s || 0]}</button></div>` : "";
     const res = g.res && (g.phase === "res" || g.winner != null) ? `<div class="bres bres2" dir="rtl" style="background:#0f0b1f;color:#f5ecd7;border-radius:18px;padding:14px;margin:8px auto;max-width:340px">
       <div style="display:flex;justify-content:space-between;font-size:12px;opacity:.7;margin-bottom:10px"><span>${g.res.mode === "sun" ? "صن" : "حكم"}</span><span>${g.res.buyer != null && teamOf(g.res.buyer) === myT ? "فريقنا اشترى" : "الخصم اشترى"}</span></div>
@@ -5637,7 +5637,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       ${playing ? `<div class="uhand jfan bfan ${myTurn ? "" : "wait"} ${dealA ? "deal" : ""}">${myHand.map((c, ci) => `<button style="${fan(ci)}" class="ucard jc ${ui.bk.sel === c ? "sel" : ""} ${myTurn && g.phase === "play" ? (ok.includes(c) ? "ok" : "no") : ""}" data-bc="${esc(c)}">${face(c)}</button>`).join("")}</div>` : `<p class="hint center">تتفرج 👀</p>`}
       <details class="jrules" hidden><summary>قوانين البلوت باختصار</summary><ul>
         <li><b>الشراء</b>: صن ☀️ (بدون حكم) أو حكم بشكل ورقة الشراء، أو بس. الدور الثاني تقدر تحكم بأي شكل ثاني</li>
-        <li><b>أشكال</b>: تشتري صن لخويك</li><li>لازم تلحق الشكل، وبالحكم لو ما عندك تقطع بالحكم (إلا لو خويك ماسك اللمّة)</li>
+        <li><b>اشكل</b>: تشتري صن لخويك</li><li>لازم تلحق الشكل، وبالحكم لو ما عندك تقطع بالحكم (إلا لو خويك ماسك اللمّة)</li>
         <li><b>المشاريع</b> تنعلن تلقائي: سرا، خمسين، مية، أربعمية، بلوت</li><li>المشتري لازم يجيب أكثر من الخصم وإلا ينقهر، وأول فريق يوصل ${ar(BAL_WIN)} يفوز 🏆</li></ul></details>
       </section>`;
     balTimerStart(); requestAnimationFrame(fitGame);
