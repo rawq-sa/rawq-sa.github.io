@@ -1567,6 +1567,18 @@ function balApply(u, mv, g, st) {
     if (mv.type !== "kick" && !(mv.type === "play" && u === room.host)) return null;
     g.dealer = (g.dealer + 1) % 4; g.hand++; balDeal(g, st); g.last = `🃏 توزيعة جديدة · الشراء من ${atn(pname(ord[g.turn]))}`; g.v++; return [...ord];
   }
+  let qd = null; try { qd = mv.color ? JSON.parse(mv.color).qayd : null; } catch (e) { qd = null; }
+  if (mv.type === "play" && qd) {
+    const tk = +qd.k;
+    if (g.phase !== "play" || isBot(u) || !(tk >= 0 && tk < 4) || teamOf(tk) === teamOf(k)) return null;
+    const hit = (st.viol || []).some(x => x.k === tk && x.t === qd.t), w = hit ? teamOf(k) : 1 - teamOf(k);
+    const H = ord.map(x => [...(st.hands[x] || [])]);
+    const all = g.ab[0] + g.ab[1] + H.flat().reduce((s2, c) => s2 + bAbnat(g, c), 0) + g.trick.reduce((s2, x) => s2 + bAbnat(g, x.c), 0) + 10;
+    g.ab = [0, 0]; g.ab[w] = all; g.gnd = w; (g.prj || []).forEach(x => x.team = w); g.tricks = 8;
+    ord.forEach(x => { st.hands[x] = []; g.cnt[x] = 0; }); g.trick = []; g.lastTrick = [];
+    g.say = { k, t: "قيد" }; g.last = `${who} قيّد على ${atn(pname(ord[tk]))} ${hit ? "✅ صح، الجولة لفريقه" : "❌ غلط، الجولة للخصم"}`;
+    const l0 = g.last; balEnd(g); g.last = l0 + " · " + g.last; g.v++; return [...ord];
+  }
   if (k !== g.turn) return null;
   if (g.phase === "dbl") {
     const D = g.dbl || { s: 0, t0: (g.dealer + 1) % 4 }, NM = ["دبل", "ثري", "فور", "قهوة"];
@@ -1610,18 +1622,6 @@ function balApply(u, mv, g, st) {
     g.ab[w] += H.flat().reduce((s, c) => s + bAbnat(g, c), 0) + 10; g.gnd = w; g.won[w] += 8 - g.tricks; g.tricks = 8;
     ord.forEach(x => { st.hands[x] = []; g.cnt[x] = 0; }); g.trick = []; g.lastTrick = [];
     g.say = { k, t: "سوا" }; g.last = `${who} قال سوا ${good ? "✅ صح، اللمات الباقية لفريقه" : "❌ غلط، اللمات الباقية للخصم"}`;
-    const l0 = g.last; balEnd(g); g.last = l0 + " · " + g.last; g.v++; return [...ord];
-  }
-  let qd = null; try { qd = mv.color ? JSON.parse(mv.color).qayd : null; } catch (e) { qd = null; }
-  if (mv.type === "play" && qd) {
-    const tk = +qd.k;
-    if (g.phase !== "play" || isBot(u) || !(tk >= 0 && tk < 4) || teamOf(tk) === teamOf(k)) return null;
-    const hit = (st.viol || []).some(x => x.k === tk && x.t === qd.t), w = hit ? teamOf(k) : 1 - teamOf(k);
-    const H = ord.map(x => [...(st.hands[x] || [])]);
-    const all = g.ab[0] + g.ab[1] + H.flat().reduce((s2, c) => s2 + bAbnat(g, c), 0) + g.trick.reduce((s2, x) => s2 + bAbnat(g, x.c), 0) + 10;
-    g.ab = [0, 0]; g.ab[w] = all; g.gnd = w; (g.prj || []).forEach(x => x.team = w); g.tricks = 8;
-    ord.forEach(x => { st.hands[x] = []; g.cnt[x] = 0; }); g.trick = []; g.lastTrick = [];
-    g.say = { k, t: "قيد" }; g.last = `${who} قيّد على ${atn(pname(ord[tk]))} ${hit ? "✅ صح، الجولة لفريقه" : "❌ غلط، الجولة للخصم"}`;
     const l0 = g.last; balEnd(g); g.last = l0 + " · " + g.last; g.v++; return [...ord];
   }
   let card = mv.card;
