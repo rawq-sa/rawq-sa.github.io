@@ -1517,7 +1517,7 @@ function balDeal(g, st) {
   const deck = shuffle(bDeck());
   st.hands = {}; g.order.forEach(u => st.hands[u] = deck.splice(0, 5));
   g.shown = deck.pop(); st.deck = deck; st.prjc = null;
-  Object.assign(g, { phase: "bid1", turn: (g.dealer + 1) % 4, asked: 0, bid: null, mode: null, trump: null, buyer: null, trick: [], lastTrick: null, won: [0, 0], ab: [0, 0], prj: [], tricks: 0, res: null });
+  Object.assign(g, { phase: "bid1", turn: (g.dealer + 1) % 4, asked: 0, bid: null, mode: null, trump: null, buyer: null, trick: [], lastTrick: null, won: [0, 0], ab: [0, 0], prj: [], tricks: 0, res: null, gnd: null });
   g.cnt = Object.fromEntries(g.order.map(u => [u, 5]));
 }
 async function startBal() {
@@ -1606,7 +1606,7 @@ function balApply(u, mv, g, st) {
   if (mv.type === "play" && /"sawa"/.test(mv.color || "")) {
     if (g.trick.length || g.tricks < 1 || g.tricks > 6 || isBot(u)) return null;
     const H = ord.map(x => [...(st.hands[x] || [])]), good = sawaOk(g, H, k), T = teamOf(k), w = good ? T : 1 - T;
-    g.ab[w] += H.flat().reduce((s, c) => s + bAbnat(g, c), 0) + 10; g.won[w] += 8 - g.tricks; g.tricks = 8;
+    g.ab[w] += H.flat().reduce((s, c) => s + bAbnat(g, c), 0) + 10; g.gnd = w; g.won[w] += 8 - g.tricks; g.tricks = 8;
     ord.forEach(x => { st.hands[x] = []; g.cnt[x] = 0; }); g.trick = []; g.lastTrick = [];
     g.say = { k, t: "سوا" }; g.last = `${who} قال سوا ${good ? "✅ صح، اللمات الباقية لفريقه" : "❌ غلط، اللمات الباقية للخصم"}`;
     const l0 = g.last; balEnd(g); g.last = l0 + " · " + g.last; g.v++; return [...ord];
@@ -1639,7 +1639,7 @@ function balApply(u, mv, g, st) {
   g.sawa = -1; if (g.tricks >= 1 && g.tricks <= 6) { try { if (sawaOk(g, ord.map(x => [...(st.hands[x] || [])]), w)) g.sawa = w; } catch (e) {} }
   g.last += ` · اللمّة لـ ${atn(pname(ord[w]))}`;
   if (g.tricks === 1) { balAnnounce(g, st); if (g.prj.length) g.last += " · 📣 " + g.prj.map(x => `${atn(pname(ord[x.k]))} ${PRJ_AR[x.t]}`).join("، "); }
-  if (g.tricks === 8) { g.ab[t] += 10; balEnd(g); }
+  if (g.tricks === 8) { g.ab[t] += 10; g.gnd = t; balEnd(g); }
   g.v++; return [u];
 }
 function balEnd(g) {
@@ -1648,7 +1648,9 @@ function balEnd(g) {
     if (m > 1 && m < 5) { pts = pts.map(p => p * m); note = (note ? note + " · " : "") + "✖️" + ar(m); }
     g.score = [g.score[0] + pts[0], g.score[1] + pts[1]];
     if (m === 5) { const w = pts[0] === pts[1] ? teamOf(g.buyer) : pts[0] > pts[1] ? 0 : 1; g.score[w] = Math.max(g.score[w], BAL_WIN); note = (note ? note + " · " : "") + "☕ قهوة"; }
-    g.res = { pts, note, ab: [...g.ab], mode: g.mode, buyer: g.buyer };
+    const PA = { sira: 20, "50": 50, "100": 100, "400": 400, baloot: 20 }, prjAb = [0, 0], land = [0, 0];
+    (g.prj || []).forEach(x => prjAb[x.team] += PA[x.t] || 0); if (g.gnd != null) land[g.gnd] = 10;
+    g.res = { pts, note, ab: [0, 1].map(t => Math.max(0, g.ab[t] - prjAb[t] - land[t])), land, prj: prjAb, ebn: [...g.ab], mode: g.mode, buyer: g.buyer };
     g.hist = [...(g.hist || []), { p: pts, m: g.mode, x: m, n: note || "" }].slice(-40);
     g.last = `انتهت التوزيعة: لنا/لهم +${ar(pts[0])} / +${ar(pts[1])}${note ? " · " + note : ""}`;
     if (g.score[0] >= BAL_WIN || g.score[1] >= BAL_WIN) g.winner = g.score[0] === g.score[1] ? teamOf(g.buyer) : g.score[0] > g.score[1] ? 0 : 1;
@@ -5613,7 +5615,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
         <div class="btop"><div class="bsc" id="bHist" role="button" aria-label="سجل الصكة"><div>لنا<b>${ar(us)}</b></div><div>لهم<b>${ar(them)}</b></div></div><span class="bmode">${modeTxt}</span><span class="hint">إلى ${ar(BAL_WIN)}</span></div>
         ${ord.map((u, k) => seat(k)).join("")}
         <div class="btrick">${bidding ? `<span class="bshown">${face(g.shown)}<i>ورقة الشراء</i></span>` : trick}</div>
-        ${g.prj?.length && (g.tricks <= 2 || g.last?.includes("بلوت!")) ? `<span class="bprj">📣 ${g.prj.map(x => `${esc(pname(ord[x.k]))}: ${PRJ_AR[x.t]}`).join(" · ")}</span>` : ""}
+        ${g.prj?.length && ui.prjOpenKey === g.hand + ":" + room.round && (g.tricks <= 2 || g.last?.includes("بلوت!")) ? `<span class="bprj">📣 ${g.prj.map(x => `${esc(pname(ord[x.k]))}: ${PRJ_AR[x.t]}`).join(" · ")}</span>` : ""}
         ${res}
         <p class="ulast">${esc(g.last || "")}</p>
       </div>
