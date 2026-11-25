@@ -40,6 +40,7 @@ function fresh(key, list) {
   seen.push(v); store.set("seen:" + key, seen);
   return v;
 }
+["touchend", "touchcancel"].forEach(t => document.addEventListener(t, e => { if (!e.touches.length) setTimeout(() => document.querySelectorAll(".ughost").forEach(g => g.remove()), 260); }, { passive: true }));
 function toast(msg) {
   const t = document.createElement("div");
   t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg;
