@@ -5622,7 +5622,7 @@ ${g.auto?.[me.uid] ? `<div class="autobar">🤖 بوت يلعب عنك الحي�
       ui.bPend = null;
       balMove("play", "", { bid: x, suit: b.dataset.s || "" });
     });
-    onAll("[data-bc]", b => {
+    V.querySelectorAll("[data-bc]").forEach(b => {
       const tap = c => {
         if (!myTurn || g.phase !== "play") return toast(g.phase === "play" ? "مو دورك" : "الحين وقت الشراء");
         if (!ok.includes(c)) return toast("لازم تلحق الشكل" + (g.mode === "hokm" ? " أو تقطع بالحكم" : ""));
